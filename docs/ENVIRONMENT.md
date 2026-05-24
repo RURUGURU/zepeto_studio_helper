@@ -9,7 +9,7 @@
 | 운영체제 | Windows 11 |
 | Unity | `2020.3.9f1` |
 | ZEPETO Studio | `3.2.12` |
-| helper 패키지 | `com.easy.zepeto-helper@0.2.1` |
+| helper 패키지 | `com.easy.zepeto-helper@0.2.2` |
 | ZEPETO registry | `https://upm.zepeto.run` |
 
 ## 필요한 준비물
@@ -93,6 +93,14 @@ Window > Easy > ZEPETO Studio Helper
 ```
 
 실제 창은 README 상단의 `docs/images/helper-window.png` 화면처럼 표시됩니다.
+
+## 초보자 확인 순서
+
+1. Unity에서 ZEPETO 프로젝트를 엽니다.
+2. Project 창에서 의상 prefab이 `Assets/Contents` 아래에 있는지 확인합니다.
+3. Hierarchy에서 `LOADER`가 보이는 scene을 엽니다.
+4. `Window > Easy > ZEPETO Studio Helper`를 엽니다.
+5. README의 `처음 사용하는 순서` 표대로 1번부터 4번까지 진행합니다.
 
 ## 프로젝트 구조 예시
 

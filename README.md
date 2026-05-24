@@ -2,62 +2,91 @@
 
 # ZEPETO Studio Helper
 
-공식 ZEPETO Studio SDK 프로젝트에서 의상 확인, 동작 선택, 클립 조정, `.zepeto` 생성을 한 창에서 순서대로 진행하는 Unity Editor 패키지
+처음 쓰는 사람도 Unity 안에서 `1 -> 2 -> 3 -> 4` 순서대로 누르면
+의상 확인, 동작 선택, 클립 저장, `.zepeto` 생성까지 끝낼 수 있게 만든 ZEPETO Studio 작업대
 
 [![Unity](https://img.shields.io/badge/Unity-2020.3.9f1-222222?logo=unity)](https://unity.com/)
 [![ZEPETO](https://img.shields.io/badge/ZEPETO%20Studio-3.2.12-2563eb)](https://studio.zepeto.me/)
-[![패키지](https://img.shields.io/badge/패키지-com.easy.zepeto--helper-16a34a)](package.json)
-[![검증](https://img.shields.io/badge/검증-Unity%20MCP%20확인-22c55e)](Documentation~/QA_AUDIT.md)
+[![Package](https://img.shields.io/badge/package-com.easy.zepeto--helper-16a34a)](package.json)
+[![Guide](https://img.shields.io/badge/guide-beginner%20friendly-2563eb)](#처음-사용하는-순서)
+[![QA](https://img.shields.io/badge/QA-Unity%20MCP%20checked-22c55e)](Documentation~/QA_AUDIT.md)
 
 ![ZEPETO Studio Helper 실제 Unity 화면](docs/images/helper-window.png)
 
 </div>
 
-## 바로 쓰는 기준
+## 한 줄 요약
 
-이미 ZEPETO Studio SDK로 만든 Unity 프로젝트라면 이 패키지를 추가한 뒤 아래 메뉴를 열면 됩니다.
+공식 ZEPETO Studio SDK 프로젝트에 이 패키지를 추가한 뒤, Unity 메뉴에서 아래 창을 열고 파란 적용 버튼만 순서대로 누르면 됩니다.
 
 ```text
 Window > Easy > ZEPETO Studio Helper
 ```
 
-필요한 준비물은 단순합니다.
+## 처음 보는 사람용 체크리스트
 
-| 준비물 | 확인 위치 |
-| --- | --- |
-| 공식 `ZEPETO Studio SDK` | `Packages/manifest.json`의 `zepeto.studio` |
-| 이 helper 패키지 | `Packages/manifest.json`의 `com.easy.zepeto-helper` |
-| ZEPETO `LOADER`가 있는 scene | Unity Hierarchy |
-| 테스트할 의상 prefab | `Assets/Contents` 아래 |
-
-계정 로그인과 최종 업로드 심사는 ZEPETO 공식 흐름에서 진행하고, 이 helper는 Unity 안에서 헷갈리는 클릭 순서와 저장 위치를 정리합니다.
-
-## 이 화면에서 하는 일
-
-| 단계 | 버튼 흐름 | 결과 |
+| 확인 | 어디서 보나요 | 되어 있으면 |
 | --- | --- | --- |
-| `1. 아바타와 의상 준비` | ID 적용, 의상 적용, Play 확인, `1번 적용 / 다음 단계` | 아바타와 의상이 준비되고 2번으로 이동 |
-| `2. 동작 선택` | 동작 선택, 미리보기 Play/Stop, `2번 적용 / 작업 동작으로 사용` | 선택한 동작의 작업용 복사본이 `LOADER`에 연결 |
-| `3. 클립 조정` | 배속, 시작/끝, 반복 조정, `3번 적용 / 저장 후 다음 단계` | 조정된 `.anim` 파일 저장 |
-| `4. 저장과 내보내기` | Play로 저장 결과 확인, `4번 완료 / .zepeto 생성` | 최종 `.zepeto` 생성 경로 표시 |
+| ZEPETO SDK가 설치됨 | `Packages/manifest.json` 또는 Package Manager | `zepeto.studio`가 보임 |
+| helper가 설치됨 | Package Manager | `com.easy.zepeto-helper`가 보임 |
+| 작업 scene이 열림 | Unity Hierarchy | `LOADER`가 보임 |
+| 의상 prefab이 있음 | Project 창 | `Assets/Contents/.../*.prefab`이 보임 |
+| helper 창이 열림 | Unity 상단 메뉴 | `Window > Easy > ZEPETO Studio Helper` |
 
-완료된 단계는 잠기고, 다시 바꾸고 싶을 때만 `수정 잠금 해제`로 열어 수정합니다.
+`helper 창이 열림`까지 확인되면 바로 아래 순서대로 진행하면 됩니다. `helper가 설치됨`이 보이지 않으면 먼저 설치 방법으로 내려가세요.
+
+## 내 상황별 빠른 길
+
+| 지금 상태 | 바로 할 일 |
+| --- | --- |
+| ZEPETO SDK 프로젝트가 이미 있음 | `설치 방법`에서 Git URL로 helper 추가 |
+| helper 설치는 끝났는데 창을 못 찾겠음 | `Window > Easy > ZEPETO Studio Helper` 열기 |
+| 창은 열렸는데 1번에서 막힘 | `LOADER`가 있는 scene인지 확인 |
+| 의상 선택 목록이 비어 있음 | 의상 prefab을 `Assets/Contents` 아래로 옮기기 |
+| export 후 파일 위치를 모르겠음 | 4번 단계의 `출력 파일` 줄 확인 |
+
+## 처음 사용하는 순서
+
+| 순서 | 화면에서 누를 것 | 끝난 상태 |
+| --- | --- | --- |
+| 1 | `1-1. 아이디 입력`에서 `ID 적용` | 내 ZEPETO 아이디가 `LOADER`에 들어감 |
+| 2 | `1-2. 의상 선택`에서 prefab 선택 후 `의상 적용` | 아바타에 의상이 입혀짐 |
+| 3 | `1-3. Play 확인`으로 화면 확인 후 Stop | 의상 상태를 눈으로 확인함 |
+| 4 | 파란 `1번 적용 / 다음 단계` | 1번이 잠기고 2번으로 이동 |
+| 5 | `2. 동작 선택`에서 동작 고르고 `미리보기 Play` | 춤/동작을 화면에서 확인함 |
+| 6 | Stop 후 파란 `2번 적용 / 작업 동작으로 사용` | 선택한 동작이 작업용 clip이 됨 |
+| 7 | `3. 클립 조정`에서 배속, 시작, 끝, 반복 조정 | 저장할 clip 모양이 정해짐 |
+| 8 | `Play로 저장 결과 확인` 후 파란 `3번 적용 / 저장 후 다음 단계` | 새 `.anim` 파일이 저장됨 |
+| 9 | `4. 저장과 내보내기`에서 `Play로 저장 결과 확인` | 최종 동작을 다시 확인함 |
+| 10 | 파란 `4번 완료 / .zepeto 생성` | `.zepeto` 파일이 생성됨 |
+| 11 | `출력 파일` 줄 확인 | 저장된 파일 위치를 알 수 있음 |
+
+중간에 다시 고치고 싶으면 해당 단계의 `수정 잠금 해제`를 누른 뒤 다시 적용하면 됩니다.
 
 ## 설치 방법
 
-Unity Package Manager에서 설치:
+### 가장 쉬운 설치
 
-1. Unity 프로젝트 열기
-2. `Window > Package Manager`
-3. 왼쪽 위 `+`
-4. `Add package from git URL...`
-5. 아래 주소 입력
+Unity에서 아래 순서대로 클릭합니다.
+
+1. `Window > Package Manager`
+2. 왼쪽 위 `+`
+3. `Add package from git URL...`
+4. 아래 주소 붙여넣기
 
 ```text
 https://github.com/RURUGURU/zepeto_studio_helper.git
 ```
 
-`Packages/manifest.json`에 직접 넣을 때:
+설치가 끝나면 아래 메뉴가 생깁니다.
+
+```text
+Window > Easy > ZEPETO Studio Helper
+```
+
+### manifest.json으로 설치
+
+Unity 프로젝트의 `Packages/manifest.json`에 필요한 줄만 추가합니다.
 
 ```json
 {
@@ -77,9 +106,11 @@ https://github.com/RURUGURU/zepeto_studio_helper.git
 }
 ```
 
-이미 `dependencies`와 `scopedRegistries`가 있다면 기존 내용을 지우지 말고 필요한 줄만 추가하세요.
+이미 `dependencies`나 `scopedRegistries`가 있다면 전체 파일을 덮어쓰지 말고 위 항목만 합쳐 넣습니다.
 
-로컬 tarball로 설치할 때:
+### tarball로 설치
+
+GitHub가 아니라 파일로 설치하고 싶을 때 사용합니다.
 
 ```powershell
 git clone https://github.com/RURUGURU/zepeto_studio_helper.git
@@ -90,35 +121,32 @@ npm pack
 생성되는 파일:
 
 ```text
-com.easy.zepeto-helper-0.2.1.tgz
+com.easy.zepeto-helper-0.2.2.tgz
 ```
 
-Unity에서는 `Window > Package Manager > + > Add package from tarball...`로 이 `.tgz`를 선택합니다.
+Unity에서는 `Window > Package Manager > + > Add package from tarball...`을 누르고 `.tgz` 파일을 선택합니다.
 
-## 실제 사용 순서
+## 버튼 이름이 헷갈릴 때
 
-1. ZEPETO용 Unity 프로젝트를 엽니다.
-2. 의상 prefab을 `Assets/Contents` 아래에 둡니다.
-3. ZEPETO `LOADER`가 있는 scene을 엽니다.
-4. `Window > Easy > ZEPETO Studio Helper`를 엽니다.
-5. `1-1. 아이디 입력`에서 ID를 확인하고 `ID 적용`을 누릅니다.
-6. `1-2. 의상 선택`에서 prefab을 고르고 `의상 적용`을 누릅니다.
-7. `1-3. Play 확인`에서 Play로 확인한 뒤 Stop을 누르고 `1번 적용 / 다음 단계`를 누릅니다.
-8. `2. 동작 선택`에서 동작을 고르고 미리보기 Play/Stop으로 확인한 뒤 `2번 적용 / 작업 동작으로 사용`을 누릅니다.
-9. `3. 클립 조정`에서 배속, 시작 시간, 끝 시간, 반복을 조정하고 Play로 확인한 뒤 `3번 적용 / 저장 후 다음 단계`를 누릅니다.
-10. `4. 저장과 내보내기`에서 저장 결과를 확인하고 `4번 완료 / .zepeto 생성`을 누릅니다.
-11. 화면의 `출력 파일` 줄에서 저장된 `.zepeto` 경로를 확인합니다.
-
-## 생성되는 파일
-
-| 종류 | 위치 |
+| 버튼 | 뜻 |
 | --- | --- |
-| 작업용 동작 복사본 | `Assets/ZepetoHelper/Animations` |
-| 클립 조정 결과 | `Assets/ZepetoHelper/Animations/ClipEdits` |
-| 임시 미리보기 clip | `Assets/ZepetoHelper/Animations/Preview/clip_adjust_preview.anim` |
-| 최종 `.zepeto` 파일 | 의상 prefab이 있는 폴더 |
+| `Play` | Unity 화면에서 실제 아바타와 동작을 확인 |
+| `Stop` | 확인을 끝내고 편집 가능한 상태로 돌아옴 |
+| `적용` | 지금 선택한 값을 helper가 작업 상태로 저장 |
+| `다음 단계` | 현재 단계가 끝났으니 다음 번호를 열기 |
+| `수정 잠금 해제` | 이미 완료한 단계를 다시 바꾸기 |
+| `.zepeto 생성` | 공식 ZEPETO export를 실행하고 결과 파일 경로 표시 |
 
-파일명 예시:
+## 저장되는 파일
+
+| 파일 | 저장 위치 | 언제 생기나요 |
+| --- | --- | --- |
+| 작업용 동작 복사본 | `Assets/ZepetoHelper/Animations` | 2번 적용 후 |
+| 조정된 clip | `Assets/ZepetoHelper/Animations/ClipEdits` | 3번 적용 후 |
+| 임시 미리보기 clip | `Assets/ZepetoHelper/Animations/Preview/clip_adjust_preview.anim` | Play 확인 중 |
+| 최종 `.zepeto` | 의상 prefab이 있는 폴더 | 4번 생성 후 |
+
+최종 파일명 예시:
 
 ```text
 ZEPETO_TRANSPARENT_1_VideoBooth_139_v02.zepeto
@@ -130,6 +158,16 @@ ZEPETO_TRANSPARENT_1_VideoBooth_139_v02.zepeto
 Assets/Contents/TRANSPARENT_1/ZEPETO_TRANSPARENT_1_VideoBooth_139_v02.zepeto
 ```
 
+## 막혔을 때 먼저 볼 곳
+
+| 증상 | 먼저 확인할 것 |
+| --- | --- |
+| helper 메뉴가 안 보임 | Package Manager에 `com.easy.zepeto-helper`가 설치됐는지 확인 |
+| `LOADER` 연결 안내가 나옴 | ZEPETO용 scene을 열었는지 확인 |
+| 의상 목록이 비어 있음 | prefab이 `Assets/Contents` 아래에 있는지 확인 |
+| Play가 비활성화됨 | 빨간 Stop 상태라면 Stop을 먼저 누름 |
+| `.zepeto`가 안 보임 | 4번의 `출력 파일` 줄과 Unity Console 확인 |
+
 ## 검증한 환경
 
 | 항목 | 값 |
@@ -138,10 +176,10 @@ Assets/Contents/TRANSPARENT_1/ZEPETO_TRANSPARENT_1_VideoBooth_139_v02.zepeto
 | Unity | `2020.3.9f1` |
 | ZEPETO Studio | `3.2.12` |
 | 패키지 이름 | `com.easy.zepeto-helper` |
-| 패키지 버전 | `0.2.1` |
+| 패키지 버전 | `0.2.2` |
 | ZEPETO registry | `https://upm.zepeto.run` |
 
-자세한 환경 설정은 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)에 정리했습니다.
+환경 설정 상세는 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md), 검증 기록은 [Documentation~/QA_AUDIT.md](Documentation~/QA_AUDIT.md)에 정리되어 있습니다.
 
 ## 개발자 명령어
 
@@ -163,19 +201,15 @@ npm pack --dry-run --json
 npm pack
 ```
 
-프로젝트 산출물 폴더로 옮기기:
+산출물 폴더로 이동:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path ..\..\Build\Packages
-Move-Item -Force .\com.easy.zepeto-helper-0.2.1.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.2.1.tgz
+Move-Item -Force .\com.easy.zepeto-helper-0.2.2.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.2.2.tgz
 ```
 
 압축 파일 내용 확인:
 
 ```powershell
-tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.2.1.tgz
+tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.2.2.tgz
 ```
-
-## QA / Audit
-
-상세 검증 기록은 [Documentation~/QA_AUDIT.md](Documentation~/QA_AUDIT.md)에 있습니다.

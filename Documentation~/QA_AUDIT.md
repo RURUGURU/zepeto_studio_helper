@@ -27,6 +27,7 @@
 | `ZepetoStudioHelperWindow.cs` console error | 통과 |
 | `error CS` console error | 통과 |
 | README 실제 Unity 화면 캡처 | 통과 |
+| README 초보자용 따라하기 흐름 | 통과 |
 | legacy motion/pose edit 문자열 검사 | 통과 |
 | `.zepeto` export smoke test | 통과 |
 | 다른 사용자 clean project 수동 테스트 | 미실행 |
@@ -62,6 +63,12 @@ README 화면 캡처 근거:
 docs/images/helper-window.png
 Unity Editor window title: ZEPETO Helper
 Captured from Unity 2020.3.9f1 through the live editor window.
+```
+
+README 초보자 흐름 확인:
+
+```text
+README.md includes: 처음 보는 사람용 체크리스트, 처음 사용하는 순서, 버튼 이름이 헷갈릴 때, 막혔을 때 먼저 볼 곳.
 ```
 
 ## 남은 리스크
