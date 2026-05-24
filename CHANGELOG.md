@@ -1,5 +1,11 @@
 # 변경 기록
 
+## 0.2.4 - 2026-05-24
+
+- README 상단에서 실제 Unity `Game View` Play 화면이 바로 보이도록 배치
+- Play 캡처 설명을 `실제 Play 확인 화면`으로 명확히 정리
+- tarball, 환경 문서, package metadata 버전을 `0.2.4`로 갱신
+
 ## 0.2.3 - 2026-05-24
 
 - README 상단에 실제 화면 기반 `workflow-overview.png` 추가

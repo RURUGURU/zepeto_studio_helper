@@ -13,6 +13,12 @@
 
 ![ZEPETO Studio Helper 전체 워크플로우](docs/images/workflow-overview.png)
 
+### 실제 Play 확인 화면
+
+Helper의 `Play` 버튼을 누르면 Unity `Game View`에서 아래처럼 아바타, 의상, 동작 상태를 바로 확인합니다.
+
+![Unity Game View 실제 Play 화면](docs/images/play-preview.png)
+
 <details>
 <summary>전체 Helper 창 보기</summary>
 
@@ -100,7 +106,7 @@ ID를 확인하고, `Assets/Contents` 아래 의상 prefab을 선택한 뒤 `의
 
 각 단계의 Play 버튼을 누르면 실제 Game View에서 아바타와 의상, 동작 상태를 확인합니다.
 
-![Unity Game View Play 확인 화면](docs/images/play-preview.png)
+![Unity Game View 실제 Play 화면](docs/images/play-preview.png)
 
 ## 설치 방법
 
@@ -160,7 +166,7 @@ npm pack
 생성되는 파일:
 
 ```text
-com.easy.zepeto-helper-0.2.3.tgz
+com.easy.zepeto-helper-0.2.4.tgz
 ```
 
 Unity에서는 `Window > Package Manager > + > Add package from tarball...`을 누르고 `.tgz` 파일을 선택합니다.
@@ -215,7 +221,7 @@ Assets/Contents/TRANSPARENT_1/ZEPETO_TRANSPARENT_1_VideoBooth_139_v02.zepeto
 | Unity | `2020.3.9f1` |
 | ZEPETO Studio | `3.2.12` |
 | 패키지 이름 | `com.easy.zepeto-helper` |
-| 패키지 버전 | `0.2.3` |
+| 패키지 버전 | `0.2.4` |
 | ZEPETO registry | `https://upm.zepeto.run` |
 
 환경 설정 상세는 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md), 검증 기록은 [Documentation~/QA_AUDIT.md](Documentation~/QA_AUDIT.md)에 정리되어 있습니다.
@@ -244,11 +250,11 @@ npm pack
 
 ```powershell
 New-Item -ItemType Directory -Force -Path ..\..\Build\Packages
-Move-Item -Force .\com.easy.zepeto-helper-0.2.3.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.2.3.tgz
+Move-Item -Force .\com.easy.zepeto-helper-0.2.4.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.2.4.tgz
 ```
 
 압축 파일 내용 확인:
 
 ```powershell
-tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.2.3.tgz
+tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.2.4.tgz
 ```

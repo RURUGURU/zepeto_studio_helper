@@ -30,6 +30,7 @@
 | README 초보자용 따라하기 흐름 | 통과 |
 | README 단계별 실제 화면 캡처 | 통과 |
 | README Play 화면 캡처 | 통과 |
+| README 상단 Play 화면 노출 | 통과 |
 | legacy motion/pose edit 문자열 검사 | 통과 |
 | `.zepeto` export smoke test | 통과 |
 | 다른 사용자 clean project 수동 테스트 | 미실행 |
@@ -82,6 +83,12 @@ docs/images/step-2-motion-select.png
 docs/images/step-3-clip-adjust.png
 docs/images/step-4-save-export.png
 docs/images/play-preview.png
+```
+
+README 상단 Play 화면 노출 확인:
+
+```text
+README.md shows docs/images/play-preview.png immediately after docs/images/workflow-overview.png.
 ```
 
 ## 남은 리스크

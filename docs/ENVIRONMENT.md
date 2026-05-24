@@ -9,7 +9,7 @@
 | 운영체제 | Windows 11 |
 | Unity | `2020.3.9f1` |
 | ZEPETO Studio | `3.2.12` |
-| helper 패키지 | `com.easy.zepeto-helper@0.2.3` |
+| helper 패키지 | `com.easy.zepeto-helper@0.2.4` |
 | ZEPETO registry | `https://upm.zepeto.run` |
 
 ## 필요한 준비물
