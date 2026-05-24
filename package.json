@@ -1,0 +1,18 @@
+{
+  "name": "com.easy.zepeto-helper",
+  "displayName": "Easy ZEPETO Studio Helper",
+  "version": "0.2.0",
+  "unity": "2020.3",
+  "description": "Beginner-friendly Editor wizard for ZEPETO Studio clothing preview, copied motion clips, clip timing adjustment, safety checks, and readable .zepeto export output.",
+  "keywords": [
+    "zepeto",
+    "studio",
+    "editor",
+    "fitting",
+    "export",
+    "animation"
+  ],
+  "author": {
+    "name": "easy"
+  }
+}

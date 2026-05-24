@@ -1,0 +1,14 @@
+*.tgz
+*.zip
+*.unitypackage
+Library/
+Temp/
+Obj/
+Logs/
+UserSettings/
+.git/
+.vs/
+.vscode/
+*.csproj
+*.sln
+*.user

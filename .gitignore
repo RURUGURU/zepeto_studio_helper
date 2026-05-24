@@ -1,0 +1,25 @@
+# Unity / generated
+Library/
+Temp/
+Obj/
+Logs/
+UserSettings/
+.vs/
+.vscode/
+
+# Build outputs
+*.tgz
+*.zip
+*.unitypackage
+
+# IDE files
+*.csproj
+*.sln
+*.user
+*.pidb
+*.booproj
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
