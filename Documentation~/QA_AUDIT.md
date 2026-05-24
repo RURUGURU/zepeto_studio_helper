@@ -26,6 +26,7 @@
 | Unity script compile | 통과 |
 | `ZepetoStudioHelperWindow.cs` console error | 통과 |
 | `error CS` console error | 통과 |
+| README 실제 Unity 화면 캡처 | 통과 |
 | legacy motion/pose edit 문자열 검사 | 통과 |
 | `.zepeto` export smoke test | 통과 |
 | 다른 사용자 clean project 수동 테스트 | 미실행 |
@@ -53,6 +54,14 @@ Console 검색어: error CS
 
 ```text
 ZepetoHelperExportSmoke PASS: Assets/Contents/TRANSPARENT_1/ZEPETO_TRANSPARENT_1_VideoBooth_139_v02.zepeto
+```
+
+README 화면 캡처 근거:
+
+```text
+docs/images/helper-window.png
+Unity Editor window title: ZEPETO Helper
+Captured from Unity 2020.3.9f1 through the live editor window.
 ```
 
 ## 남은 리스크

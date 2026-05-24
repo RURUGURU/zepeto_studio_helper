@@ -1,9 +1,9 @@
 {
   "name": "com.easy.zepeto-helper",
   "displayName": "Easy ZEPETO Studio Helper",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "unity": "2020.3",
-  "description": "ZEPETO Studio 의상 확인, 동작 선택, 클립 조정, .zepeto 생성을 4단계로 안내하는 Unity Editor helper 패키지.",
+  "description": "ZEPETO Studio 의상 확인, 동작 선택, 클립 조정, .zepeto 생성을 실제 Unity 화면 기준 4단계로 안내하는 Editor helper 패키지.",
   "keywords": [
     "zepeto",
     "studio",
