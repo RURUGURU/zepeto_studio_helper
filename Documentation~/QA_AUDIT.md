@@ -28,6 +28,8 @@
 | `error CS` console error | 통과 |
 | README 실제 Unity 화면 캡처 | 통과 |
 | README 초보자용 따라하기 흐름 | 통과 |
+| README 단계별 실제 화면 캡처 | 통과 |
+| README Play 화면 캡처 | 통과 |
 | legacy motion/pose edit 문자열 검사 | 통과 |
 | `.zepeto` export smoke test | 통과 |
 | 다른 사용자 clean project 수동 테스트 | 미실행 |
@@ -69,6 +71,17 @@ README 초보자 흐름 확인:
 
 ```text
 README.md includes: 처음 보는 사람용 체크리스트, 처음 사용하는 순서, 버튼 이름이 헷갈릴 때, 막혔을 때 먼저 볼 곳.
+```
+
+README 실제 화면 자산:
+
+```text
+docs/images/workflow-overview.png
+docs/images/step-1-avatar-outfit.png
+docs/images/step-2-motion-select.png
+docs/images/step-3-clip-adjust.png
+docs/images/step-4-save-export.png
+docs/images/play-preview.png
 ```
 
 ## 남은 리스크

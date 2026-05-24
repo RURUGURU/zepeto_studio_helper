@@ -1,5 +1,13 @@
 # 변경 기록
 
+## 0.2.3 - 2026-05-24
+
+- README 상단에 실제 화면 기반 `workflow-overview.png` 추가
+- 1~4번 단계별 실제 Unity Helper 캡처 추가
+- 실제 Unity Game View Play 캡처 추가
+- 초보자가 화면을 보며 따라갈 수 있도록 `실제 화면으로 따라하기` 섹션 추가
+- tarball, 환경 문서, package metadata 버전을 `0.2.3`으로 갱신
+
 ## 0.2.2 - 2026-05-24
 
 - README를 초보자용 따라하기 안내서 형식으로 재구성

@@ -11,7 +11,14 @@
 [![Guide](https://img.shields.io/badge/guide-beginner%20friendly-2563eb)](#처음-사용하는-순서)
 [![QA](https://img.shields.io/badge/QA-Unity%20MCP%20checked-22c55e)](Documentation~/QA_AUDIT.md)
 
+![ZEPETO Studio Helper 전체 워크플로우](docs/images/workflow-overview.png)
+
+<details>
+<summary>전체 Helper 창 보기</summary>
+
 ![ZEPETO Studio Helper 실제 Unity 화면](docs/images/helper-window.png)
+
+</details>
 
 </div>
 
@@ -62,6 +69,38 @@ Window > Easy > ZEPETO Studio Helper
 | 11 | `출력 파일` 줄 확인 | 저장된 파일 위치를 알 수 있음 |
 
 중간에 다시 고치고 싶으면 해당 단계의 `수정 잠금 해제`를 누른 뒤 다시 적용하면 됩니다.
+
+## 실제 화면으로 따라하기
+
+### 1. 아바타와 의상
+
+ID를 확인하고, `Assets/Contents` 아래 의상 prefab을 선택한 뒤 `의상 적용`과 `1번 적용 / 다음 단계`를 누릅니다.
+
+![1번 아바타와 의상 실제 화면](docs/images/step-1-avatar-outfit.png)
+
+### 2. 동작 선택
+
+동작을 고르고 `미리보기 Play`로 확인한 뒤 `2번 적용 / 작업 동작으로 사용`을 누릅니다.
+
+![2번 동작 선택 실제 화면](docs/images/step-2-motion-select.png)
+
+### 3. 클립 조정
+
+배속, 시작 시간, 끝 시간, 반복 여부를 조정하고 `Play로 배속 확인` 후 `3번 적용 / 저장 후 다음 단계`를 누릅니다.
+
+![3번 클립 조정 실제 화면](docs/images/step-3-clip-adjust.png)
+
+### 4. 저장과 내보내기
+
+최종 결과를 다시 Play로 확인한 뒤 `4번 완료 / .zepeto 생성`을 누르고 `출력 파일` 줄의 경로를 확인합니다.
+
+![4번 저장과 내보내기 실제 화면](docs/images/step-4-save-export.png)
+
+### Play 화면
+
+각 단계의 Play 버튼을 누르면 실제 Game View에서 아바타와 의상, 동작 상태를 확인합니다.
+
+![Unity Game View Play 확인 화면](docs/images/play-preview.png)
 
 ## 설치 방법
 
@@ -121,7 +160,7 @@ npm pack
 생성되는 파일:
 
 ```text
-com.easy.zepeto-helper-0.2.2.tgz
+com.easy.zepeto-helper-0.2.3.tgz
 ```
 
 Unity에서는 `Window > Package Manager > + > Add package from tarball...`을 누르고 `.tgz` 파일을 선택합니다.
@@ -176,7 +215,7 @@ Assets/Contents/TRANSPARENT_1/ZEPETO_TRANSPARENT_1_VideoBooth_139_v02.zepeto
 | Unity | `2020.3.9f1` |
 | ZEPETO Studio | `3.2.12` |
 | 패키지 이름 | `com.easy.zepeto-helper` |
-| 패키지 버전 | `0.2.2` |
+| 패키지 버전 | `0.2.3` |
 | ZEPETO registry | `https://upm.zepeto.run` |
 
 환경 설정 상세는 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md), 검증 기록은 [Documentation~/QA_AUDIT.md](Documentation~/QA_AUDIT.md)에 정리되어 있습니다.
@@ -205,11 +244,11 @@ npm pack
 
 ```powershell
 New-Item -ItemType Directory -Force -Path ..\..\Build\Packages
-Move-Item -Force .\com.easy.zepeto-helper-0.2.2.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.2.2.tgz
+Move-Item -Force .\com.easy.zepeto-helper-0.2.3.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.2.3.tgz
 ```
 
 압축 파일 내용 확인:
 
 ```powershell
-tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.2.2.tgz
+tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.2.3.tgz
 ```
