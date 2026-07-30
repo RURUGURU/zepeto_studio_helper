@@ -22,8 +22,12 @@ namespace Easy.ZepetoHelper.SelfTestEditor
         // Unity clears Temp/ on startup, so the handshake files live in the project root instead.
         private const string TriggerPath = "zepeto-helper-selftest.trigger";
         private const string ResultPath = "zepeto-helper-selftest.result.txt";
+        // A refusal gets its own file. ResultPath must never say anything but what the last real run found.
+        private const string SkipPath = "zepeto-helper-selftest.skipped.txt";
+        private const string RunnerLabel = "ZEPETO Helper self test";
         private const string TestSceneFolder = "Assets/ZepetoHelperTests";
         private const string TestScenePath = TestSceneFolder + "/SelfTestLoaderScene.unity";
+        private const string PackageRoot = "Packages/com.easy.zepeto-helper";
 
         private static readonly BindingFlags AnyInstance = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
         private static readonly BindingFlags AnyStatic = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
@@ -31,6 +35,34 @@ namespace Easy.ZepetoHelper.SelfTestEditor
         private static readonly List<string> results = new List<string>();
         private static int passCount;
         private static int failCount;
+
+        /// <summary>
+        /// The author's real ZEPETO id. Also the "a real-world id is accepted" fixture for the id-format checks
+        /// below, so every check name in the report stays byte for byte what it always was.
+        ///
+        /// Assembled from two halves on purpose. A verbatim literal here would (a) be a hit for anyone grepping
+        /// the repo to confirm the id is gone - a false positive inside the very code that proves it is gone -
+        /// and (b) trip the no-personal-id scan the moment that scan is widened to cover this assembly's own
+        /// sources. It hides nothing from the compiled dll (the compiler folds the concatenation) and is not
+        /// meant to: the invariant is about what ships as source and documentation.
+        /// Declared before PersonalTokens because static field initialisers run in declaration order.
+        /// </summary>
+        private static readonly string PersonalIdSample = "darbam" + "s77";
+
+        // [QC][Invariant:no_personal_account_data_shipped]
+        // Tokens that must not appear in any file the package ships. An explicit hand-maintained list rather
+        // than a heuristic on purpose: a pattern like \w+\d{2,} would flag SDK asset names such as
+        // Videobooth_282, and this check has to stay deterministic and dependency-free. Extend the list when a
+        // new personal account or machine name gets used during development.
+        private static readonly string[] PersonalTokens =
+        {
+            // The account the helper used to ship as its built-in default.
+            PersonalIdSample,
+
+            // Its stem, which also catches the author's Windows profile folder if an absolute path such as
+            // C:\Users\<user>\Desktop\... ever gets pasted into a source file or a doc.
+            "dar" + "ba",
+        };
 
         [DidReloadScripts]
         private static void OnScriptsReloaded()
@@ -104,6 +136,32 @@ namespace Easy.ZepetoHelper.SelfTestEditor
             passCount = 0;
             failCount = 0;
 
+            // Third line of defence, and the one that protects the user's work rather than the editor's state.
+            // This suite calls EditorSceneManager.NewScene(..., Single) and opens Assets/Playground.unity over
+            // whatever is loaded. Neither API prompts, so a stray trigger file was enough to silently discard a
+            // scene somebody had been editing for an hour.
+            // Deliberately no prompt (the trigger path has to stay non-interactive) and deliberately no saving
+            // on the user's behalf - committing someone's half-finished scene is its own kind of damage.
+            // Only the scene that is open when the suite STARTS is protected. Scenes the suite creates and
+            // dirties itself belong to the suite, and it goes on replacing those freely.
+            //
+            // [QC][Invariant:result_file_is_the_last_real_run]
+            // The refusal must not go anywhere near ResultPath. It used to Note the skip and then WriteReport,
+            // which overwrote the tracked "pass=60 fail=0" record with "pass=0 fail=0" - a refusal that reads
+            // exactly like a clean run, and the tracked baseline destroyed in the process. The SKIPPED record goes
+            // to SkipPath instead, first line first, and this returns before any report is written.
+            if (ZepetoSelfTestSceneGuard.RefuseIfAnyOpenSceneIsDirty(
+                    RunnerLabel,
+                    "이 검사는 열린 씬을 갈아치우기 때문에 편집 내용이 사라집니다.",
+                    SkipPath,
+                    null) != null)
+            {
+                return;
+            }
+
+            // Past the guard, so this IS a real run: any record of an earlier refusal is stale now.
+            ZepetoSelfTestSceneGuard.ClearSkipRecord(SkipPath);
+
             try
             {
                 TestNoHardcodedAccount();
@@ -122,16 +180,7 @@ namespace Easy.ZepetoHelper.SelfTestEditor
                 Fail("harness", exception.ToString());
             }
 
-            StringBuilder report = new StringBuilder();
-            report.AppendLine("ZEPETO Helper self test");
-            report.AppendLine("pass=" + passCount + " fail=" + failCount);
-            report.AppendLine("----");
-            for (int i = 0; i < results.Count; i++)
-            {
-                report.AppendLine(results[i]);
-            }
-
-            File.WriteAllText(ResultPath, report.ToString());
+            WriteReport();
             Debug.Log("ZEPETO Helper self test finished. pass=" + passCount + " fail=" + failCount);
 
             // Leave the editor on the real work scene with the helper open, so the result is visible on screen
@@ -143,6 +192,35 @@ namespace Easy.ZepetoHelper.SelfTestEditor
             }
         }
 
+        private static void WriteReport()
+        {
+            // [QC][Invariant:result_file_is_the_last_real_run]
+            // A tally of nothing is not a result. Any path that gets here without having run a single check is a
+            // bug, and writing "pass=0 fail=0" over the tracked record would bury that bug under something that
+            // reads like a clean sweep. Say SKIPPED in the refusal's own file and leave ResultPath alone.
+            if (passCount + failCount == 0)
+            {
+                ZepetoSelfTestSceneGuard.WriteSkipRecord(
+                    SkipPath,
+                    "SKIPPED " + RunnerLabel + " :: the report was reached with zero checks run",
+                    "결과가 하나도 없어서 결과 파일을 덮어쓰지 않았습니다. 이전 결과 파일이 마지막 실제 실행 기록입니다.");
+                Debug.LogWarning(RunnerLabel + ": 검사가 하나도 실행되지 않아 결과 파일을 그대로 두었습니다. "
+                    + SkipPath + "를 확인하세요.");
+                return;
+            }
+
+            StringBuilder report = new StringBuilder();
+            report.AppendLine("ZEPETO Helper self test");
+            report.AppendLine("pass=" + passCount + " fail=" + failCount);
+            report.AppendLine("----");
+            for (int i = 0; i < results.Count; i++)
+            {
+                report.AppendLine(results[i]);
+            }
+
+            File.WriteAllText(ResultPath, report.ToString());
+        }
+
         // ---------- checks ----------
 
         private static void TestNoHardcodedAccount()
@@ -151,17 +229,95 @@ namespace Easy.ZepetoHelper.SelfTestEditor
             FieldInfo legacyConst = type.GetField("BuiltInDefaultZepetoId", AnyStatic);
             Check("no-builtin-id-const", legacyConst == null, "BuiltInDefaultZepetoId still exists");
 
-            string sourcePath = "Packages/com.easy.zepeto-helper/Editor/ZepetoStudioHelperWindow.cs";
-            if (File.Exists(sourcePath))
+            // [QC][Invariant:no_personal_account_data_shipped]
+            // This used to read exactly one file - Editor/ZepetoStudioHelperWindow.cs - so it reported green
+            // while the ids were shipping in Documentation~/QA_AUDIT.md and README.md, and while id handling
+            // itself had already moved to ZepetoStudioHelperWindow.Accounts.cs. One file cannot hold this
+            // invariant. Scan everything the package ships that carries text a human wrote.
+            List<string> shipped = CollectShippedPackageFiles();
+            if (shipped.Count == 0)
             {
-                string source = File.ReadAllText(sourcePath);
-                Check("no-personal-id-in-source", source.IndexOf("darbams77", StringComparison.OrdinalIgnoreCase) < 0,
-                    "shipped source still contains a personal ZEPETO id");
+                // A scan that reads nothing passes vacuously - the exact shape of the original bug. No files
+                // means the check is broken, not that the package is clean.
+                Fail("no-personal-id-in-source", "no shipped files were found under " + PackageRoot
+                    + ", so the scan read nothing and proves nothing");
+                return;
             }
-            else
+
+            string offender = FindPersonalToken(shipped);
+            Check("no-personal-id-in-source", offender == null,
+                "a shipped package file still contains personal account data :: " + offender);
+            Note("no-personal-id-in-source:scanned", shipped.Count + " files under " + PackageRoot);
+        }
+
+        /// <summary>
+        /// Every file the package ships that can carry text somebody typed: the editor sources, plus the markdown
+        /// at the package root, under docs/ and under Documentation~/. The trailing ~ hides that last folder from
+        /// Unity's asset database - not from whoever downloads the package, which is why it is scanned too.
+        /// </summary>
+        private static List<string> CollectShippedPackageFiles()
+        {
+            List<string> files = new List<string>();
+            AddFilesWithExtension(files, PackageRoot + "/Editor", ".cs", SearchOption.AllDirectories);
+            AddFilesWithExtension(files, PackageRoot, ".md", SearchOption.TopDirectoryOnly);
+            AddFilesWithExtension(files, PackageRoot + "/docs", ".md", SearchOption.AllDirectories);
+            AddFilesWithExtension(files, PackageRoot + "/Documentation~", ".md", SearchOption.AllDirectories);
+            return files;
+        }
+
+        private static void AddFilesWithExtension(List<string> into, string folder, string extension, SearchOption option)
+        {
+            if (!Directory.Exists(folder))
             {
-                Fail("no-personal-id-in-source", "could not read " + sourcePath);
+                return;
             }
+
+            string[] found = Directory.GetFiles(folder, "*" + extension, option);
+            for (int i = 0; i < found.Length; i++)
+            {
+                // The extension is re-tested instead of trusting the search pattern. Windows 8.3 short names let
+                // a "*.ext" pattern match "X.ext.something" - the same trap that forces both fbx enumeration
+                // sites to skip ".fbx.part" - and pulling in every .cs.meta would only add noise.
+                if (found[i].EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+                {
+                    into.Add(found[i].Replace('\\', '/'));
+                }
+            }
+        }
+
+        /// <summary>
+        /// "path:line contains 'token'" for the first offending line found, or null when every file is clean.
+        /// The old message named neither the file nor the token, which is useless when the scan covers 30 files -
+        /// and the offending lines were in files it never opened in the first place.
+        /// </summary>
+        private static string FindPersonalToken(List<string> files)
+        {
+            for (int f = 0; f < files.Count; f++)
+            {
+                string[] lines;
+                try
+                {
+                    lines = File.ReadAllLines(files[f]);
+                }
+                catch (Exception exception)
+                {
+                    // Unreadable is not clean: report it rather than skipping past it.
+                    return files[f] + " could not be read (" + exception.Message + ")";
+                }
+
+                for (int l = 0; l < lines.Length; l++)
+                {
+                    for (int t = 0; t < PersonalTokens.Length; t++)
+                    {
+                        if (lines[l].IndexOf(PersonalTokens[t], StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            return files[f] + ":" + (l + 1) + " contains '" + PersonalTokens[t] + "'";
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static void TestMcpCodeRemoved()
@@ -241,7 +397,7 @@ namespace Easy.ZepetoHelper.SelfTestEditor
             Check("id-sanitize:inner", "sery2750".Equals(sanitize.Invoke(null, new object[] { "sery 2750" })), "inner whitespace was not stripped");
 
             Check("id-valid:sery_2750", string.IsNullOrEmpty((string)formatError.Invoke(null, new object[] { "sery_2750" })), "sery_2750 should be accepted");
-            Check("id-valid:darbams77", string.IsNullOrEmpty((string)formatError.Invoke(null, new object[] { "darbams77" })), "darbams77 should be accepted");
+            Check("id-valid:" + PersonalIdSample, string.IsNullOrEmpty((string)formatError.Invoke(null, new object[] { PersonalIdSample })), PersonalIdSample + " should be accepted");
             Check("id-valid:dotted", string.IsNullOrEmpty((string)formatError.Invoke(null, new object[] { "my.zepeto-01" })), "dots and dashes should be accepted");
             Check("id-invalid:empty", !string.IsNullOrEmpty((string)formatError.Invoke(null, new object[] { "" })), "empty id should be rejected");
             Check("id-invalid:symbol", !string.IsNullOrEmpty((string)formatError.Invoke(null, new object[] { "bad!id" })), "'!' should be rejected");
@@ -417,9 +573,9 @@ namespace Easy.ZepetoHelper.SelfTestEditor
                     "helper did not bind to the LOADER GameObject");
 
                 // Account 1
-                applyId.Invoke(window, new object[] { "darbams77" });
-                Check("apply-id:first", loaderComponent.zepetoId == "darbams77",
-                    "LOADER zepetoId was '" + loaderComponent.zepetoId + "', expected darbams77");
+                applyId.Invoke(window, new object[] { PersonalIdSample });
+                Check("apply-id:first", loaderComponent.zepetoId == PersonalIdSample,
+                    "LOADER zepetoId was '" + loaderComponent.zepetoId + "', expected " + PersonalIdSample);
 
                 // Account 2 - the second account must behave identically, not just the first one.
                 applyId.Invoke(window, new object[] { "sery_2750" });
@@ -432,13 +588,13 @@ namespace Easy.ZepetoHelper.SelfTestEditor
                     "'@sery_2750' did not normalise to sery_2750, got '" + loaderComponent.zepetoId + "'");
 
                 // Switch back - round tripping between accounts must be lossless.
-                applyId.Invoke(window, new object[] { "darbams77" });
-                Check("apply-id:switch-back", loaderComponent.zepetoId == "darbams77",
+                applyId.Invoke(window, new object[] { PersonalIdSample });
+                Check("apply-id:switch-back", loaderComponent.zepetoId == PersonalIdSample,
                     "switching back failed, got '" + loaderComponent.zepetoId + "'");
 
                 // A malformed id must be refused without corrupting the scene value.
                 applyId.Invoke(window, new object[] { "bad id!" });
-                Check("apply-id:reject-invalid", loaderComponent.zepetoId == "darbams77",
+                Check("apply-id:reject-invalid", loaderComponent.zepetoId == PersonalIdSample,
                     "invalid id overwrote the LOADER value, got '" + loaderComponent.zepetoId + "'");
 
                 // A fresh window must read the id back out of the scene, not out of EditorPrefs.
@@ -451,8 +607,9 @@ namespace Easy.ZepetoHelper.SelfTestEditor
 
                     FieldInfo textField = secondType.GetField("zepetoIdText", AnyInstance);
                     string seeded = textField == null ? null : textField.GetValue(second) as string;
-                    Check("id-from-scene", seeded == "darbams77",
-                        "a new window seeded the id field with '" + (seeded ?? "null") + "', expected the scene value darbams77");
+                    Check("id-from-scene", seeded == PersonalIdSample,
+                        "a new window seeded the id field with '" + (seeded ?? "null")
+                        + "', expected the scene value " + PersonalIdSample);
                 }
                 finally
                 {
@@ -654,17 +811,28 @@ namespace Easy.ZepetoHelper.SelfTestEditor
                 MethodInfo applyId = type.GetMethod("ApplyZepetoId", AnyInstance);
                 MethodInfo currentId = type.GetMethod("GetCurrentZepetoId", AnyInstance);
 
-                applyId.Invoke(window, new object[] { "darbams77" });
-                Check("real-template:apply-first", "darbams77".Equals(currentId.Invoke(window, null)),
-                    "first account did not stick, got '" + currentId.Invoke(window, null) + "'");
+                // The id about to be overwritten is the real one in the user's own work scene. Capture it and
+                // put it back whatever happens: a throwing assertion in the middle of the account switching
+                // used to leave the author's id sitting in Assets/Playground.unity's LOADER.
+                string originalId = idProp.stringValue;
+                try
+                {
+                    applyId.Invoke(window, new object[] { PersonalIdSample });
+                    Check("real-template:apply-first", PersonalIdSample.Equals(currentId.Invoke(window, null)),
+                        "first account did not stick, got '" + currentId.Invoke(window, null) + "'");
 
-                applyId.Invoke(window, new object[] { "sery_2750" });
-                Check("real-template:apply-second", "sery_2750".Equals(currentId.Invoke(window, null)),
-                    "second account did not stick, got '" + currentId.Invoke(window, null) + "'");
+                    applyId.Invoke(window, new object[] { "sery_2750" });
+                    Check("real-template:apply-second", "sery_2750".Equals(currentId.Invoke(window, null)),
+                        "second account did not stick, got '" + currentId.Invoke(window, null) + "'");
 
-                applyId.Invoke(window, new object[] { "darbams77" });
-                Check("real-template:switch-back", "darbams77".Equals(currentId.Invoke(window, null)),
-                    "switching back failed, got '" + currentId.Invoke(window, null) + "'");
+                    applyId.Invoke(window, new object[] { PersonalIdSample });
+                    Check("real-template:switch-back", PersonalIdSample.Equals(currentId.Invoke(window, null)),
+                        "switching back failed, got '" + currentId.Invoke(window, null) + "'");
+                }
+                finally
+                {
+                    RestoreStringProperty(window, "zepetoIdProperty", originalId, "real-template:id-restored");
+                }
             }
             finally
             {
@@ -780,29 +948,138 @@ namespace Easy.ZepetoHelper.SelfTestEditor
                 Type type = typeof(ZepetoStudioHelperWindow);
                 type.GetMethod("FindLoaderAndSerializedFields", AnyInstance).Invoke(window, null);
 
+                // What follows rewires the user's own work scene AND a project asset: AssignAnimationClip ends
+                // in ApplyClipToOverrideController, which calls AssetDatabase.SaveAssets, so the override table
+                // is on disk the moment it changes. Snapshot both LOADER references before touching anything.
+                AnimationClip clipBefore = GetObjectReference(window, "animationClipProperty") as AnimationClip;
+                UnityEngine.Object controllerBefore = GetObjectReference(window, "animatorControllerProperty");
+
                 MethodInfo ensureLocal = type.GetMethod("EnsureLocalAnimatorController", AnyInstance);
                 object[] ensureArgs = new object[] { null };
                 bool localOk = (bool)ensureLocal.Invoke(window, ensureArgs);
                 Check("playback-slot:local-controller", localOk,
                     "could not create a project-local AnimatorOverrideController: " + ensureArgs[0]);
 
-                MethodInfo assign = type.GetMethod("AssignAnimationClip", AnyInstance);
-                bool assigned = (bool)assign.Invoke(window, new object[] { motion, false });
-                Check("playback-slot:assign", assigned, "AssignAnimationClip returned false");
+                // Snapshotted only now, because the local-copy step above is what decides WHICH controller gets
+                // its table rewritten. Taking it earlier would restore the wrong asset.
+                AnimatorOverrideController touchedController =
+                    GetObjectReference(window, "animatorControllerProperty") as AnimatorOverrideController;
+                List<KeyValuePair<AnimationClip, AnimationClip>> overridesBefore = null;
+                if (touchedController != null)
+                {
+                    overridesBefore = new List<KeyValuePair<AnimationClip, AnimationClip>>(touchedController.overridesCount);
+                    touchedController.GetOverrides(overridesBefore);
+                }
 
-                MethodInfo getPlayback = type.GetMethod("GetPlaybackClip", AnyInstance);
-                AnimationClip playback = getPlayback.Invoke(window, null) as AnimationClip;
+                try
+                {
+                    MethodInfo assign = type.GetMethod("AssignAnimationClip", AnyInstance);
+                    bool assigned = (bool)assign.Invoke(window, new object[] { motion, false });
+                    Check("playback-slot:assign", assigned, "AssignAnimationClip returned false");
 
-                Check("playback-slot:updated", playback == motion,
-                    "override slot holds '" + (playback == null ? "NULL" : playback.name) + "', expected " + motion.name);
-                Check("playback-slot:not-a-pose", playback != null && playback.length > 0.1f,
-                    "override slot still holds a static pose, the avatar would not move");
-                Note("playback-slot:value", playback == null ? "NULL" : playback.name + " " + playback.length.ToString("0.00") + "s");
+                    MethodInfo getPlayback = type.GetMethod("GetPlaybackClip", AnyInstance);
+                    AnimationClip playback = getPlayback.Invoke(window, null) as AnimationClip;
+
+                    Check("playback-slot:updated", playback == motion,
+                        "override slot holds '" + (playback == null ? "NULL" : playback.name) + "', expected " + motion.name);
+                    Check("playback-slot:not-a-pose", playback != null && playback.length > 0.1f,
+                        "override slot still holds a static pose, the avatar would not move");
+                    Note("playback-slot:value", playback == null ? "NULL" : playback.name + " " + playback.length.ToString("0.00") + "s");
+                }
+                finally
+                {
+                    RestorePlaybackState(window, touchedController, overridesBefore, clipBefore, controllerBefore);
+                }
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(window);
             }
+        }
+
+        /// <summary>
+        /// Puts the work scene and the override controller back the way the playback-slot check found them.
+        ///
+        /// The override table is restored first because it is the only part already written to disk. Restoring it
+        /// deliberately brings back whatever the SDK had mapped there - usually A_pose - since that is the
+        /// pre-test state, not because a pose is desirable.
+        /// </summary>
+        private static void RestorePlaybackState(
+            ZepetoStudioHelperWindow window,
+            AnimatorOverrideController touchedController,
+            List<KeyValuePair<AnimationClip, AnimationClip>> overridesBefore,
+            AnimationClip clipBefore,
+            UnityEngine.Object controllerBefore)
+        {
+            if (touchedController != null && overridesBefore != null)
+            {
+                touchedController.ApplyOverrides(overridesBefore);
+                EditorUtility.SetDirty(touchedController);
+                AssetDatabase.SaveAssets();
+                Note("playback-slot:overrides-restored",
+                    overridesBefore.Count + " slot(s) on " + touchedController.name);
+            }
+
+            RestoreObjectProperty(window, "animationClipProperty", clipBefore, "playback-slot:clip-restored");
+            RestoreObjectProperty(window, "animatorControllerProperty", controllerBefore, "playback-slot:controller-restored");
+        }
+
+        private static SerializedProperty GetWindowProperty(ZepetoStudioHelperWindow window, string fieldName)
+        {
+            FieldInfo field = typeof(ZepetoStudioHelperWindow).GetField(fieldName, AnyInstance);
+            return field == null ? null : field.GetValue(window) as SerializedProperty;
+        }
+
+        private static UnityEngine.Object GetObjectReference(ZepetoStudioHelperWindow window, string fieldName)
+        {
+            SerializedProperty property = GetWindowProperty(window, fieldName);
+            return property == null ? null : property.objectReferenceValue;
+        }
+
+        /// <summary>
+        /// Writes a value straight back through the helper's own SerializedProperty.
+        ///
+        /// The property is re-read from the window rather than reused from before the test: the helper rebinds
+        /// its SerializedObjects whenever they go stale, so a reference captured earlier can point at a
+        /// SerializedObject nothing else is updating any more. Update() first, so this writes onto current state
+        /// instead of replaying a stale snapshot of every other field on the component.
+        /// </summary>
+        private static void RestoreStringProperty(ZepetoStudioHelperWindow window, string fieldName, string value, string resultName)
+        {
+            SerializedProperty property = GetWindowProperty(window, fieldName);
+            if (property == null || property.serializedObject == null || property.serializedObject.targetObject == null)
+            {
+                Fail(resultName, "could not rebind " + fieldName + " to restore '" + value + "'");
+                return;
+            }
+
+            property.serializedObject.Update();
+            property.stringValue = value;
+            property.serializedObject.ApplyModifiedProperties();
+            Note(resultName, "'" + value + "'");
+        }
+
+        // Not written through ApplyZepetoId / AssignAnimationClip on purpose: both refuse values this has to be
+        // able to write back. ApplyZepetoId rejects an empty or malformed id - which is exactly what an
+        // untouched template LOADER holds - and AssignAnimationClip refuses null, so going through them would
+        // silently leave the test's own values in the scene.
+        // Bypassing AssignAnimationClip does not desync the playback slot from the clip field: RestorePlaybackState
+        // restores the AnimatorOverrideController's own table first, so the slot and the field are put back
+        // together, which is the invariant AssignAnimationClip exists to maintain.
+        private static void RestoreObjectProperty(ZepetoStudioHelperWindow window, string fieldName, UnityEngine.Object value, string resultName)
+        {
+            SerializedProperty property = GetWindowProperty(window, fieldName);
+            if (property == null || property.serializedObject == null || property.serializedObject.targetObject == null)
+            {
+                Fail(resultName, "could not rebind " + fieldName + " to restore '"
+                    + (value == null ? "NULL" : value.name) + "'");
+                return;
+            }
+
+            property.serializedObject.Update();
+            property.objectReferenceValue = value;
+            property.serializedObject.ApplyModifiedProperties();
+            Note(resultName, value == null ? "NULL" : value.name);
         }
 
         /// <summary>

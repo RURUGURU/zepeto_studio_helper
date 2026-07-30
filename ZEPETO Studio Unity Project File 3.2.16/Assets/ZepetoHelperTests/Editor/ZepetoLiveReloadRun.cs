@@ -16,10 +16,63 @@ namespace Easy.ZepetoHelper.Tests
     /// swaps a second fbx in mid-Play - exactly what pressing 'Unity로 보내기' in Blender does - and then
     /// measures the avatar, not the asset.
     ///
-    /// Drop "zepeto-livereload.trigger" at the project root to run. Needs two fixtures beside it:
-    ///   zepeto-live-a.fbx   (48 frames)
-    ///   zepeto-live-b.fbx   (96 frames, a different bone posed)
+    /// Drop "zepeto-livereload.trigger" at the project root to run. It needs the two fixtures described in the
+    /// FIXTURE SPECIFICATION below, which must sit beside the trigger at the project root.
     /// </summary>
+    // ---------------------------------------------------------------------------------------------------------
+    // FIXTURE SPECIFICATION - how to recreate zepeto-live-a.fbx / zepeto-live-b.fbx
+    //
+    // Neither fixture is checked in (an fbx cannot be authored by hand), so this run is unreproducible until
+    // someone rebuilds them. Everything needed to do that is written down here on purpose.
+    // AppendFixtureSpecification() repeats this text into the result file when a fixture is missing - keep the
+    // two in sync.
+    //
+    // WHERE          <project root>/zepeto-live-a.fbx        (beside zepeto-livereload.trigger)
+    //                <project root>/zepeto-live-b.fbx
+    //                NOT in Assets/CustomMotions. That folder is the live watcher's polling root, so a fixture
+    //                parked there would make the watcher fire on the fixture instead of on the copy this run
+    //                places at Assets/CustomMotions/LiveRoundTrip.fbx, and the measurement would be a lie.
+    //
+    // CONTENT        A: 48 frames  (frame_start 1 -> frame_end 48 at 24 fps, ~1.96s)
+    //                   ONLY the RIGHT ARM moves. Rotate upperArm_R (and optionally lowerArm_R / hand_R).
+    //                   Every leg bone stays at rest.
+    //                B: 96 frames  (frame_start 1 -> frame_end 96 at 24 fps, ~3.96s)
+    //                   ONLY the LEFT LEG moves. Rotate upperLeg_L about Z (lowerLeg_L / foot_L optional).
+    //                   Every arm bone stays at rest.
+    //
+    // WHY DIFFERENT BONES
+    //                This is the whole reason the run can conclude anything. The probe samples the right hand
+    //                AND the left knee in both phases:
+    //                  phase A: arm moves, leg still  -> playback works at all
+    //                  phase B: leg moves, arm still  -> the swap reached the ALREADY RUNNING Animator
+    //                With the same bone in both fixtures, "the hot reload never happened" and "nothing is
+    //                animating at all" produce the identical reading - a still bone - and the run could not
+    //                tell them apart. The two failure messages in Report() depend on this split.
+    //
+    // WHY DIFFERENT FRAME COUNTS
+    //                The clip-swapped assertion compares the live clip's length before and after the swap and
+    //                needs the difference to exceed 0.5s. 48 vs 96 frames gives ~2.0s of margin. Two fixtures
+    //                of equal length would leave that assertion unable to fail.
+    //
+    // HOW TO PRODUCE (BlenderMotion/zepeto_motion_helper.py, the add-on the live loop is built around)
+    //                1. Export the rig first: helper window -> "ZEPETO 리그 내보내기" (or drop
+    //                   zepeto-rig-export.trigger). That writes Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx.
+    //                2. In Blender, install/enable zepeto_motion_helper.py and press "ZEPETO 몸 불러오기" with
+    //                   that fbx selected. Scene fps must be 24 - the add-on refuses to export otherwise.
+    //                3. Set the frame range to 1..48. Rotate ONLY upperArm_R (select the bone, R, Z, move the
+    //                   mouse, left click) and press "현재 포즈 저장" on at least two frames - e.g. 1, 24, 48.
+    //                   Two keyframes is the add-on's minimum; a single key exports a static pose and the
+    //                   avatar would not move at all.
+    //                4. Press "처음과 끝 맞추기" so the motion loops instead of freezing after one pass.
+    //                5. Set 이름 = zepeto-live-a and 폴더 = the project ROOT (not Assets/CustomMotions, see
+    //                   WHERE above), then press "Unity로 보내기". The add-on writes zepeto-live-a.fbx.part and
+    //                   renames it atomically, which is the same two-sided .part contract Unity's watcher skips.
+    //                6. Press "포즈 전부 되돌리기", set the frame range to 1..96, and repeat steps 3-5 rotating
+    //                   ONLY upperLeg_L, keying frames 1 / 48 / 96, with 이름 = zepeto-live-b.
+    //                Both exports must include the skinned mesh (the add-on selects ARMATURE + MESH for exactly
+    //                this reason): without it Unity builds a generic avatar, isHuman is false, and no Humanoid
+    //                clip is generated at all.
+    // ---------------------------------------------------------------------------------------------------------
     [InitializeOnLoad]
     public static class ZepetoLiveReloadRun
     {
@@ -34,9 +87,30 @@ namespace Easy.ZepetoHelper.Tests
         private const string ClockKey = "Easy.ZepetoHelper.LiveRun.Clock";
         private const string LenBeforeKey = "Easy.ZepetoHelper.LiveRun.LenBefore";
         private const string CountBeforeKey = "Easy.ZepetoHelper.LiveRun.CountBefore";
+        // Never written by this run; deliberately absent from ResetPerRunKeys() for that reason.
         private const string TravelKey = "Easy.ZepetoHelper.LiveRun.Travel";
         private const string MinKey = "Easy.ZepetoHelper.LiveRun.Min";
         private const string MaxKey = "Easy.ZepetoHelper.LiveRun.Max";
+
+        // Frame counts of the two fixtures, quoted in the report and in the missing-fixture specification.
+        private const int FixtureAFrames = 48;
+        private const int FixtureBFrames = 96;
+
+        // [QC][Invariant:travel_key_table_is_the_reset_list]
+        // Every min/max key this run touches is MinKey|MaxKey + ".<phase>.<bone>.<axis>", assembled from these
+        // three tables and nothing else. SessionState has no enumeration API, so there is no wildcard erase and
+        // no way to discover last run's keys at runtime - the sampler (Track), the reader (Travel) and the
+        // per-run reset (ResetPerRunKeys) all walk these same arrays, which is what makes the reset provably
+        // complete. Adding a phase, a bone or an axis here is therefore the ONLY supported way to add one.
+        private const string PhaseA = "a";
+        private const string PhaseB = "b";
+        private const string BoneArm = "arm";
+        private const string BoneLeg = "leg";
+        private static readonly string[] Phases = { PhaseA, PhaseB };
+        private static readonly string[] Bones = { BoneArm, BoneLeg };
+
+        // Listed in the same order as Vector3's own indexer (x=0, y=1, z=2); Track() indexes the vector with it.
+        private static readonly string[] Axes = { "x", "y", "z" };
 
         private const float SettleSeconds = 12f;   // avatar download + first frames
         private const float ObserveSeconds = 8f;   // watch the swapped motion play
@@ -76,6 +150,92 @@ namespace Easy.ZepetoHelper.Tests
         private static void Append(string line)
         {
             File.AppendAllText(ResultPath, line + Environment.NewLine);
+        }
+
+        /// <summary>
+        /// Writes the missing-fixture failure AND everything needed to create the fixtures. "FATAL: fixtures
+        /// missing" on its own told the reader nothing: not where the files go, not what has to be inside them,
+        /// not that the two must move DIFFERENT bones for the result to mean anything.
+        /// Mirrors the FIXTURE SPECIFICATION comment block at the top of this file - keep the two in sync.
+        /// </summary>
+        private static void AppendFixtureSpecification()
+        {
+            Append("FATAL: fixtures missing - nothing was measured.");
+            Append("  " + Path.GetFullPath(FixtureA) + " : " + (File.Exists(FixtureA) ? "present" : "MISSING"));
+            Append("  " + Path.GetFullPath(FixtureB) + " : " + (File.Exists(FixtureB) ? "present" : "MISSING"));
+            Append(string.Empty);
+            Append("required content");
+            Append("  " + FixtureA + " : " + FixtureAFrames + " frames (1.." + FixtureAFrames
+                + " at 24 fps). ONLY the RIGHT ARM moves - rotate upperArm_R; every leg bone stays at rest.");
+            Append("  " + FixtureB + " : " + FixtureBFrames + " frames (1.." + FixtureBFrames
+                + " at 24 fps). ONLY the LEFT LEG moves - rotate upperLeg_L about Z; every arm bone stays at rest.");
+            Append("  Both must contain the skinned mesh as well as the armature, or Unity builds a generic");
+            Append("  avatar (isHuman=false) and generates no Humanoid clip at all.");
+            Append(string.Empty);
+            Append("why the two fixtures must move DIFFERENT bones");
+            Append("  The probe samples the right hand AND the left knee in both phases:");
+            Append("    phase A: arm moves, leg still -> playback works at all");
+            Append("    phase B: leg moves, arm still -> the swap reached the ALREADY RUNNING Animator");
+            Append("  With the same bone in both fixtures, 'the hot reload never happened' and 'nothing is");
+            Append("  animating at all' both read as a still bone and cannot be told apart - which is exactly");
+            Append("  the distinction this run exists to make.");
+            Append("  The frame counts must differ too: the clip-swapped assertion needs the live clip's length");
+            Append("  to change by more than 0.5s, and " + FixtureAFrames + " vs " + FixtureBFrames
+                + " frames gives ~2.0s of margin.");
+            Append(string.Empty);
+            Append("where they go");
+            Append("  Beside " + TriggerPath + " at the project root - NOT in Assets/CustomMotions. That folder");
+            Append("  is the live watcher's polling root, so a fixture parked there would make the watcher fire");
+            Append("  on the fixture instead of on this run's own copy at " + WatchedAsset + ".");
+            Append(string.Empty);
+            Append("how to produce them (BlenderMotion/zepeto_motion_helper.py)");
+            Append("  1. Export the rig: helper window -> 'ZEPETO 리그 내보내기' (or drop");
+            Append("     zepeto-rig-export.trigger). Writes Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx.");
+            Append("  2. In Blender enable zepeto_motion_helper.py, press 'ZEPETO 몸 불러오기' with that fbx.");
+            Append("     Scene fps must be 24 - the add-on refuses to export otherwise.");
+            Append("  3. Frame range 1.." + FixtureAFrames + ". Rotate ONLY upperArm_R (select bone, R, Z, move,");
+            Append("     left click) and press '현재 포즈 저장' on at least two frames, e.g. 1 / 24 / "
+                + FixtureAFrames + ".");
+            Append("  4. Press '처음과 끝 맞추기' so the motion loops instead of freezing after one pass.");
+            Append("  5. Set 이름 = zepeto-live-a and 폴더 = the project ROOT, then 'Unity로 보내기'.");
+            Append("  6. Press '포즈 전부 되돌리기', set the frame range to 1.." + FixtureBFrames + ", and repeat");
+            Append("     steps 3-5 rotating ONLY upperLeg_L, keying 1 / " + (FixtureBFrames / 2) + " / "
+                + FixtureBFrames + ", 이름 = zepeto-live-b.");
+        }
+
+        /// <summary>
+        /// Clears every SessionState key this run writes, so a second run in the same editor session cannot read
+        /// the first run's numbers. RunningKey, PhaseKey and ClockKey are re-seeded at the end of
+        /// StartIfRequested instead, next to the code that arms the run.
+        ///
+        /// [AUDIT][Risk:Critical][Scope:live_roundtrip_measurement]
+        /// The arm/leg travel figures this run prints are quoted elsewhere as measured evidence that a hot
+        /// reload reached a running Animator. Finish() clears only RunningKey, so before this reset existed a
+        /// second run in the same session had Travel() read the FIRST run's extremes: it could report movement
+        /// that never happened, and PASS on a build where the avatar never moved.
+        /// </summary>
+        private static void ResetPerRunKeys()
+        {
+            SessionState.SetFloat(LenBeforeKey, -1f);
+            SessionState.SetInt(CountBeforeKey, -1);
+
+            for (int p = 0; p < Phases.Length; p++)
+            {
+                for (int b = 0; b < Bones.Length; b++)
+                {
+                    for (int a = 0; a < Axes.Length; a++)
+                    {
+                        string suffix = "." + Phases[p] + "." + Bones[b] + "." + Axes[a];
+
+                        // Seeded to the same sentinels TrackAxis and Travel already agree on: Mathf.Min against
+                        // float.MaxValue and Mathf.Max against float.MinValue both take the first real sample,
+                        // and Travel reads the pair as "never sampled" until one arrives. Assigning the
+                        // sentinels rather than erasing the keys keeps that one convention in one place.
+                        SessionState.SetFloat(MinKey + suffix, float.MaxValue);
+                        SessionState.SetFloat(MaxKey + suffix, float.MinValue);
+                    }
+                }
+            }
         }
 
         private static Type HelperType()
@@ -119,9 +279,15 @@ namespace Easy.ZepetoHelper.Tests
             File.Delete(TriggerPath);
             File.WriteAllText(ResultPath, "ZEPETO live reload round trip" + Environment.NewLine);
 
+            // Before anything can be sampled, not just before Play: every phase x bone x axis extreme left by an
+            // earlier run in this editor session has to be gone, or this run reports that run's numbers as its own.
+            ResetPerRunKeys();
+
             if (!File.Exists(FixtureA) || !File.Exists(FixtureB))
             {
-                Append("FATAL: fixtures missing (" + FixtureA + ", " + FixtureB + ")");
+                AppendFixtureSpecification();
+                Debug.LogError("ZEPETO live reload run: 측정용 FBX 두 개가 없어서 실행하지 못했습니다. "
+                    + "만드는 방법을 " + ResultPath + " 에 적어두었습니다.");
                 return;
             }
 
@@ -247,7 +413,7 @@ namespace Easy.ZepetoHelper.Tests
                 // phase A has a real baseline of "fixture A is playing".
                 if (Elapsed() > SettleSeconds * 0.5f)
                 {
-                    SampleAvatar("a");
+                    SampleAvatar(PhaseA);
                 }
 
                 if (Elapsed() < SettleSeconds)
@@ -264,7 +430,7 @@ namespace Easy.ZepetoHelper.Tests
 
                 // This is the moment Blender's export happens in real use.
                 File.Copy(FixtureB, WatchedAsset, true);
-                Append("--- swapped fixture B in (96 frames) ---");
+                Append("--- swapped fixture B in (" + FixtureBFrames + " frames) ---");
 
                 SessionState.SetString(PhaseKey, "waiting");
                 ResetClock();
@@ -311,7 +477,7 @@ namespace Easy.ZepetoHelper.Tests
                     return;
                 }
 
-                SampleAvatar("b");
+                SampleAvatar(PhaseB);
 
                 if (Elapsed() < ObserveSeconds)
                 {
@@ -364,20 +530,21 @@ namespace Easy.ZepetoHelper.Tests
             // probe reported "no movement" for a leg that was in fact swinging.
             if (knee != null)
             {
-                Track(phasePrefix + ".leg", knee.position - hips.position);
+                Track(phasePrefix + "." + BoneLeg, knee.position - hips.position);
             }
 
             if (hand != null)
             {
-                Track(phasePrefix + ".arm", hand.position - hips.position);
+                Track(phasePrefix + "." + BoneArm, hand.position - hips.position);
             }
         }
 
         private static void Track(string key, Vector3 value)
         {
-            TrackAxis(key + ".x", value.x);
-            TrackAxis(key + ".y", value.y);
-            TrackAxis(key + ".z", value.z);
+            for (int i = 0; i < Axes.Length; i++)
+            {
+                TrackAxis(key + "." + Axes[i], value[i]);
+            }
         }
 
         private static void TrackAxis(string key, float value)
@@ -392,10 +559,10 @@ namespace Easy.ZepetoHelper.Tests
         private static float Travel(string key)
         {
             float widest = 0f;
-            foreach (string axis in new[] { "x", "y", "z" })
+            for (int i = 0; i < Axes.Length; i++)
             {
-                float min = SessionState.GetFloat(MinKey + "." + key + "." + axis, float.MaxValue);
-                float max = SessionState.GetFloat(MaxKey + "." + key + "." + axis, float.MinValue);
+                float min = SessionState.GetFloat(MinKey + "." + key + "." + Axes[i], float.MaxValue);
+                float max = SessionState.GetFloat(MaxKey + "." + key + "." + Axes[i], float.MinValue);
                 if (min < float.MaxValue && max > float.MinValue)
                 {
                     widest = Mathf.Max(widest, max - min);
@@ -417,10 +584,10 @@ namespace Easy.ZepetoHelper.Tests
                 ? "PASS clip-swapped: the live clip really became the new motion"
                 : "FAIL clip-swapped: the live clip did not change length");
 
-            float armA = Travel("a.arm");
-            float legA = Travel("a.leg");
-            float armB = Travel("b.arm");
-            float legB = Travel("b.leg");
+            float armA = Travel(PhaseA + "." + BoneArm);
+            float legA = Travel(PhaseA + "." + BoneLeg);
+            float armB = Travel(PhaseB + "." + BoneArm);
+            float legB = Travel(PhaseB + "." + BoneLeg);
 
             Append("phase A (fixture A, arm motion): arm=" + armA.ToString("0.000")
                 + "m leg=" + legA.ToString("0.000") + "m");
