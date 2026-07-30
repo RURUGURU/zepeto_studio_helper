@@ -13,40 +13,49 @@
 **커밋 지점이 생겼습니다.** 루트에도 git 저장소를 만들어, 이전에 어떤 저장소에도 없던
 애드온·`.blend`·테스트·씬·리그 meta가 이제 추적됩니다.
 
-**Blender 쪽은 실제로 실행해서 검증했습니다** — 헤드리스 5.2.0 LTS에서 **27 / 27 통과**
-(`BlenderMotion/headless_check.py`). **Unity 쪽은 라이선스가 활성화되지 않아 아무것도 실행할 수 없습니다.**
+**양쪽을 실제로 실행해서 검증했습니다.**
 
-> ### ⛔ Unity가 이 머신에서 실행되지 않습니다
+| 무엇 | 결과 |
+| --- | --- |
+| Blender 애드온 (헤드리스 5.2.0 LTS) | **27 / 27 통과** — `BlenderMotion/headless_check.py` |
+| Unity 자체 테스트 (GUI + `-executeMethod`) | **60 / 60 통과** — 결과 파일 재기록 완료 |
+| 컴파일 (`csc.exe` + Unity 양쪽) | 에러 0 · 경고 0 |
+| 헬퍼 창 7단계 육안 확인 | 완료 (캡처 6장으로 기록) |
+
+> ### Unity Personal은 `-batchmode`를 쓸 수 없습니다
+>
+> 라이선스는 유효합니다(Personal, `%LOCALAPPDATA%\Unity\licenses\UnityEntitlementLicense.xml`).
+> 그런데 `-batchmode`는 엔타이틀먼트 라이선싱이 성공한 뒤에도 거부합니다:
+> `BatchMode: Unity has not been activated with a valid License`.
+> **GUI 모드 + `-executeMethod`는 정상 동작합니다** — 이 회차의 모든 Unity 검증을 그 방식으로 했습니다.
 >
 > ```
-> BatchMode: Unity has not been activated with a valid License
-> Failed to activate/update license Missing or bad username or password
+> Unity.exe -projectPath "<프로젝트>" -logFile <로그> -quit \
+>     -executeMethod Easy.ZepetoHelper.SelfTestEditor.ZepetoHelperSelfTest.Run
 > ```
 >
-> ULF 라이선스 파일도, `ProgramData/Unity`도 없습니다. **Unity Hub에서 계정 로그인 후 라이선스를
-> 활성화해야 합니다** (Personal 무료 라이선스로 충분). 그 전까지 막혀 있는 것:
-> 화면 확인 · 캡처 재촬영 · 트리거 테스트 4종 · `.zepeto` export 확인 · 라이브 왕복 실측.
-> 즉 [남은 일](#남은-일)의 1·2·3번이 전부 이 하나에 걸려 있습니다.
+> 자체 테스트는 `[MenuItem]`이 붙은 `public static Run()`이라 트리거 파일이나 재컴파일 없이 바로
+> 호출됩니다. Unity Hub가 떠 있어야 라이선싱 클라이언트 IPC가 5초 타임아웃에 걸리지 않습니다.
 
 ---
 
-## ⚠️ 배포 전 차단 항목 — 개인 아이디가 캡처에 남아 있습니다
+## ⚠️ 배포 전 차단 항목 — 캡처 2장 남음
 
-이전 회차가 "개인 아이디를 placeholder로 교체했다"고 기록했지만, **그것은 텍스트 전용이었습니다.**
-`grep`으로는 패키지 어디에도 없지만 **캡처 PNG에는 픽셀로 남아 있습니다.** 직접 이미지를 열어 확인했습니다.
+이전 회차가 "개인 아이디를 placeholder로 교체했다"고 기록했지만 **그것은 텍스트 전용이었고**, 캡처 PNG에는
+픽셀로 남아 있었습니다. 이번에 **Unity를 띄워 6장을 다시 찍어** 해결했습니다 — 씬 `LOADER`의 `zepetoId`를
+`my_zepeto_id`로 바꾼 상태에서 촬영하고 원래 값으로 되돌렸습니다. 재촬영본은 현재 7단계 UI입니다.
 
-| 파일 | 무엇이 보이는가 |
+| 파일 | 상태 |
 | --- | --- |
-| `docs/images/helper-window.png` | `현재 아이디` 줄과 입력칸에 실제 아이디 |
-| `docs/images/step-1-avatar-outfit.png` | 같은 두 칸 |
-| `docs/images/workflow-overview.png` | 위 캡처를 썸네일로 포함 |
-| `docs/images/play-preview.png` | 본인 아바타의 얼굴·머리·의상 |
+| `helper-window.png` · `step-1-avatar-outfit.png` · `step-2-motion-select.png` | ✅ 재촬영 |
+| `step-3-clip-adjust.png`(실제 6번) · `step-4-save-export.png`(실제 7번) | ✅ 재촬영 |
+| `step-4-5-blender-live.png` | ✅ **신규** — 캡처가 없던 4·5번 구간 |
+| `workflow-overview.png` | ⛔ 4단계 전제로 **설계된 합성 도해**. 제거된 단계 잠금을 설명하고 `PLAY` 칸에 아바타 포함. 크롭 불가 — 도해 재작성 필요. README 상단 임베드만 내렸습니다 |
+| `play-preview.png` | ⛔ 본인 아바타. **자동 재촬영이 원리적으로 불가** — placeholder 아이디로는 아바타가 로드되지 않고, 아바타가 보이는 것이 그 이미지의 존재 이유입니다. 버리거나 별도 계정으로 촬영 |
 
-`.npmignore`는 `Documentation~/`만 제외하고 `docs/`는 일부러 포함하므로 **tarball에 그대로 들어갑니다.**
-자체 테스트의 `no-personal-id-in-source`는 `.cs`와 `.md`만 읽으므로 **PNG를 구조적으로 볼 수 없습니다** —
-초록불이 이것을 보증하지 않습니다.
-
-**재촬영이나 마스킹은 사람이 해야 합니다. 그 전에는 발행하지 마세요.**
+`.npmignore`는 `Documentation~/`만 제외하고 `docs/`는 일부러 포함하므로 남은 2장은 **tarball에 그대로
+들어갑니다.** 자체 테스트의 `no-personal-id-in-source`는 `.cs`와 `.md`만 읽으므로 **PNG를 구조적으로 볼 수
+없습니다** — 초록불이 이것을 보증하지 않습니다.
 
 ---
 
@@ -260,34 +269,35 @@ Mixamo 경로 테스트용 픽스처로 쓸 만하지만 `Assets/CustomMotions`(
 
 ## 남은 일
 
-### 0. Unity 라이선스 활성화 — 이것 하나가 아래 셋을 다 막고 있습니다
+### 1. 실행 검증 — 대부분 완료
 
-Unity Hub → 로그인 → Personal 라이선스 활성화. 그 뒤에 1·2·3번이 전부 가능해집니다.
+컴파일이 깨끗한 것은 정확한 것과 다릅니다. 이번 회차가 그걸 두 번 증명했습니다: diff 리뷰가 잡은 치명 2건이
+경고 없이 통과했고, **자체 테스트를 처음 실제로 돌렸을 때 24개째에서 중단**됐습니다(아래).
 
-### 1. 화면·실행 검증 (Unity 라이선스 필요)
+- [x] **Blender 애드온 1.4.0 — 헤드리스 27/27.** 경로 런타임 유도(저장 안 된 `.blend` 기준), env
+      오버라이드, 모호성 거부, `clear_pose`가 표시된 뼈만 되돌리는지, export가 바이너리인지, `.part`
+      잔여 없음까지 실측. `54 + 49 = 103` 산수도 실제 리그에서 확인
+- [x] **자체 테스트 60/60**, 결과 파일 재기록. 예상했던 NOTE 5줄 등장 확인
+      (`no-personal-id-in-source:scanned` 24파일, `real-template:id-restored`,
+      `playback-slot:{overrides,clip,controller}-restored` — 러너가 씬을 되돌린다는 증거)
+- [x] **asmdef 회귀 발견·수정.** 신규 asmdef를 테스트 폴더 루트에 `includePlatforms: ["Editor"]`로 둬서
+      런타임 MonoBehaviour(`ZepetoHelperTestLoader`)까지 Editor 전용이 됐고, `AddComponent`가 null을
+      반환해 NRE로 중단됐습니다. 런타임/Editor 두 어셈블리로 분리
+- [x] **헬퍼 창 7단계 육안 확인.** 헤더 `현재 작업: 1. 아바타 준비` ↔ 카드 1 일치(옛 `3. 클립 조정` 버그
+      해소), 4번의 Blender 안내가 `1단계~5단계`, 7번이 `이 창의 1~7단계는…`, 단계 잠금 문구 없음,
+      Stop·Emergency Stop이 비활성이어도 항상 렌더링되고 사유가 붙음
+- [x] **`.meta` 재생성 확인.** Unity가 `Wave_Hello.fbx` / `AddonSmokeTest.fbx`의 `.meta`를 다시 만들었고
+      `rigImportErrors`가 **비어 있고** `boneName` 0개 — 오염이 사라졌습니다(오염 시 55개)
+- [ ] `zepeto-rig-export.trigger` 실행 (assertion 4개 신규 — 아직 안 돌렸습니다)
+- [ ] 라운드트립 1회 완주 (3 → 4 → 5). Blender 절반과 Unity 쪽 준비는 확인됐고, 실제 FBX 수신·핫리로드가
+      남았습니다
+- [ ] 1번 버튼(`FBX를 ZEPETO용으로 설정`)을 재생성된 두 FBX에 눌러 재오염되지 않는지 확인 —
+      가드와 복구 코드는 넣었지만 실행으로 확인하지 못했습니다
 
-컴파일이 깨끗한 것은 정확한 것과 다릅니다 — 이번에 잡은 치명 2건이 둘 다 경고 없이 통과하던 것입니다.
+### 2. 캡처 2장 — 사람의 결정이 필요합니다
 
-- [x] ~~Blender 애드온 1.4.0 검증~~ → **헤드리스 27/27 통과.** 경로 런타임 유도(저장 안 된 `.blend`
-      기준), env 오버라이드, 모호성 거부, `clear_pose`가 표시된 뼈만 되돌리는지, export가 바이너리인지,
-      `.part` 잔여 없음까지 실측. `54 + 49 = 103` 산수도 실제 리그에서 확인
-- [ ] 헬퍼 창 7단계 육안 확인 (헤더 `현재 작업` 문구, 카드 번호, Stop 버튼)
-- [ ] `zepeto-helper-selftest.trigger`로 자체 테스트 재실행 → 결과 파일 재기록
-      (검사 60개·이름은 유지했으나 NOTE 5줄이 새로 추가될 예정이라 **기록이 내용상 낡았습니다**)
-- [ ] `zepeto-rig-export.trigger` 재실행 (이번에 assertion 4개가 새로 생겼습니다)
-- [ ] 라운드트립 1회 완주 (3 → 4 → 5) — Blender 절반은 이미 검증됐으니 Unity 쪽 수신만 남았습니다
-- [ ] 임포트 재생성 확인: `Wave_Hello.fbx` / `AddonSmokeTest.fbx`의 `.meta`를 지웠으므로 Unity가 다시
-      만듭니다. generic 뼈 이름이 자동 매핑되는지, 그리고 1번 버튼이 다시 오염시키지 않는지 확인
-
-### 2. 캡처 4장 재촬영 또는 마스킹 (Unity 라이선스 필요)
-
-[위](#️-배포-전-차단-항목--개인-아이디가-캡처에-남아-있습니다) 참고. **발행 전 필수.**
-
-라이선스가 풀리면 아이디를 노출하지 않고 다시 찍을 수 있습니다: 씬 `LOADER`의 `zepetoId`를 placeholder로
-바꿔놓고 캡처한 뒤 되돌리면 됩니다. `helper-window` · `step-1-avatar-outfit` · `workflow-overview`는
-그렇게 해결됩니다. **`play-preview.png`는 성질이 다릅니다** — 실제 아바타가 로드된 화면이 그 이미지의
-존재 이유이므로, placeholder 아이디로는 아바타가 아예 안 나옵니다. 버릴지, 별도 계정으로 찍을지는
-결정이 필요합니다.
+[위](#️-배포-전-차단-항목--캡처-2장-남음) 참고. 6장은 재촬영으로 끝났고, `workflow-overview.png`(도해
+재작성)와 `play-preview.png`(아바타 노출 여부)만 남았습니다. **발행 전 필수.**
 
 ### 3. 라이브 왕복 픽스처 복원
 
