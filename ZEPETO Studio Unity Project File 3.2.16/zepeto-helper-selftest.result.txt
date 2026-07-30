@@ -3,6 +3,7 @@ pass=60 fail=0
 ----
 PASS no-builtin-id-const
 PASS no-personal-id-in-source
+NOTE no-personal-id-in-source:scanned :: 24 files under Packages/com.easy.zepeto-helper
 PASS mcp-removed:GetUnityMcpBridgePort
 PASS mcp-removed:CanPingUnityMcpBridge
 PASS mcp-removed:TryRestartUnityMcpBridge
@@ -27,9 +28,9 @@ PASS id-invalid:empty
 PASS id-invalid:symbol
 PASS id-invalid:url
 NOTE sdk-loader-shape :: ZepetoStudioLoader fields = [_loader:ZepetoCharacterCustomLoader, Deformations:TextAsset[], Clips:AnimationClip[], playgroundController:PlaygroundController, _oldDeformer:String, _room3DSpace:ZepetoRoom3DSpace, _spaceGuideRenderer:SpaceGuideRenderer, _guiStyle:GUIStyle]
-NOTE field-owner:zepetoId :: ZEPETO/ZepetoCharacterCustomLoader (String)
-NOTE field-owner:AnimationClip :: ZEPETO.Studio/PlaygroundController (AnimationClip)
-NOTE field-owner:AnimatorController :: ZEPETO.Studio/PlaygroundController (AnimatorOverrideController)
+NOTE field-owner:zepetoId :: Easy.ZepetoHelper.Tests/ZepetoHelperTestLoader (String), Easy.ZepetoHelper.Tests/ZepetoHelperTestIdOwner (String), ZEPETO/ZepetoCharacterCustomLoader (String)
+NOTE field-owner:AnimationClip :: Easy.ZepetoHelper.Tests/ZepetoHelperTestLoader (AnimationClip), Easy.ZepetoHelper.Tests/ZepetoHelperTestClipOwner (AnimationClip), ZEPETO.Studio/PlaygroundController (AnimationClip)
+NOTE field-owner:AnimatorController :: Easy.ZepetoHelper.Tests/ZepetoHelperTestLoader (Object), Easy.ZepetoHelper.Tests/ZepetoHelperTestClipOwner (Object), ZEPETO.Studio/PlaygroundController (AnimatorOverrideController)
 NOTE sdk-customloader-shape :: Zepeto.ZepetoCharacterCustomLoader fields = [destroyWhenContextLoaded:Boolean, deformations:TextAsset, _oldDeformations:TextAsset, allProperties:CustomProperty[], metadataProvider:ZepetoCustomMetadataProvider, zepetoId:String, Hashcode:String, Inplace:Boolean, editMode:Boolean, baked:Boolean, OnInitialized:UnityEvent, ContextCreated:UnityEvent]
 NOTE sdk-playgroundcontroller-shape :: PlaygroundController fields = [TargetCamera:Camera, updateCamera:Boolean, AnimatorController:AnimatorOverrideController, AnimationClip:AnimationClip, loader:ZepetoCharacterLoaderBase, _loaders:LinkedList`1, thetaSpeed:Single, phiSpeed:Single, moveSpeed:Single, zoomSpeed:Single, phiBoundMin:Single, phiBoundMax:Single, rotateSmoothing:Single, moveSmoothing:Single, distance:Single, euler:Vector2, targetRot:Quaternion, targetLookAt:Vector3, targetDist:Single, distanceVec:Vector3, target:Transform, IsDragging:Boolean]
 PASS saved-ids:removed
@@ -57,6 +58,7 @@ PASS real-template:bind-zepetoId
 PASS real-template:apply-first
 PASS real-template:apply-second
 PASS real-template:switch-back
+NOTE real-template:id-restored :: 'darbams77'
 PASS real-template:outfit-prefab
 NOTE real-template:outfit :: Assets/Contents/TRANSPARENT_1/TRANSPARENT_1.prefab
 PASS real-template:sdk-motions
@@ -66,6 +68,9 @@ PASS playback-slot:assign
 PASS playback-slot:updated
 PASS playback-slot:not-a-pose
 NOTE playback-slot:value :: Videobooth_282 23.13s
+NOTE playback-slot:overrides-restored :: 1 slot(s) on PlaygroundAnimatorController_local
+NOTE playback-slot:clip-restored :: ZepetoRig_Wave
+NOTE playback-slot:controller-restored :: PlaygroundAnimatorController_local
 PASS catalog:populated
 NOTE catalog:count :: 13 motions
 PASS catalog:sdk-is-humanoid
@@ -79,4 +84,4 @@ PASS live:instanceid-preserved
 PASS live:content-replaced
 PASS live:name-restored
 PASS live:loop-applied
-NOTE live:probe :: len=23.13s guid=5c7f5907401e5c7429683a559cfeb3af
+NOTE live:probe :: len=23.13s guid=c0c574bbb95d36545a32c86f7a89fb50

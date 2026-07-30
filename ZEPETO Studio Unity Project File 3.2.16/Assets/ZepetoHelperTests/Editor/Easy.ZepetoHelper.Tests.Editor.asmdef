@@ -1,8 +1,13 @@
 {
-  "name": "Easy.ZepetoHelper.Tests",
-  "rootNamespace": "Easy.ZepetoHelper.SelfTest",
-  "references": [],
-  "includePlatforms": [],
+  "name": "Easy.ZepetoHelper.Tests.Editor",
+  "rootNamespace": "Easy.ZepetoHelper.SelfTestEditor",
+  "references": [
+    "Easy.ZepetoHelper.Tests",
+    "Easy.ZepetoHelper.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": false,
