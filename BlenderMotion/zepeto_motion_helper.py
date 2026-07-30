@@ -1,7 +1,7 @@
 bl_info = {
     "name": "ZEPETO 모션 헬퍼",
     "author": "easy",
-    "version": (1, 3, 0),
+    "version": (1, 4, 0),
     "blender": (4, 2, 0),
     "location": "3D View > 사이드바(N) > ZEPETO",
     "description": "ZEPETO 의상 미리보기용 모션을 버튼 몇 개로 만들고 Unity로 내보냅니다.",
@@ -11,6 +11,7 @@ bl_info = {
 import os
 import re
 import time
+from collections import namedtuple
 import bpy
 from bpy.props import BoolProperty, StringProperty
 from mathutils import Euler, Vector
@@ -46,6 +47,253 @@ MAPPED_BONES = frozenset((
     "littlePro_R", "littleInt_R", "littleDis_R",
 ))
 
+
+
+# ---------------------------------------------------------------- Unity project location
+#
+# Both paths this add-on needs live inside the Unity project, and that project sits somewhere different on
+# every machine. They used to be module-level constants baked into this file, which shipped one developer's
+# C:\Users\<name>\... path to everyone else: Blender evaluates a property's `default=` once at registration,
+# so a new .blend or a new scene inherited a folder that does not exist, and both "몸 불러오기" and
+# "Unity로 보내기" failed on a machine that was otherwise set up correctly. Only the one live .blend worked,
+# because its saved scene properties happened to hold real values.
+#
+# So resolve at run time instead, mirroring what the Unity side already does in
+# Packages/com.easy.zepeto-helper/Editor/ZepetoStudioHelperWindow.GoToBlender.cs (GuessBlendFilePath): walk up
+# from a known starting point looking for the project next to it. Pure stdlib, so nothing here depends on the
+# Blender version.
+UNITY_PROJECT_ENV = "ZEPETO_UNITY_PROJECT"
+UNITY_PROJECT_PREFIX = "zepeto studio unity project file"     # compared lower-cased
+PROJECT_WALK_LIMIT = 6
+# How much newer one candidate's Assets folder has to be before age alone is allowed to decide between two
+# otherwise equally plausible projects (seconds). A project someone is actually working in gets touched the
+# same day; a leftover download sitting beside it does not. Anything closer than this counts as a tie, and a
+# tie is reported to the user, never guessed - see _pick_project.
+PROJECT_AGE_MARGIN = 24 * 60 * 60
+
+# What refresh_paths did, as opposed to what it found.
+#   project     the folder that resolved, or "" - NOT a claim that anything was fixed
+#   export_dir  the value actually written to scene.zepeto_export_dir, or ""
+#   rig_fbx     the value actually written to scene.zepeto_rig_fbx, or ""
+#   ambiguous   projects the search found but refused to choose between (tuple, usually empty)
+PathFix = namedtuple("PathFix", "project export_dir rig_fbx ambiguous")
+
+
+def _looks_like_unity_project(path):
+    """Named like the ZEPETO Studio download AND actually carrying an Assets folder."""
+    if not path or not os.path.isdir(path):
+        return False
+    name = os.path.basename(os.path.normpath(path)).lower()
+    return name.startswith(UNITY_PROJECT_PREFIX) and os.path.isdir(os.path.join(path, "Assets"))
+
+
+def _anchor_dirs():
+    """
+    Folders that prove which project the user is in: the open .blend, and this add-on file.
+
+    Kept separate from resolve_unity_project's start list on purpose - a start point is a place to search FROM,
+    an anchor is evidence ABOUT a candidate.
+    """
+    out = []
+    if bpy.data.filepath:
+        out.append(os.path.dirname(os.path.abspath(bpy.data.filepath)))
+    # globals().get: run from Blender's Text editor rather than as an installed add-on, __file__ can be absent,
+    # and a NameError here would surface as the raw traceback this whole file works to avoid.
+    own_file = globals().get("__file__", "")
+    if own_file:
+        out.append(os.path.dirname(os.path.abspath(own_file)))
+    return out
+
+
+def _is_inside(parent, child):
+    """True when child is parent or lives under it. Pure path math, so a folder that is gone is just False."""
+    try:
+        parent = os.path.normcase(os.path.abspath(parent))
+        child = os.path.normcase(os.path.abspath(child))
+    except (OSError, ValueError):
+        return False
+    return child == parent or child.startswith(parent + os.sep)
+
+
+def _rank_project(path):
+    """
+    How sure we can be that `path` is the project the user means. Higher wins; an equal rank is a tie.
+
+      2  it contains the open .blend or this add-on file - nothing beats holding the file we are running from
+      1  it carries BOTH folders this pipeline uses (Assets/CustomMotions and Assets/ZepetoHelper/Rig), so the
+         helper has actually been used with it, unlike a second copy of the download
+      0  it merely looks like a Unity project
+    """
+    for anchor in _anchor_dirs():
+        if _is_inside(path, anchor):
+            return 2
+    # Both folders, not either: Assets/CustomMotions is the live-preview watch root and
+    # Assets/ZepetoHelper/Rig is where the Unity side writes the rig. They are deliberately different folders.
+    if (os.path.isdir(os.path.join(path, "Assets", "CustomMotions"))
+            and os.path.isdir(os.path.join(path, "Assets", "ZepetoHelper", "Rig"))):
+        return 1
+    return 0
+
+
+def _assets_mtime(path):
+    """When this project's Assets folder was last touched. 0.0 when it cannot be read, so it never wins a tie."""
+    try:
+        return os.path.getmtime(os.path.join(path, "Assets"))
+    except OSError:
+        return 0.0
+
+
+def _pick_project(candidates):
+    """
+    Choose between projects sitting side by side, or refuse to. Returns (project, ambiguous).
+
+    Exactly one half is filled: a folder and (), or "" and the candidates that tied.
+
+    This used to be "whatever os.listdir sorted first", which is how a stale "... 3.2.12" download or a "(1)"
+    duplicate beside the real project could silently win. The export then lands in a project Unity is not
+    watching, and the user sees a successful export that never shows up - the hardest failure here to diagnose.
+    So: rank on evidence, and when the evidence ties, say so instead of picking.
+    """
+    unique = []
+    for path in candidates:
+        norm = os.path.normpath(path)
+        if norm not in unique:
+            unique.append(norm)
+    if not unique:
+        return "", ()
+    if len(unique) == 1:
+        return unique[0], ()
+
+    ranked = [(_rank_project(p), p) for p in unique]
+    best = max(rank for rank, _ in ranked)
+    top = [p for rank, p in ranked if rank == best]
+    if len(top) == 1:
+        return top[0], ()
+
+    # Last resort, and only when it is not a close call (PROJECT_AGE_MARGIN).
+    top.sort(key=_assets_mtime, reverse=True)
+    if _assets_mtime(top[0]) - _assets_mtime(top[1]) >= PROJECT_AGE_MARGIN:
+        return top[0], ()
+    return "", tuple(sorted(top))
+
+
+def _walk_up_for_project(start_dir):
+    """
+    Test start_dir, then every ancestor, and also each ancestor's immediate children.
+
+    Looking at the children is what makes the shipped layout work: the .blend lives in a BlenderMotion folder
+    *beside* the project, not inside it. The walk is capped so one button press can never turn into a crawl of
+    a whole drive.
+
+    Returns (project, ambiguous), same as _pick_project. The nearest level holding any candidate at all decides:
+    proximity outranks every other signal, and stopping there keeps the ambiguous set down to the folders
+    actually sitting next to each other.
+    """
+    current = start_dir
+    for _ in range(PROJECT_WALK_LIMIT + 1):
+        if not current or not os.path.isdir(current):
+            return "", ()
+        if _looks_like_unity_project(current):
+            # start_dir is this folder or lives under it, so it contains us - unambiguous by definition.
+            return os.path.normpath(current), ()
+        try:
+            entries = sorted(os.listdir(current))
+        except OSError:
+            entries = []
+        matches = [os.path.join(current, entry) for entry in entries
+                   if _looks_like_unity_project(os.path.join(current, entry))]
+        if matches:
+            return _pick_project(matches)
+        parent = os.path.dirname(current)
+        if parent == current:                                  # reached the drive root
+            return "", ()
+        current = parent
+    return "", ()
+
+
+def resolve_unity_project():
+    """
+    The Unity project folder on THIS machine, plus any ambiguity we refused to resolve.
+
+    Returns (project, ambiguous): a folder and (), or "" and the candidate projects that tied.
+
+    Order: the env var first, so a user can always force an answer; then the folder of the open .blend; then
+    this add-on file's own folder, which still resolves when the .blend was never saved.
+    """
+    forced = os.environ.get(UNITY_PROJECT_ENV, "").strip().strip('"')
+    if forced and os.path.isdir(os.path.join(forced, "Assets")):
+        return os.path.normpath(forced), ()
+
+    starts = []
+    if bpy.data.filepath:
+        starts.append(os.path.dirname(bpy.data.filepath))
+    own_file = globals().get("__file__", "")
+    if own_file:
+        starts.append(os.path.dirname(os.path.abspath(own_file)))
+    ambiguous = ()
+    for start in starts:
+        found, tied = _walk_up_for_project(start)
+        if found:
+            return found, ()
+        # Remember the first tie but keep going: the add-on's own folder may still give a clean answer.
+        if tied and not ambiguous:
+            ambiguous = tied
+    return "", ambiguous
+
+
+def refresh_paths(scene, force=False):
+    """
+    Fill the scene's two path properties from resolve_unity_project(). Returns a PathFix.
+
+    The return value reports what was WRITTEN, not what was found. Callers must report from that: finding a
+    project folder that turns out to be missing both subfolders used to be announced to the user as a
+    successful repair, so the one repair button in the UI claimed to have fixed a state that was still broken.
+
+    Called from operators only, never from draw(): writing to ID data during a panel draw is not allowed, and
+    a directory walk has no business running on every redraw. Saving the .blend to a new location therefore
+    fixes the paths on the next button press, with no code edit.
+
+    A value that still exists is left alone unless force is set, so a folder the user picked by hand is never
+    clobbered. When nothing resolves the property is left EMPTY on purpose: an empty field asks the user for a
+    folder, while a wrong path fails later and looks like the tool itself is broken.
+    """
+    if scene is None:
+        return PathFix("", "", "", ())
+    export_dir = bpy.path.abspath(scene.zepeto_export_dir)
+    rig_fbx = bpy.path.abspath(scene.zepeto_rig_fbx)
+    need_dir = force or not export_dir or not os.path.isdir(export_dir)
+    need_rig = force or not rig_fbx or not os.path.isfile(rig_fbx)
+    if not need_dir and not need_rig:
+        return PathFix("", "", "", ())
+
+    project, ambiguous = resolve_unity_project()
+    if not project:
+        return PathFix("", "", "", ambiguous)
+    set_dir = ""
+    set_rig = ""
+    if need_dir:
+        # Assets/CustomMotions is the folder Unity polls for live preview; keep it distinct from the two
+        # ZepetoHelper folders the Unity side owns.
+        candidate = os.path.join(project, "Assets", "CustomMotions")
+        if os.path.isdir(candidate):
+            scene.zepeto_export_dir = candidate
+            set_dir = candidate
+    if need_rig:
+        candidate = os.path.join(project, "Assets", "ZepetoHelper", "Rig", "ZepetoBaseModel.fbx")
+        if os.path.isfile(candidate):
+            scene.zepeto_rig_fbx = candidate
+            set_rig = candidate
+    return PathFix(project, set_dir, set_rig, ambiguous)
+
+
+def export_dir_problem(scene):
+    """The panel and the export operator must agree on what a usable save folder is, so both ask here."""
+    folder = bpy.path.abspath(scene.zepeto_export_dir)
+    if not folder:
+        return "저장 폴더가 비어 있습니다. 패널의 '저장 폴더'를 직접 지정하세요 (Unity 프로젝트의 Assets/CustomMotions)"
+    if not os.path.isdir(folder):
+        return "저장 폴더가 없습니다: %s - 패널의 '저장 폴더'를 직접 지정하세요" % folder
+    return None
 
 
 # ---------------------------------------------------------------- helpers
@@ -285,9 +533,14 @@ class ZEPETO_OT_import_rig(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        # Resolve before validating: the stored path may be empty (fresh scene) or may have come from another
+        # machine with the .blend. refresh_paths only overwrites what is missing.
+        refresh_paths(context.scene)
         path = bpy.path.abspath(context.scene.zepeto_rig_fbx)
         if not path or not os.path.isfile(path):
-            self.report({"ERROR"}, "리그 FBX를 찾을 수 없습니다. Unity 헬퍼에서 'ZEPETO 리그 내보내기'를 먼저 누르세요")
+            self.report({"ERROR"},
+                        "리그 FBX를 찾을 수 없습니다. Unity 헬퍼에서 'ZEPETO 리그 내보내기'를 먼저 누르세요. "
+                        "이미 내보냈다면 아래 'ZEPETO FBX' 칸에 그 파일을 직접 지정하세요")
             return {"CANCELLED"}
 
         active = getattr(context, "object", None)
@@ -351,25 +604,115 @@ class ZEPETO_OT_import_rig(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ZEPETO_OT_locate_paths(bpy.types.Operator):
+    """
+    Re-point both path fields at this machine's Unity project.
+
+    Needed because the export button is disabled while the save folder is missing, so the export operator's own
+    repair never gets a chance to run - without this the only fix left was the file browser or the Python
+    console.
+    """
+    bl_idname = "zepeto.locate_paths"
+    bl_label = "Unity 프로젝트 경로 자동 찾기"
+    bl_description = "이 컴퓨터의 Unity 프로젝트를 찾아 저장 폴더와 리그 FBX 경로를 다시 채웁니다"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        scene = context.scene
+        # force=True: the whole point of pressing this is to replace what is in the fields now.
+        fix = refresh_paths(scene, force=True)
+
+        # Report what was WRITTEN, never "a project was found". Reporting the folder meant the button announced
+        # success while both fields were still empty - so the user read "찾았습니다", the export button stayed
+        # disabled, and nothing in the UI said why.
+        done = []
+        if fix.export_dir:
+            done.append("저장 폴더 → %s" % fix.export_dir)
+        if fix.rig_fbx:
+            done.append("리그 FBX → %s" % fix.rig_fbx)
+        if done:
+            self.report({"INFO"}, "경로를 다시 채웠습니다. " + " / ".join(done))
+            return {"FINISHED"}
+
+        # Nothing was written. Say exactly what is still missing and what the user has to do about it.
+        missing = []
+        if export_dir_problem(scene):
+            missing.append("저장 폴더")
+        rig_fbx = bpy.path.abspath(scene.zepeto_rig_fbx)
+        if not rig_fbx or not os.path.isfile(rig_fbx):
+            missing.append("리그 FBX")
+        if not missing:
+            # A real no-op: force rewrote nothing because both fields already point at things that exist.
+            self.report({"INFO"}, "두 경로가 이미 올바릅니다. 바꾸지 않았습니다")
+            return {"FINISHED"}
+
+        if fix.ambiguous:
+            # Two or more downloads side by side. Guessing here is how an export lands in a project Unity is
+            # not watching, so the user picks.
+            self.report({"ERROR"},
+                        "Unity 프로젝트로 보이는 폴더가 %d개라서 고르지 못했습니다 (%s). "
+                        "패널의 '저장 폴더'에서 쓰려는 프로젝트의 Assets/CustomMotions 폴더를 직접 고르세요 "
+                        "(또는 환경 변수 %s에 그 프로젝트 폴더를 넣으세요). 아직 비어 있는 것: %s"
+                        % (len(fix.ambiguous), " / ".join(fix.ambiguous),
+                           UNITY_PROJECT_ENV, ", ".join(missing)))
+        elif fix.project:
+            self.report({"ERROR"},
+                        "Unity 프로젝트는 찾았지만(%s) 그 안에 필요한 폴더가 없어서 %s 경로를 채우지 못했습니다. "
+                        "Unity 헬퍼에서 'ZEPETO 리그 내보내기'를 먼저 누르거나, 패널에서 직접 고르세요"
+                        % (fix.project, ", ".join(missing)))
+        else:
+            self.report({"ERROR"},
+                        "Unity 프로젝트를 찾지 못해 %s 경로가 그대로 비어 있습니다. 패널에서 직접 지정하세요 "
+                        "(또는 환경 변수 %s에 프로젝트 폴더를 넣으세요)" % (", ".join(missing), UNITY_PROJECT_ENV))
+        return {"CANCELLED"}
+
+
 class ZEPETO_OT_clear_pose(bpy.types.Operator):
     bl_idname = "zepeto.clear_pose"
     bl_label = "포즈 초기화"
-    bl_description = "모든 뼈 회전을 0으로 되돌립니다 (키프레임은 지우지 않습니다)"
+    # Wording follows what execute() actually does: every rotation, but translation/scale only where the panel
+    # flagged a change - the body's own shipped offsets are left alone.
+    bl_description = "모든 뼈의 회전을 되돌리고, 이동·크기가 바뀐 뼈만 원래대로 돌립니다 (키프레임은 지우지 않습니다)"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         rig = get_rig(context)
         if not rig:
+            self.report({"ERROR"}, "리그가 없습니다")
             return {"CANCELLED"}
         ensure_euler(rig)
+
+        # Rotation alone was not enough: a bone dragged with G or resized with S stayed where it was, the
+        # panel kept listing it under "이동/크기가 바뀐 뼈", and no button in the add-on could clear it.
+        #
+        # Rotation is cleared on EVERY bone - that is what "포즈 초기화" means. Translation and scale are
+        # touched only on the bones the panel actually flagged (`cleared`: currently off-rest, minus the
+        # zepeto_baseline_odd import snapshot, because the ZEPETO body ships a few non-unit pose scales).
+        #
+        # Resetting everything outside the snapshot instead flattened those shipped offsets and scales whenever
+        # the snapshot was not there to protect them - a scene saved before this feature existed, a rig that
+        # never came through step 1 - and a deviation too small for odd_bones' thresholds was destroyed even
+        # with a snapshot present. That damage is silent until the export looks wrong in Unity.
+        #
+        # Sharing the one snapshot with the panel is what keeps this button's count and the warning's list
+        # talking about the same set of bones.
+        baseline = set(filter(None, (context.scene.zepeto_baseline_odd or "").split(",")))
+        cleared = odd_bones(rig) - baseline
         for pb in rig.pose.bones:
             pb.rotation_euler = (0, 0, 0)
+            if pb.name not in cleared:
+                continue
+            pb.location = (0.0, 0.0, 0.0)
+            pb.scale = (1.0, 1.0, 1.0)
+        self.report({"INFO"}, "포즈를 되돌렸습니다 (회전 전체 + 이동·크기가 바뀐 뼈 %d개)" % len(cleared))
         return {"FINISHED"}
 
 
 class ZEPETO_OT_key_pose(bpy.types.Operator):
     bl_idname = "zepeto.key_pose"
-    bl_label = "2. 현재 포즈 저장"
+    # Numbered to match the panel section this button lives in ("3단계 · 이 순간 기록"). The label is what F3
+    # search and the Info log show, so an old number there sends the user to the wrong box.
+    bl_label = "3. 현재 포즈 저장"
     bl_description = "지금 프레임에 현재 포즈를 키프레임으로 기록합니다"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -406,20 +749,37 @@ class ZEPETO_OT_delete_key(bpy.types.Operator):
     def execute(self, context):
         rig = get_rig(context)
         if not rig:
+            self.report({"ERROR"}, "리그가 없습니다")
             return {"CANCELLED"}
         frame = context.scene.frame_current
+
+        # Both rotation representations, and count what actually went away.
+        #
+        # rotation_euler only was a silent lie: ensure_euler deliberately leaves a bone that already carries
+        # quaternion F-curves in QUATERNION mode (flipping it would orphan real animation), so such bones exist
+        # by design - their keys stayed on the timeline while this operator still reported "지웠습니다".
+        removed = 0
         for pb in rig.pose.bones:
-            try:
-                pb.keyframe_delete(data_path="rotation_euler", frame=frame)
-            except RuntimeError:
-                pass
-        self.report({"INFO"}, "%d 프레임 키를 지웠습니다" % frame)
+            hit = False
+            for data_path in ("rotation_euler", "rotation_quaternion"):
+                try:
+                    if pb.keyframe_delete(data_path=data_path, frame=frame):
+                        hit = True
+                except RuntimeError:
+                    pass
+            if hit:
+                removed += 1
+        if not removed:
+            self.report({"WARNING"}, "%d 프레임에는 지울 키가 없습니다" % frame)
+            return {"CANCELLED"}
+        self.report({"INFO"}, "%d 프레임 키를 지웠습니다 (뼈 %d개)" % (frame, removed))
         return {"FINISHED"}
 
 
 class ZEPETO_OT_make_loop(bpy.types.Operator):
     bl_idname = "zepeto.make_loop"
-    bl_label = "3. 반복되게 만들기"
+    # Matches the panel section "4단계 · 부드럽게 반복" (see the note on key_pose's label).
+    bl_label = "4. 반복되게 만들기"
     bl_description = "첫 프레임 포즈를 마지막 프레임에 복사해 자연스럽게 반복되게 합니다"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -452,7 +812,8 @@ class ZEPETO_OT_make_loop(bpy.types.Operator):
 
 class ZEPETO_OT_export(bpy.types.Operator):
     bl_idname = "zepeto.export"
-    bl_label = "4. Unity로 내보내기"
+    # Matches the panel section "5단계 · Unity로 보내기" (see the note on key_pose's label).
+    bl_label = "5. Unity로 내보내기"
     bl_description = "ZEPETO용 설정으로 FBX를 Unity 프로젝트에 바로 저장합니다"
 
     def execute(self, context):
@@ -462,10 +823,14 @@ class ZEPETO_OT_export(bpy.types.Operator):
             return {"CANCELLED"}
 
         scene = context.scene
-        folder = bpy.path.abspath(scene.zepeto_export_dir)
-        if not folder or not os.path.isdir(folder):
-            self.report({"ERROR"}, "저장 폴더가 올바르지 않습니다: %s" % folder)
+        # Repair an empty or inherited-from-another-machine folder before judging it. The panel gates the
+        # button on the same check (export_dir_problem), so normally this has nothing left to do.
+        refresh_paths(scene)
+        folder_problem = export_dir_problem(scene)
+        if folder_problem:
+            self.report({"ERROR"}, folder_problem)
             return {"CANCELLED"}
+        folder = bpy.path.abspath(scene.zepeto_export_dir)
 
         # Validated rather than silently repaired: "   " used to pass the `or` fallback, strip to "", and
         # write a file literally called ".fbx"; forbidden Windows characters escaped as a raw traceback.
@@ -516,6 +881,11 @@ class ZEPETO_OT_export(bpy.types.Operator):
         prev_active = context.view_layer.objects.active
         prev_hide = {o: o.hide_select for o in wanted}
 
+        # Any exporter failure has to come out as a Korean report like every other failure here. Unwrapped, an
+        # error inside export_scene.fbx (a locked path, an unwritable folder, an encoding the exporter chokes
+        # on) escaped as a raw Python traceback in the system console - which a beginner never sees, so the
+        # button simply looked like it did nothing.
+        export_error = None
         try:
             for o in wanted:
                 o.hide_select = False
@@ -542,6 +912,8 @@ class ZEPETO_OT_export(bpy.types.Operator):
                 axis_up="Y",
                 global_scale=1.0,
             )
+        except Exception as exc:
+            export_error = exc
         finally:
             for o, hidden in prev_hide.items():
                 o.hide_select = hidden
@@ -554,8 +926,17 @@ class ZEPETO_OT_export(bpy.types.Operator):
                     pass
             context.view_layer.objects.active = prev_active
 
-        if not os.path.exists(temp_path):
-            self.report({"ERROR"}, "FBX를 만들지 못했습니다")
+        if export_error is not None or not os.path.exists(temp_path):
+            # Same cleanup contract as the os.replace failure below: never leave a half-written .part inside
+            # Assets/, where a manual AssetDatabase.Refresh would import it and mint an orphan .meta.
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
+            if export_error is None:
+                self.report({"ERROR"}, "FBX를 만들지 못했습니다")
+            else:
+                self.report({"ERROR"}, "FBX를 만들지 못했습니다: %s" % export_error)
             return {"CANCELLED"}
 
         # Unity can hold the destination open while reimporting it, which surfaces as PermissionError here.
@@ -630,6 +1011,11 @@ def draw_zepeto_panel(layout, context):
             box.label(text="1단계 · 몸 불러오기", icon="ARMATURE_DATA")
             box.operator("zepeto.import_rig", text="ZEPETO 몸 불러오기", icon="IMPORT")
             box.prop(scene, "zepeto_rig_fbx", text="")
+            # The field starts empty on purpose (see refresh_paths); say so, or an empty box reads as broken.
+            rig_fbx = bpy.path.abspath(scene.zepeto_rig_fbx)
+            if not rig_fbx or not os.path.isfile(rig_fbx):
+                box.label(text="비워 두면 불러올 때 자동으로 찾습니다", icon="INFO")
+                box.operator("zepeto.locate_paths", text="경로 자동 찾기", icon="FILE_REFRESH")
             return
 
         usable = sum(1 for b in rig.data.bones if is_mapped_bone(b.name))
@@ -690,10 +1076,20 @@ def draw_zepeto_panel(layout, context):
         box = layout.box()
         box.label(text="5단계 · Unity로 보내기", icon="EXPORT")
         box.prop(scene, "zepeto_motion_name", text="이름")
+        # The save folder used to be invisible in the UI: a .blend carrying another machine's path failed at the
+        # export button with no way to fix it short of the Python console. Same problems list as everything else
+        # in this box, so the button keeps its single gate.
+        box.prop(scene, "zepeto_export_dir", text="저장 폴더")
 
         name_problem = motion_name_problem(scene.zepeto_motion_name)
         if name_problem:
             problems.append(name_problem)
+
+        folder_problem = export_dir_problem(scene)
+        if folder_problem:
+            problems.append(folder_problem)
+            box.label(text="이 폴더를 찾을 수 없습니다. 아래 버튼을 누르거나 폴더를 직접 고르세요", icon="ERROR")
+            box.operator("zepeto.locate_paths", text="경로 자동 찾기", icon="FILE_REFRESH")
 
         if problems:
             box.label(text="아직 안 됩니다", icon="ERROR")
@@ -710,6 +1106,7 @@ def draw_zepeto_panel(layout, context):
 
 CLASSES = (
     ZEPETO_OT_import_rig,
+    ZEPETO_OT_locate_paths,
     ZEPETO_OT_clear_pose,
     ZEPETO_OT_key_pose,
     ZEPETO_OT_delete_key,
@@ -719,10 +1116,6 @@ CLASSES = (
     ZEPETO_PT_panel_item,
 )
 
-UNITY_PROJECT = r"C:\Users\Jun-WN\Desktop\zepeto\ZEPETO Studio Unity Project File 3.2.16"
-DEFAULT_EXPORT_DIR = os.path.join(UNITY_PROJECT, "Assets", "CustomMotions")
-DEFAULT_RIG_FBX = os.path.join(UNITY_PROJECT, "Assets", "ZepetoHelper", "Rig", "ZepetoBaseModel.fbx")
-
 
 def register():
     for c in CLASSES:
@@ -730,15 +1123,17 @@ def register():
     bpy.types.Scene.zepeto_motion_name = StringProperty(
         name="이름", default="MyMotion",
         description="내보낼 FBX 파일 이름")
+    # Both path properties start EMPTY and are filled by refresh_paths on first use. `default=` is evaluated
+    # once here, at registration, so anything baked in would freeze one machine's folder into every new scene.
     bpy.types.Scene.zepeto_export_dir = StringProperty(
-        name="폴더", subtype="DIR_PATH", default=DEFAULT_EXPORT_DIR,
-        description="Unity 프로젝트의 CustomMotions 폴더")
+        name="저장 폴더", subtype="DIR_PATH", default="",
+        description="Unity 프로젝트의 Assets/CustomMotions 폴더. 비워 두면 자동으로 찾습니다")
     bpy.types.Scene.zepeto_baseline_odd = StringProperty(
         name="baseline", default="",
         description="Bones already off-rest when the rig was imported")
     bpy.types.Scene.zepeto_rig_fbx = StringProperty(
-        name="ZEPETO FBX", subtype="FILE_PATH", default=DEFAULT_RIG_FBX,
-        description="Unity 헬퍼의 'ZEPETO 리그 내보내기'가 만든 FBX")
+        name="ZEPETO FBX", subtype="FILE_PATH", default="",
+        description="Unity 헬퍼의 'ZEPETO 리그 내보내기'가 만든 FBX. 비워 두면 자동으로 찾습니다")
     bpy.types.Scene.zepeto_show_all_bones = BoolProperty(
         name="Unity가 무시하는 뼈도 보기", default=False,
         description="켜면 Twist·_scale·얼굴 뼈까지 전부 보입니다. 그 뼈들을 돌려도 Unity에서는 사라집니다",
