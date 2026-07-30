@@ -10,19 +10,25 @@
 
 ## 배포 전 차단 항목 — 미해결
 
-> **`docs/images/`의 캡처에 제작자의 개인 정보가 픽셀로 남아 있다. 아직 고치지 않았다.**
+> **캡처 8장 중 6장은 0.9.1에서 재촬영해 해결했다. 2장이 남아 있다.**
 
-0.9.0에서 한 것은 **코드와 markdown 텍스트의 개인 아이디 제거뿐이다. 캡처 이미지는 재촬영하지도,
-가리지도 않았다.** `.npmignore`는 문서 폴더 중 `Documentation~/`만 빼고 **`docs/`는 일부러 포함**하므로
-(README가 그 이미지를 직접 불러오기 때문), `npm pack` 산출물과 GitHub에 렌더링된 README 양쪽에 아래가
-그대로 실려 나간다.
+0.9.0에서 한 것은 코드와 markdown 텍스트의 개인 아이디 제거뿐이었고 캡처는 손대지 않았다. 0.9.1에서
+실제 Unity 2020.3.9f1을 띄워, 씬 `LOADER`의 `zepetoId`를 `my_zepeto_id` placeholder로 바꾼 상태로 다시
+찍고 원래 값으로 되돌렸다. 그래서 재촬영본에는 아이디가 없고 화면도 현재 7단계 UI다.
 
-| 파일 | 화면에 보이는 것 |
+`.npmignore`는 문서 폴더 중 `Documentation~/`만 빼고 **`docs/`는 일부러 포함**하므로(README가 그 이미지를
+직접 불러오기 때문), 남은 2장은 `npm pack` 산출물과 GitHub 렌더링 양쪽에 그대로 실려 나간다.
+
+| 파일 | 상태 |
 | --- | --- |
-| `docs/images/helper-window.png` | `현재 아이디` 줄과 `아이디` 입력칸에 제작자의 실제 ZEPETO 아이디 |
-| `docs/images/step-1-avatar-outfit.png` | 같은 두 곳에 같은 아이디 |
-| `docs/images/workflow-overview.png` | 위 `step-1` 캡처를 썸네일로 품고 있어 아이디가 작게 그대로 보이고, `play-preview` 캡처도 함께 들어 있다 |
-| `docs/images/play-preview.png` | 제작자 본인 아바타의 얼굴·머리·의상 |
+| `docs/images/helper-window.png` | ✅ 재촬영 (창 전체) |
+| `docs/images/step-1-avatar-outfit.png` | ✅ 재촬영 (1번 카드) |
+| `docs/images/step-2-motion-select.png` | ✅ 재촬영 (2·3번 카드) |
+| `docs/images/step-4-5-blender-live.png` | ✅ 신규 (4·5번 카드 — 이전에 캡처가 없던 구간) |
+| `docs/images/step-3-clip-adjust.png` | ✅ 재촬영 (실제 6번 화면) |
+| `docs/images/step-4-save-export.png` | ✅ 재촬영 (실제 7번 화면) |
+| `docs/images/workflow-overview.png` | ⛔ **미해결** — 4단계 흐름을 전제로 설계된 합성 도해. 제거된 단계 잠금을 설명하고, `PLAY` 칸에 제작자 아바타가 들어 있다. 크롭으로 해결 불가, 도해 재작성 필요 |
+| `docs/images/play-preview.png` | ⛔ **미해결** — 제작자 본인 아바타. placeholder 아이디로는 아바타가 로드되지 않아 자동 재촬영이 불가능하다. 버리거나 별도 계정으로 촬영해야 한다 |
 
 **tarball을 발행하거나 저장소를 공개하기 전에 위 4개를 다시 찍거나 해당 영역을 가려야 한다.**
 나머지 3장(`step-2-motion-select.png`, `step-3-clip-adjust.png`, `step-4-save-export.png`)은 1번 카드가
@@ -95,8 +101,10 @@ reflection으로 실제 SDK 어셈블리를 조사한 결과다. 코드가 의�
     (범위를 넓히기 전에는 `Editor/ZepetoStudioHelperWindow.cs` **한 파일**만 읽었다. 그래서 아이디가 이
     문서의 `### 계정별 아바타 로딩` 표와 README 예시 문장에 남아 tarball에 실려 나가는데도 통과했다.)
   - **범위를 넓힌 뒤에도 `.cs`와 `.md`만 본다.** `.png`는 수집되지 않고, 텍스트 스캔이라 적용될 수도 없다.
-  - 0.9.0에서 실제로 한 일은 **문서 텍스트의 아이디 2개를 placeholder로 교체한 것까지**다.
-    캡처 이미지 안의 아이디는 **그대로 남아 있다.** 위 `배포 전 차단 항목` 참고.
+  - 0.9.0에서 한 일은 **문서 텍스트의 아이디 2개를 placeholder로 교체한 것까지**였고, 캡처 이미지 안의
+    아이디는 그대로 남아 있었다. 0.9.1에서 캡처 6장을 재촬영해 그중 아이디가 보였던 것들을 해결했다.
+    **아직 2장이 남아 있다** — 위 `배포 전 차단 항목` 참고. 검사 자체는 여전히 PNG를 볼 수 없으므로,
+    이 표가 검사를 대신하는 기록이다.
 - Major: 배포 패키지에 개발용 Unity MCP bridge 코드가 남아 에디터 로드마다 실행되고 있었음.
   - 0.3.0에서 전부 제거했다.
 - Major: `Assets/Contents`나 SDK animation 폴더가 없을 때 `AssetDatabase.FindAssets`가 매 repaint마다

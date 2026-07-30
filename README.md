@@ -12,66 +12,62 @@
 [![Guide](https://img.shields.io/badge/guide-beginner%20friendly-2563eb)](#처음-사용하는-순서)
 [![QA](https://img.shields.io/badge/QA-60%20self%20tests%20passing-22c55e)](Documentation~/QA_AUDIT.md)
 
-**아래 캡처를 포함해 `docs/images/`의 캡처 7장은 배포 전에 반드시 교체해야 합니다.**
-**제작자의 개인 ZEPETO 아이디와 개인 아바타가 그대로 보이고, 화면 구조도 0.2.x(4단계) 시절입니다.**
-**바로 아래 `캡처 이미지 경고`를 먼저 읽으세요.**
-
-![ZEPETO Studio Helper 전체 워크플로우](docs/images/workflow-overview.png)
-
-### 실제 Play 확인 화면
-
-Helper의 `Play` 버튼을 누르면 Unity `Game View`에서 아래처럼 아바타, 의상, 동작 상태를 바로 확인합니다.
-
-![Unity Game View 실제 Play 화면](docs/images/play-preview.png)
-
-<details>
-<summary>전체 Helper 창 보기</summary>
-
 ![ZEPETO Studio Helper 실제 Unity 화면](docs/images/helper-window.png)
 
-</details>
+Unity 2020.3.9f1에서 실제로 띄운 0.9.1 화면입니다. 아이디 칸은 `my_zepeto_id` placeholder로 두고 찍었습니다.
+
+> **남은 캡처 2장은 아직 교체하지 못했습니다** — `workflow-overview.png`(4단계 시절 합성 도해)와
+> `play-preview.png`(제작자 본인 아바타). 배포 전에 반드시 처리해야 합니다.
+> 아래 [캡처 이미지 경고](#캡처-이미지-경고-배포-전-필독)를 읽으세요.
 
 </div>
 
 ## 캡처 이미지 경고 (배포 전 필독)
 
-> **`docs/images/`의 캡처 7장은 아직 아무것도 고치지 않은 0.2.x 시절 원본입니다.**
-> 0.9.0에서 정리한 것은 **코드와 markdown 텍스트뿐이고, 캡처 이미지는 손대지 않았습니다.**
-> `npm pack`은 `docs/`를 포함하고 이 README가 캡처를 직접 불러오므로, tarball과 GitHub에 렌더링된 README
-> 양쪽에 아래 내용이 그대로 노출됩니다.
+0.9.1에서 캡처 5장을 **실제 Unity 2020.3.9f1에서 다시 찍었습니다.** 씬 `LOADER`의 `zepetoId`를
+`my_zepeto_id` placeholder로 바꿔놓고 촬영한 뒤 원래 값으로 되돌렸으므로, 이 5장에는 개인 아이디가
+없고 화면도 현재 7단계 UI입니다.
 
-### 1. 개인 정보가 픽셀로 남아 있습니다
-
-아이디가 **텍스트가 아니라 이미지 픽셀**이라 `grep`으로는 찾을 수 없습니다. 자체 테스트의
-`no-personal-id-in-source` 검사도 `.cs`와 `.md`만 읽으므로 **구조적으로 PNG를 볼 수 없습니다** —
-그 검사가 초록이어도 이미지는 검증된 것이 아닙니다.
-
-| 파일 | 화면에 보이는 것 |
+| 파일 | 상태 |
 | --- | --- |
-| `docs/images/helper-window.png` | `현재 아이디` 줄과 `아이디` 입력칸에 제작자의 실제 ZEPETO 아이디 |
-| `docs/images/step-1-avatar-outfit.png` | 같은 두 곳에 같은 아이디 |
-| `docs/images/workflow-overview.png` | 위 `step-1` 캡처를 썸네일로 품고 있어 아이디가 작게 그대로 보임. 오른쪽 `PLAY` 칸에는 표 마지막 줄의 `play-preview` 캡처도 그대로 들어 있음 |
-| `docs/images/play-preview.png` | 제작자 본인 아바타의 얼굴·머리·의상 |
+| `docs/images/helper-window.png` | ✅ 재촬영 — 창 전체 (안전 패널 + 1·2번 카드) |
+| `docs/images/step-1-avatar-outfit.png` | ✅ 재촬영 — 1번 카드 |
+| `docs/images/step-2-motion-select.png` | ✅ 재촬영 — 2번 카드 + 3번 카드 |
+| `docs/images/step-4-5-blender-live.png` | ✅ **신규** — 4번 Blender 왕복 + 5번 라이브 확인 (이전에는 캡처가 없었습니다) |
+| `docs/images/step-3-clip-adjust.png` | ✅ 재촬영 — 실제 **6번** 클립 조정 화면 (파일명은 옛 4단계 시절 이름) |
+| `docs/images/step-4-save-export.png` | ✅ 재촬영 — 실제 **7번** 제페토로 내보내기 화면 (파일명 동일 사유) |
+| `docs/images/workflow-overview.png` | ⛔ **미해결** |
+| `docs/images/play-preview.png` | ⛔ **미해결** |
 
-**tarball을 만들거나 저장소를 공개하기 전에 위 4개를 다시 찍거나 해당 영역을 가려야 합니다.**
-(나머지 3장 — `step-2-motion-select.png`, `step-3-clip-adjust.png`, `step-4-save-export.png` — 에서는
-1번 카드가 접혀 있어 아이디가 보이지 않습니다.)
+### ⛔ 남은 2장 — 배포 전 처리 필수
 
-### 2. 7장 전부가 7단계 재작성보다 앞섭니다
+`npm pack`은 `docs/`를 포함하므로 이 2장은 tarball과 GitHub 렌더링 양쪽에 그대로 나갑니다.
 
-저장소 이력상 이 이미지들은 모두 **2026-05-24 커밋에 추가된 0.2.x(4단계 마법사) 화면**입니다
-(`git log --diff-filter=A -- docs/images`). 디스크상 파일 시각은 `2026-07-25 16:30`으로 찍혀 있지만
-그것은 복사 시각이지 촬영 시각이 아닙니다. 어느 쪽 날짜든 0.9.0 7단계 재작성(2026-07-28)보다 이전입니다.
+**`play-preview.png`** — 제작자 본인 아바타의 얼굴·머리·의상이 보입니다. 이건 성질상 자동으로 고칠 수
+없습니다: 그 이미지의 존재 이유가 "실제 아바타가 로드된 화면"인데, placeholder 아이디로는 아바타가
+아예 나오지 않습니다. **버릴지, 별도 계정으로 다시 찍을지 결정이 필요합니다.**
 
-그래서 캡처에는 **지금은 존재하지 않는 화면**이 나옵니다.
+**`workflow-overview.png`** — 제목이 `1 -> 2 -> 3 -> 4 작업 흐름`인 **설계된 합성 도해**입니다. 문제가
+셋입니다: (1) 4단계 흐름이라는 전제 자체가 지금 틀렸고, (2) `완료 단계는 잠기고 다음 단계가 열립니다`
+라고 설명하는데 단계 잠금은 0.9.0에서 제거됐고, (3) 오른쪽 `PLAY` 칸에 `play-preview` 캡처가 그대로
+들어 있어 아바타가 보입니다. 크롭으로 해결되지 않고 **도해를 다시 만들어야 합니다.** 그래서 README
+상단에서 임베드를 내렸습니다 — 파일은 남겨두었습니다.
 
-- 헤더의 `v7 ZEPETO 작업대` 와 `1. 아바타 / 2. 동작 / 3. 클립 / 4. Export` 4칸 레일
+> 자체 테스트의 `no-personal-id-in-source` 검사는 `.cs`와 `.md`만 읽으므로 **구조적으로 PNG를 볼 수
+> 없습니다.** 그 검사가 초록이어도 이미지는 검증된 것이 아닙니다. 위 표가 그 공백을 메우는 기록입니다.
+
+### 참고 — 옛 캡처에 있던 화면
+
+이전 캡처는 저장소 이력상 **2026-05-24 커밋의 0.2.x(4단계 마법사) 화면**이었습니다
+(`git log --diff-filter=A -- docs/images`). 지금은 존재하지 않는 것들:
+
+- 헤더의 `1. 아바타 / 2. 동작 / 3. 클립 / 4. Export` 4칸 레일
 - `1-1. 아이디 입력` / `1-2. 의상 선택` / `1-3. Play 확인` 하위 번호
-- `1번 적용 / 다음 단계`, `수정 잠금 해제`, `이전 단계를 완료하면 열립니다` — 단계 잠금은 0.9.0에서 제거됐습니다
+- `1번 적용 / 다음 단계`, `수정 잠금 해제`, `이전 단계를 완료하면 열립니다`
 
-캡처의 번호를 지금 화면의 카드 번호로 읽는 표:
+아직 교체하지 못한 `workflow-overview.png`를 볼 때는 아래 표로 번호를 읽으세요.
 
-| 캡처에 보이는 제목 | 현재 카드 |
+| 도해에 보이는 제목 | 현재 카드 |
 | --- | --- |
 | `1. 아바타와 의상 준비` | **1**번 아바타 준비 |
 | `2. 동작 선택` | **2**번 동작 고르기 |
@@ -216,6 +212,11 @@ Blender에서 ZEPETO의 실제 뼈 이름·뼈대로 작업하기 위한 파일�
 **Play는 끄지 마세요.** Blender에서 `Unity로 보내기`를 누른 뒤 Unity 창을 다시 클릭하면
 1~2초 안에 동작이 바뀌고 `적용된 횟수`가 올라갑니다.
 
+4번과 5번 카드는 이렇게 보입니다. 4번의 번호(`1단계`~`5단계`)는 **Blender 패널의 단계 번호**이고
+이 창의 카드 번호와 다릅니다.
+
+![4번 Blender 왕복과 5번 라이브 확인 실제 화면](docs/images/step-4-5-blender-live.png)
+
 ### 6. 클립 조정
 
 배속, 시작 시간, 끝 시간, 반복 여부를 조정하고 `Play로 배속 확인` 후 `6번 적용 / 저장`을 누릅니다.
@@ -232,6 +233,10 @@ Blender에서 ZEPETO의 실제 뼈 이름·뼈대로 작업하기 위한 파일�
 ### Play 화면
 
 각 단계의 Play 버튼을 누르면 실제 Game View에서 아바타와 의상, 동작 상태를 확인합니다.
+
+> ⛔ 이 캡처(`docs/images/play-preview.png`)는 **제작자 본인 아바타**가 보이는 상태입니다.
+> 배포 전에 버리거나 별도 계정으로 다시 찍어야 합니다 —
+> [캡처 이미지 경고](#캡처-이미지-경고-배포-전-필독) 참고.
 
 ![Unity Game View 실제 Play 화면](docs/images/play-preview.png)
 
