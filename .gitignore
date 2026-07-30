@@ -53,3 +53,11 @@ __pycache__/
 Thumbs.db
 Desktop.ini
 desktop.ini
+
+# ── 라이브 왕복 픽스처 (재생성 가능, 3.4MB) ──────────────────
+# ZepetoLiveReloadRun이 요구하는 두 FBX는 바이너리이고 항상 같은 입력에서 나오므로
+# 저장소에 넣지 않고 생성 스크립트만 추적합니다:
+#   set ZEPETO_FIXTURE=a  (그리고 b)
+#   blender.exe --background --factory-startup --python BlenderMotion/make_live_fixtures.py
+zepeto-live-a.fbx
+zepeto-live-b.fbx

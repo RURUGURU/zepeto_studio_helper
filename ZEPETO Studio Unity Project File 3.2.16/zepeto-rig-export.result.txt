@@ -1,0 +1,9 @@
+ZEPETO rig export check (serial 2)
+pass=4 fail=0
+----
+PASS rig-export:export-succeeded
+PASS rig-export:fbx-exists
+NOTE rig-export:header :: Kaydara FBX Binary
+PASS rig-export:binary-fbx
+PASS rig-export:animation-type-human
+NOTE rig-export:scene-dirt :: none - the open scene is unchanged and still reads as saved

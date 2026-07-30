@@ -18,7 +18,10 @@
 | 무엇 | 결과 |
 | --- | --- |
 | Blender 애드온 (헤드리스 5.2.0 LTS) | **27 / 27 통과** — `BlenderMotion/headless_check.py` |
-| Unity 자체 테스트 (GUI + `-executeMethod`) | **60 / 60 통과** — 결과 파일 재기록 완료 |
+| Unity 자체 테스트 | **60 / 60 통과** — 결과 파일 재기록 완료 |
+| 리그 export 러너 | **4 / 4 통과** — 바이너리 검증 포함, 씬 오염 없음 |
+| **라이브 왕복 실측** | **통과** — 팔 0.272m / 다리 0.195m, 1.96s→3.96s, 1.5초 반영 |
+| 커스텀 모션 end-to-end | **통과** — 손 이동 0.373m, 씬 완전 복원 |
 | 컴파일 (`csc.exe` + Unity 양쪽) | 에러 0 · 경고 0 |
 | 헬퍼 창 7단계 육안 확인 | 완료 (캡처 6장으로 기록) |
 
@@ -207,9 +210,12 @@ meta에 뼈별 위치 오차 경고가 2.3m~21.5m로 기록돼 있지만, 64개 
 
 | 파일 | 상태 |
 | --- | --- |
-| `ZepetoRig_Wave.fbx` | ✅ **유일하게 정상.** 스킨 메시 있음(Deformer 107 / Skin 1), 55/55 ZEPETO 뼈 이름, `rigImportErrors` 비어 있음 |
-| `Wave_Hello.fbx` | ⚠️ 스킨 메시 **없음**(Deformer 0). generic 뼈 이름. `.meta`가 오염돼 있었음 |
-| `AddonSmokeTest.fbx` | ⚠️ 같음. 초기 부트스트랩 리그의 스모크 테스트 잔재 |
+| `ZepetoRig_Wave.fbx` | ✅ 스킨 메시 있음(Deformer 107 / Skin 1), 55/55 ZEPETO 뼈 이름 |
+| `Wave_Hello.fbx` | ✅ **복구됨.** generic 뼈 20개로 자기 Avatar 생성 (`Wave_HelloAvatar` isHuman=True) |
+| `AddonSmokeTest.fbx` | ✅ 같은 방식으로 복구됨 |
+
+**셋 다 정상입니다.** `.meta`를 지운 뒤 Unity가 재생성했고, 두 generic 파일은 `boneName` 20개(자기 뼈)에
+`avatarSetup: 1`(CreateFromThisModel), `rigImportErrors` 비어 있음 — 오염 시의 55개 ZEPETO 맵이 아닙니다.
 
 ### 오염 원인과 이번 수정
 
@@ -223,10 +229,26 @@ meta에 뼈별 위치 오차 경고가 2.3m~21.5m로 기록돼 있지만, 64개 
 - 이미 오염된 자산 **복구** 경로 추가 — Unity는 거절된 복사에서 `avatarSetup`/`sourceAvatar`를 되돌리면서
   **복사된 뼈 매핑은 남기므로**, `humanDescription.human`을 실제 transform 이름과 대조해 필요 시 비웁니다
 
-> **Mixamo 임포트는 지원 불가가 아닙니다.** 오히려 generic 뼈 이름(Hips/Spine/LeftArm)이 Unity 오토매퍼의
-> 모국어입니다. `Wave_Hello.anim`이 증거입니다 — ZEPETO 뼈 이름과 0/55 겹침인데도 유효한 130커브 Humanoid
-> 클립입니다. 자동 매핑이 **안 되는** 쪽이 ZEPETO 이름이고(`upperReg_R`에 leg 토큰이 없음), 그래서 리그에
-> 손으로 만든 humanDescription이 필요합니다.
+### 실측으로 확인한 재오염 방지
+
+실제 1번 버튼 코드 경로(`TryConfigureMotionFbx`)를 `Wave_Hello.fbx`에 돌린 결과:
+
+```
+Avatar는 이 FBX에서 생성 - 이 FBX의 뼈 이름이 ZEPETO 리그와 달라
+  Avatar를 복사하지 않았습니다 (55개 중 55개 없음, 예: hips)
+avatarSetup = CreateFromThisModel   sourceAvatar = NULL
+avatar 'Wave_HelloAvatar' isValid=True isHuman=True
+extract -> Wave_Hello.anim (1.96초) humanoid=True
+Play: 오른손 이동 0.373m → the avatar IS performing the custom motion
+```
+
+라이브 프리뷰가 arm할 때 폴더 내 FBX **전부**를 Humanoid로 재설정하는데도(그게 진행바가 있는 이유),
+그 뒤에도 두 파일의 `boneName`은 20개로 유지됐습니다 — 재오염되지 않습니다.
+
+> **Mixamo 임포트는 지원 불가가 아닙니다 — 실측으로 확정됐습니다.** generic 뼈 이름(Hips/Spine/LeftArm)이
+> Unity 오토매퍼의 모국어입니다. ZEPETO 뼈 이름과 0/55 겹침인 20뼈 FBX가 들어가서 유효한 Humanoid
+> 클립이 나왔고 아바타 위에서 재생됐습니다. 자동 매핑이 **안 되는** 쪽이 ZEPETO 이름이고
+> (`upperReg_R`에 leg 토큰이 없음), 그래서 리그에 손으로 만든 humanDescription이 필요합니다.
 
 `Capoeira.fbx`(루트, Assets 밖)는 진짜 Mixamo 파일(Maya 2020, `mixamorig:*` 65뼈, 완전 스킨)입니다.
 Mixamo 경로 테스트용 픽스처로 쓸 만하지만 `Assets/CustomMotions`(폴링됨)에는 넣지 마세요.
@@ -288,30 +310,47 @@ Mixamo 경로 테스트용 픽스처로 쓸 만하지만 `Assets/CustomMotions`(
       Stop·Emergency Stop이 비활성이어도 항상 렌더링되고 사유가 붙음
 - [x] **`.meta` 재생성 확인.** Unity가 `Wave_Hello.fbx` / `AddonSmokeTest.fbx`의 `.meta`를 다시 만들었고
       `rigImportErrors`가 **비어 있고** `boneName` 0개 — 오염이 사라졌습니다(오염 시 55개)
-- [ ] `zepeto-rig-export.trigger` 실행 (assertion 4개 신규 — 아직 안 돌렸습니다)
-- [ ] 라운드트립 1회 완주 (3 → 4 → 5). Blender 절반과 Unity 쪽 준비는 확인됐고, 실제 FBX 수신·핫리로드가
-      남았습니다
-- [ ] 1번 버튼(`FBX를 ZEPETO용으로 설정`)을 재생성된 두 FBX에 눌러 재오염되지 않는지 확인 —
-      가드와 복구 코드는 넣었지만 실행으로 확인하지 못했습니다
+- [x] **리그 export 러너 4/4.** `Kaydara FBX Binary` 확인, `animationType: Human`, 106 transforms,
+      스킨 메시 1, `NOTE scene-dirt :: none` (러너가 씬을 더럽히지 않음)
+- [x] **라운드트립 3 → 4 → 5 완주 — 실측.** 아래 별도 항목 참고
+- [x] **1번 버튼 재오염 없음 — 실측.** 아래 별도 항목 참고
 
 ### 2. 캡처 2장 — 사람의 결정이 필요합니다
 
 [위](#️-배포-전-차단-항목--캡처-2장-남음) 참고. 6장은 재촬영으로 끝났고, `workflow-overview.png`(도해
 재작성)와 `play-preview.png`(아바타 노출 여부)만 남았습니다. **발행 전 필수.**
 
-### 3. 라이브 왕복 픽스처 복원
+### 3. ~~라이브 왕복 픽스처 복원~~ → 해결, 그리고 실측했습니다
 
-`zepeto-live-a.fbx`(48프레임, 오른팔만) / `zepeto-live-b.fbx`(96프레임, 왼다리만)가 **존재하지 않아**
-`ZepetoLiveReloadRun`이 즉시 중단됩니다. 두 픽스처가 서로 **다른 뼈**를 움직여야 하는 이유는
-"핫리로드 실패"와 "아무것도 안 움직임"을 구별하기 위한 것입니다. 사양은 러너 파일 상단 주석에 적어뒀습니다.
+픽스처가 없어 재현 불가였던 항목입니다. 이제 **생성 스크립트**(`BlenderMotion/make_live_fixtures.py`)로
+만들고 실제로 측정했습니다.
 
-> 이전 문서가 실측으로 인용한 `arm=0.308m / leg=0.249m / 1.4초 반영`은 **산문에만 존재합니다.**
-> 결과 파일이 없고 픽스처가 없어 현재 재현 불가입니다. (소수점 자릿수와 48/96프레임이 코드 포맷과
-> 정확히 일치해 실제 실행의 흔적으로는 일관됩니다.)
-> 같은 이유로 `F_CUBE_IN_FBX` / `F_BODY_IN_FBX` 값도 출처가 없었습니다 — 그 토큰의 유일한 등장 위치가
-> 이전 STATUS.md 자신이었습니다. **헤드리스 Blender 스크립트는 이제 존재합니다**
-> (`BlenderMotion/headless_check.py`, 27개 검사). 큐브 제외 여부를 여기에 검사로 추가하면 그 주장도
-> 재현 가능해집니다.
+```
+clip length: 1.96s -> 3.96s                       PASS clip-swapped
+phase A (픽스처 A, 팔 모션):  arm=0.272m  leg=0.000m
+phase B (픽스처 B, 다리 모션): arm=0.000m  leg=0.195m   PASS avatar-animating
+reload fired after 1.5s, count = 2
+animator is playing: LiveFromBlender (3.96s)
+```
+
+2×2 진리표가 성립합니다 — A에서는 팔만, B에서는 다리만 움직였으므로 **"핫리로드가 안 일어났다"와
+"아무것도 안 움직인다"가 구별됩니다.** 스왑 후 재생 중인 Animator가 다리를 흔들었다는 것은
+**리바인드 없이 반영됐다**는 뜻입니다.
+
+픽스처(3.4MB)는 재생성 가능하므로 `.gitignore`로 제외하고 생성 스크립트만 추적합니다:
+
+```
+set ZEPETO_FIXTURE=a        (그리고 b 로 한 번 더)
+blender.exe --background --factory-startup --python BlenderMotion/make_live_fixtures.py
+```
+
+> 이전 문서가 인용한 `arm=0.308m / leg=0.249m / 1.4초`는 산문에만 있었습니다. 지금 값이 다른 것은
+> 회전 각도가 다르기 때문이고(제 픽스처는 0.95 / 0.70 rad), **구조와 클립 길이(1.96s→3.96s), 반영
+> 지연(1.4초 vs 1.5초)은 일치**합니다. 즉 옛 수치도 실제 실행의 흔적이었을 가능성이 높습니다.
+> 이제 그 자리에 재현 가능한 측정이 있습니다.
+>
+> `F_CUBE_IN_FBX` / `F_BODY_IN_FBX`는 여전히 출처가 없습니다. 다만 헤드리스 스크립트가 생겼으니
+> (`BlenderMotion/headless_check.py`, 27개 검사) 큐브 제외 검사를 추가하면 그 주장도 재현 가능해집니다.
 
 ### 4. 커밋
 
@@ -401,6 +440,7 @@ csc: C:\Program Files\Unity\Hub\Editor\2020.3.9f1\Editor\Data\Tools\Roslyn\csc.e
 | Blender 작업 파일 | `Desktop/zepeto/BlenderMotion/zepeto_motion.blend` |
 | 애드온 원본 | `Desktop/zepeto/BlenderMotion/zepeto_motion_helper.py` |
 | 애드온 헤드리스 검사 | `Desktop/zepeto/BlenderMotion/headless_check.py` (27개, Unity 불필요) |
+| 라이브 픽스처 생성기 | `Desktop/zepeto/BlenderMotion/make_live_fixtures.py` (픽스처는 git 제외) |
 | Blender 리그 | `.../Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx` |
 | Blender→Unity 드롭존 | `.../Assets/CustomMotions` |
 | 라이브 확인 클립 | `.../Assets/ZepetoHelper/Motions/LiveFromBlender.anim` |
@@ -427,9 +467,14 @@ csc: C:\Program Files\Unity\Hub\Editor\2020.3.9f1\Editor\Data\Tools\Roslyn\csc.e
 | 트리거 | 하는 일 |
 | --- | --- |
 | `zepeto-helper-selftest.trigger` | 자체 테스트 60개 → `.result.txt` (거절 시 `.skipped.txt`) |
-| `zepeto-livereload.trigger` | Play 왕복 실측 (**픽스처 2개 필요 — 현재 없음**) |
+| `zepeto-livereload.trigger` | Play 왕복 실측 (**픽스처 2개 필요** — 위 생성기로 먼저 만드세요) |
 | `zepeto-rig-export.trigger` | 리그 내보내기 + assertion 4개 |
-| `zepeto-custom-motion.trigger` | 커스텀 모션 end-to-end |
+| `zepeto-custom-motion.trigger` | 커스텀 모션 end-to-end. **파일 내용에 FBX 경로를 적습니다** (예: `Assets/CustomMotions/Wave_Hello.fbx`) |
+
+> **`-quit`을 쓰지 마세요.** 트리거는 `[InitializeOnLoadMethod]` → `delayCall`로 실행되는데 `-quit`은
+> 그 전에 Unity를 닫아버려 트리거가 소비되지 않습니다. 그냥 띄워두고 결과 파일이 생길 때까지 기다린 뒤
+> 닫으면 됩니다. (자체 테스트만은 `[MenuItem]`이 있어 `-executeMethod ...ZepetoHelperSelfTest.Run`으로
+> 바로 호출할 수 있고, 그때는 `-quit`을 같이 써도 됩니다.)
 
 ---
 

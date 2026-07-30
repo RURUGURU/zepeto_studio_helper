@@ -1,0 +1,19 @@
+ZEPETO live reload round trip
+placed fixture A at Assets/CustomMotions/LiveRoundTrip.fbx
+configure fixture A -> True : LiveRoundTrip.fbx 설정 완료 — Animation Type = Humanoid, Avatar는 이 FBX에서 생성 (모션 자체의 뼈대를 기준으로 읽습니다), Root Transform 고정 (1개 클립)
+RequestLivePreviewPlay invoked
+runInBackground = True
+--- Play active ---
+armed = True
+before swap: live clip length = 1.96s, reload count = 1
+--- swapped fixture B in (96 frames) ---
+reload fired after 1.5s, count = 2
+after swap: live clip length = 3.96s
+--- results ---
+clip length: 1.96s -> 3.96s
+PASS clip-swapped: the live clip really became the new motion
+phase A (fixture A, arm motion): arm=0.272m leg=0.000m
+phase B (fixture B, leg motion): arm=0.000m leg=0.195m
+PASS avatar-animating: after the swap the RUNNING avatar swung the LEG, which only fixture B does - the hot reload reached the Animator with no rebind
+animator is playing: LiveFromBlender (3.96s)
+--- finished: done ---

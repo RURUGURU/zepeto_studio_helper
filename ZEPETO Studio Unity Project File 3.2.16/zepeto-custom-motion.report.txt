@@ -1,0 +1,78 @@
+custom motion end-to-end
+fbx = Assets/CustomMotions/Wave_Hello.fbx
+----
+step 1 configure -> True : Wave_Hello.fbx 설정 완료 — Avatar는 이 FBX에서 생성 - 이 FBX의 뼈 이름이 ZEPETO 리그와 달라 Avatar를 복사하지 않았습니다 (55개 중 55개 없음, 예: hips), Root Transform 고정 (1개 클립)
+animationType = Human
+avatarSetup = CreateFromThisModel  sourceAvatar = NULL
+sub-assets in fbx: 48
+  GameObject 'Wave_Hello' hideFlags=NotEditable
+  GameObject 'Hips' hideFlags=NotEditable
+  Avatar 'Wave_HelloAvatar' hideFlags=NotEditable
+    avatar isValid=True isHuman=True
+  AnimationClip '__preview__Scene' hideFlags=HideInHierarchy, NotEditable
+  Transform 'RightUpLeg' hideFlags=HideInHierarchy, NotEditable
+  Transform 'LeftToeBase' hideFlags=HideInHierarchy, NotEditable
+  Transform 'Wave_Hello' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'Head' hideFlags=HideInHierarchy, NotEditable
+  Transform 'LeftLeg' hideFlags=HideInHierarchy, NotEditable
+  Transform 'RightShoulder' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'RightArm' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'LeftLeg' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'LeftUpLeg' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'Chest' hideFlags=HideInHierarchy, NotEditable
+  Transform 'LeftUpLeg' hideFlags=HideInHierarchy, NotEditable
+  Transform 'Head' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'RightLeg' hideFlags=HideInHierarchy, NotEditable
+  Transform 'RightArm' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'RightUpLeg' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'RightShoulder' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'LeftToeBase' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'LeftArm' hideFlags=HideInHierarchy, NotEditable
+  Transform 'LeftFoot' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'RightFoot' hideFlags=HideInHierarchy, NotEditable
+  Transform 'Spine' hideFlags=HideInHierarchy, NotEditable
+  Transform 'Hips' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'RightForeArm' hideFlags=HideInHierarchy, NotEditable
+  Transform 'LeftForeArm' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'RightToeBase' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'LeftHand' hideFlags=HideInHierarchy, NotEditable
+  Transform 'RightForeArm' hideFlags=HideInHierarchy, NotEditable
+  Transform 'LeftShoulder' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'LeftFoot' hideFlags=HideInHierarchy, NotEditable
+  Transform 'LeftHand' hideFlags=HideInHierarchy, NotEditable
+  Transform 'RightFoot' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'LeftShoulder' hideFlags=HideInHierarchy, NotEditable
+  Transform 'LeftArm' hideFlags=HideInHierarchy, NotEditable
+  Transform 'RightLeg' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'LeftForeArm' hideFlags=HideInHierarchy, NotEditable
+  Transform 'RightHand' hideFlags=HideInHierarchy, NotEditable
+  Animator 'Wave_Hello' hideFlags=HideInHierarchy, NotEditable
+  Transform 'Chest' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'Spine' hideFlags=HideInHierarchy, NotEditable
+  Transform 'Neck' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'Neck' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'RightHand' hideFlags=HideInHierarchy, NotEditable
+  Transform 'RightToeBase' hideFlags=HideInHierarchy, NotEditable
+  AnimationClip 'Scene' hideFlags=NotEditable
+defaultClipAnimations: 1
+clipAnimations: 1
+importAnimation: True
+step 2 extract -> True : 내 모션으로 추가했습니다: Assets/ZepetoHelper/Motions/Wave_Hello 1.anim (1.96초). 2번 목록에서 바로 고를 수 있습니다.
+clip = Wave_Hello length=1.96s humanoid=True
+snapshot animationClipProperty = ZepetoRig_Wave @ Assets/ZepetoHelper/Motions/ZepetoRig_Wave.anim
+snapshot animatorControllerProperty = PlaygroundAnimatorController_local @ Assets/ZepetoHelper/Controllers/PlaygroundAnimatorController_local.overrideController
+local controller -> True : AnimatorController is already project-local: Assets/ZepetoHelper/Controllers/PlaygroundAnimatorController_local.overrideController
+snapshot override table: 1 slot(s) on PlaygroundAnimatorController_local
+step 3 assign -> True
+playback slot = Wave_Hello
+--- entering Play ---
+--- Play active ---
+right hand height relative to hips: min=0.260 max=0.633 travel=0.373m
+RESULT: the avatar IS performing the custom motion
+playing: Wave_Hello (1.96s)
+--- finished: done (serial 21) ---
+  restored override table: 1 slot(s) on PlaygroundAnimatorController_local
+  restored animationClipProperty = ZepetoRig_Wave
+  restored animatorControllerProperty = PlaygroundAnimatorController_local
+  work scene saved back to its pre-run contents
+--- restored the work scene to its pre-run state ---

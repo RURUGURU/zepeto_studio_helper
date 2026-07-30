@@ -1,0 +1,22 @@
+ZEPETO rig export (serial 2)
+----
+FBX Exporter installed: True
+base model found: True
+  skinned meshes: 1  animator: True  avatar: ZEPETO_BASE isHuman=True
+export -> True
+  message: ZEPETO 리그를 내보냈습니다: Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx / Avatar: ZepetoBaseModelAvatar (isHuman=True)
+fbx exists: True  size=1400KB
+animationType: Human
+  avatar 'ZepetoBaseModelAvatar' isValid=True isHuman=True
+  meshes in fbx: 1  avatars: 1
+  transforms (bones+nodes): 106
+  skinned meshes: 1
+---- results ----
+pass=4 fail=0
+PASS rig-export:export-succeeded
+PASS rig-export:fbx-exists
+NOTE rig-export:header :: Kaydara FBX Binary
+PASS rig-export:binary-fbx
+PASS rig-export:animation-type-human
+NOTE rig-export:scene-dirt :: none - the open scene is unchanged and still reads as saved
+--- done ---
