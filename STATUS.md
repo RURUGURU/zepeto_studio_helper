@@ -13,8 +13,20 @@
 **커밋 지점이 생겼습니다.** 루트에도 git 저장소를 만들어, 이전에 어떤 저장소에도 없던
 애드온·`.blend`·테스트·씬·리그 meta가 이제 추적됩니다.
 
-> **⚠️ 이 회차의 검증은 전부 정적입니다.** Unity와 Blender를 실행하지 않았습니다
-> (`csc.exe` 사전 컴파일과 파일 바이트 분석만). 화면 확인과 테스트 재실행이 남아 있습니다 — [남은 일](#남은-일) 참고.
+**Blender 쪽은 실제로 실행해서 검증했습니다** — 헤드리스 5.2.0 LTS에서 **27 / 27 통과**
+(`BlenderMotion/headless_check.py`). **Unity 쪽은 라이선스가 활성화되지 않아 아무것도 실행할 수 없습니다.**
+
+> ### ⛔ Unity가 이 머신에서 실행되지 않습니다
+>
+> ```
+> BatchMode: Unity has not been activated with a valid License
+> Failed to activate/update license Missing or bad username or password
+> ```
+>
+> ULF 라이선스 파일도, `ProgramData/Unity`도 없습니다. **Unity Hub에서 계정 로그인 후 라이선스를
+> 활성화해야 합니다** (Personal 무료 라이선스로 충분). 그 전까지 막혀 있는 것:
+> 화면 확인 · 캡처 재촬영 · 트리거 테스트 4종 · `.zepeto` export 확인 · 라이브 왕복 실측.
+> 즉 [남은 일](#남은-일)의 1·2·3번이 전부 이 하나에 걸려 있습니다.
 
 ---
 
@@ -248,21 +260,34 @@ Mixamo 경로 테스트용 픽스처로 쓸 만하지만 `Assets/CustomMotions`(
 
 ## 남은 일
 
-### 1. 화면·실행 검증 (가장 급함)
+### 0. Unity 라이선스 활성화 — 이것 하나가 아래 셋을 다 막고 있습니다
 
-**이번 회차는 Unity를 한 번도 띄우지 않았습니다.** 컴파일이 깨끗한 것은 정확한 것과 다릅니다 —
-실제로 이번에 잡은 치명 2건이 둘 다 경고 없이 통과하던 것들입니다.
+Unity Hub → 로그인 → Personal 라이선스 활성화. 그 뒤에 1·2·3번이 전부 가능해집니다.
 
+### 1. 화면·실행 검증 (Unity 라이선스 필요)
+
+컴파일이 깨끗한 것은 정확한 것과 다릅니다 — 이번에 잡은 치명 2건이 둘 다 경고 없이 통과하던 것입니다.
+
+- [x] ~~Blender 애드온 1.4.0 검증~~ → **헤드리스 27/27 통과.** 경로 런타임 유도(저장 안 된 `.blend`
+      기준), env 오버라이드, 모호성 거부, `clear_pose`가 표시된 뼈만 되돌리는지, export가 바이너리인지,
+      `.part` 잔여 없음까지 실측. `54 + 49 = 103` 산수도 실제 리그에서 확인
 - [ ] 헬퍼 창 7단계 육안 확인 (헤더 `현재 작업` 문구, 카드 번호, Stop 버튼)
 - [ ] `zepeto-helper-selftest.trigger`로 자체 테스트 재실행 → 결과 파일 재기록
       (검사 60개·이름은 유지했으나 NOTE 5줄이 새로 추가될 예정이라 **기록이 내용상 낡았습니다**)
 - [ ] `zepeto-rig-export.trigger` 재실행 (이번에 assertion 4개가 새로 생겼습니다)
-- [ ] Blender에서 애드온 1.4.0 로드 → 경로 자동 유도, `경로 자동 찾기`, `clear_pose` 확인
-- [ ] 라운드트립 1회 완주 (3 → 4 → 5)
+- [ ] 라운드트립 1회 완주 (3 → 4 → 5) — Blender 절반은 이미 검증됐으니 Unity 쪽 수신만 남았습니다
+- [ ] 임포트 재생성 확인: `Wave_Hello.fbx` / `AddonSmokeTest.fbx`의 `.meta`를 지웠으므로 Unity가 다시
+      만듭니다. generic 뼈 이름이 자동 매핑되는지, 그리고 1번 버튼이 다시 오염시키지 않는지 확인
 
-### 2. 캡처 4장 재촬영 또는 마스킹
+### 2. 캡처 4장 재촬영 또는 마스킹 (Unity 라이선스 필요)
 
 [위](#️-배포-전-차단-항목--개인-아이디가-캡처에-남아-있습니다) 참고. **발행 전 필수.**
+
+라이선스가 풀리면 아이디를 노출하지 않고 다시 찍을 수 있습니다: 씬 `LOADER`의 `zepetoId`를 placeholder로
+바꿔놓고 캡처한 뒤 되돌리면 됩니다. `helper-window` · `step-1-avatar-outfit` · `workflow-overview`는
+그렇게 해결됩니다. **`play-preview.png`는 성질이 다릅니다** — 실제 아바타가 로드된 화면이 그 이미지의
+존재 이유이므로, placeholder 아이디로는 아바타가 아예 안 나옵니다. 버릴지, 별도 계정으로 찍을지는
+결정이 필요합니다.
 
 ### 3. 라이브 왕복 픽스처 복원
 
@@ -273,8 +298,10 @@ Mixamo 경로 테스트용 픽스처로 쓸 만하지만 `Assets/CustomMotions`(
 > 이전 문서가 실측으로 인용한 `arm=0.308m / leg=0.249m / 1.4초 반영`은 **산문에만 존재합니다.**
 > 결과 파일이 없고 픽스처가 없어 현재 재현 불가입니다. (소수점 자릿수와 48/96프레임이 코드 포맷과
 > 정확히 일치해 실제 실행의 흔적으로는 일관됩니다.)
-> 같은 이유로 `F_CUBE_IN_FBX` / `F_BODY_IN_FBX` 값도 출처가 없습니다 — 그 토큰의 유일한 등장 위치가
-> 이전 STATUS.md 자신이었고, 헤드리스 Blender 테스트 스크립트가 존재하지 않습니다.
+> 같은 이유로 `F_CUBE_IN_FBX` / `F_BODY_IN_FBX` 값도 출처가 없었습니다 — 그 토큰의 유일한 등장 위치가
+> 이전 STATUS.md 자신이었습니다. **헤드리스 Blender 스크립트는 이제 존재합니다**
+> (`BlenderMotion/headless_check.py`, 27개 검사). 큐브 제외 여부를 여기에 검사로 추가하면 그 주장도
+> 재현 가능해집니다.
 
 ### 4. 커밋
 
@@ -363,6 +390,7 @@ csc: C:\Program Files\Unity\Hub\Editor\2020.3.9f1\Editor\Data\Tools\Roslyn\csc.e
 | 테스트 러너 | `.../Assets/ZepetoHelperTests/Editor` (+ 공용 `ZepetoSelfTestSceneGuard.cs`) |
 | Blender 작업 파일 | `Desktop/zepeto/BlenderMotion/zepeto_motion.blend` |
 | 애드온 원본 | `Desktop/zepeto/BlenderMotion/zepeto_motion_helper.py` |
+| 애드온 헤드리스 검사 | `Desktop/zepeto/BlenderMotion/headless_check.py` (27개, Unity 불필요) |
 | Blender 리그 | `.../Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx` |
 | Blender→Unity 드롭존 | `.../Assets/CustomMotions` |
 | 라이브 확인 클립 | `.../Assets/ZepetoHelper/Motions/LiveFromBlender.anim` |
@@ -373,7 +401,18 @@ csc: C:\Program Files\Unity\Hub\Editor\2020.3.9f1\Editor\Data\Tools\Roslyn\csc.e
 
 ### 테스트 실행 방법
 
-프로젝트 루트에 트리거 파일을 두고 Unity를 활성화하면 재컴파일 시 실행됩니다.
+**Blender 쪽 — 라이선스 불필요, 지금 바로 됩니다:**
+
+```
+"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" ^
+    --background --factory-startup --python BlenderMotion/headless_check.py
+```
+
+검사 27개. 결과는 콘솔과 `%TEMP%\zepeto_headless_check\result.txt`. FBX는 temp에만 쓰므로
+`Assets/`를 오염시키지 않습니다(그 폴더는 0.4초마다 폴링됩니다).
+
+**Unity 쪽 — 라이선스 활성화 후.** 프로젝트 루트에 트리거 파일을 두고 Unity를 활성화하면 재컴파일 시
+실행됩니다.
 
 | 트리거 | 하는 일 |
 | --- | --- |
