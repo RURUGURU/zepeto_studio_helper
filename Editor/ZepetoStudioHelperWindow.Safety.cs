@@ -99,7 +99,7 @@ namespace Easy.ZepetoHelper.Editor
                 }
             }
 
-            if (previewStage == 3 && !PrepareClipAdjustPreviewBeforePlay())
+            if (previewStage == PreviewStageClipAdjust && !PrepareClipAdjustPreviewBeforePlay())
             {
                 return;
             }
@@ -153,9 +153,11 @@ namespace Easy.ZepetoHelper.Editor
             }
 
             LiveReloadArmed = true;
-            // Live preview lives inside step 2, so step 2 owns this Play session. Leaving it at -1 meant no
-            // stage owned it, which used to grey out every Stop button in the window.
-            activePreviewStage = 2;
+            // Live preview is card 5 (DrawStep5CheckOnMyCharacter, Flow.cs), which owns no stage of its own: the
+            // internal stage machine has four stages for seven cards, and everything about trying a motion on the
+            // avatar - card 2's preview and this - sits in PreviewStageMotion. So that stage owns this Play
+            // session. Leaving it at -1 meant no stage owned it, which used to grey out every Stop in the window.
+            activePreviewStage = PreviewStageMotion;
             SessionState.SetInt(ActivePreviewStageSessionKey, activePreviewStage);
             EditorApplication.isPlaying = true;
             statusMessage = "라이브 확인을 시작합니다 (" + prepareMessage
@@ -609,11 +611,6 @@ namespace Easy.ZepetoHelper.Editor
             public bool HasWarning
             {
                 get { return Level != SafetyLevel.Ok; }
-            }
-
-            public bool IsRecoverable
-            {
-                get { return Level == SafetyLevel.Recoverable; }
             }
 
             public static SafetySnapshot Unknown(string message)

@@ -8,7 +8,12 @@ using UnityEngine;
 namespace Easy.ZepetoHelper.Editor
 {
     /// <summary>
-    /// ZEPETO account ids: validation rules, the saved id list and applying an id to LOADER.
+    /// ZEPETO account ids: validation rules and applying an id to LOADER.
+    ///
+    /// There is no saved-id list any more. 0.7.0 dropped it along with its dropdown and add/delete buttons
+    /// (DrawZepetoIdRow, Steps.cs) - three extra controls guarding a value that is short, rarely changed and
+    /// already on screen. The open scene's LOADER.zepetoId is the only place an id lives now, and
+    /// LoadZepetoIdSettings deletes the EditorPrefs keys the old list wrote so none of them can come back.
     /// </summary>
     public sealed partial class ZepetoStudioHelperWindow
     {

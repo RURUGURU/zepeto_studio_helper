@@ -12,3 +12,8 @@ UserSettings/
 *.csproj
 *.sln
 *.user
+
+# 문서 폴더는 일부러 다르게 취급한다.
+# docs/ (ENVIRONMENT.md + images)는 README가 직접 링크하고 이미지도 거기서 불러오므로 배포본에 포함한다.
+# Documentation~/ (QA_AUDIT.md)는 내부 QA·감사 기록이라 저장소에만 두고 tarball에는 넣지 않는다.
+Documentation~/

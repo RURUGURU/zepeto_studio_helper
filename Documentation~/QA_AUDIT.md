@@ -2,11 +2,41 @@
 
 ## 범위
 
-패키지: `com.easy.zepeto-helper@0.3.0`
+패키지: `com.easy.zepeto-helper@0.9.1`
 
 핵심 파일: `Editor/ZepetoStudioHelperWindow.cs`
 
 목표: 공식 ZEPETO Studio SDK 프로젝트에서, 계정이 여러 개인 사람도 그대로 쓸 수 있는 Unity Editor helper 패키지로 정리한다.
+
+## 배포 전 차단 항목 — 미해결
+
+> **`docs/images/`의 캡처에 제작자의 개인 정보가 픽셀로 남아 있다. 아직 고치지 않았다.**
+
+0.9.0에서 한 것은 **코드와 markdown 텍스트의 개인 아이디 제거뿐이다. 캡처 이미지는 재촬영하지도,
+가리지도 않았다.** `.npmignore`는 문서 폴더 중 `Documentation~/`만 빼고 **`docs/`는 일부러 포함**하므로
+(README가 그 이미지를 직접 불러오기 때문), `npm pack` 산출물과 GitHub에 렌더링된 README 양쪽에 아래가
+그대로 실려 나간다.
+
+| 파일 | 화면에 보이는 것 |
+| --- | --- |
+| `docs/images/helper-window.png` | `현재 아이디` 줄과 `아이디` 입력칸에 제작자의 실제 ZEPETO 아이디 |
+| `docs/images/step-1-avatar-outfit.png` | 같은 두 곳에 같은 아이디 |
+| `docs/images/workflow-overview.png` | 위 `step-1` 캡처를 썸네일로 품고 있어 아이디가 작게 그대로 보이고, `play-preview` 캡처도 함께 들어 있다 |
+| `docs/images/play-preview.png` | 제작자 본인 아바타의 얼굴·머리·의상 |
+
+**tarball을 발행하거나 저장소를 공개하기 전에 위 4개를 다시 찍거나 해당 영역을 가려야 한다.**
+나머지 3장(`step-2-motion-select.png`, `step-3-clip-adjust.png`, `step-4-save-export.png`)은 1번 카드가
+접힌 상태라 아이디가 보이지 않는다.
+
+### 자체 테스트가 이것을 잡을 수 없는 이유 (구조적)
+
+`no-personal-id-in-source`가 읽는 파일은 `CollectShippedPackageFiles`가 모은 것뿐이고, 그 함수가 모으는
+것은 **`Editor/` 아래의 `.cs`와, 패키지 root · `docs/` · `Documentation~/`의 `.md`뿐이다.** `.png`는
+수집 대상이 아니며, 검사 자체가 `File.ReadAllLines`로 텍스트 줄을 훑는 방식이라 이미지에 적용될 수도 없다.
+
+따라서 **이 검사가 초록이어도 이미지에 대해서는 아무것도 보장하지 않는다.** 지금이 정확히
+`no_personal_account_data_shipped` 불변식이 깨진 채로 초록이 보고되는 상태이고, 그것이 이 항목의 핵심
+결함이다. 캡처를 고치기 전까지 이 검사 결과를 "개인 정보가 안 나간다"는 근거로 쓰면 안 된다.
 
 ## 검증한 환경
 
@@ -19,7 +49,7 @@
 | zepeto.character | `3.1.32` |
 | helper 설치 형태 | embedded (`Packages/com.easy.zepeto-helper`) |
 | 작업 scene | `Assets/Playground.unity` (템플릿 제공) |
-| 의상 prefab | `Assets/Contents/TRANSPARENT_1/TRANSPARENT_1.prefab` (템플릿 제공) |
+| 의상 prefab | 예시로 `Assets/Contents/TRANSPARENT_1/TRANSPARENT_1.prefab`를 사용 (템플릿이 제공하는 샘플 의상 폴더 중 하나. 헬퍼가 요구하는 고정 경로가 아니다) |
 
 ### Unity 버전에 대한 참고
 
@@ -57,7 +87,16 @@ reflection으로 실제 SDK 어셈블리를 조사한 결과다. 코드가 의�
   - 현재 구현은 stale reference를 감지하면 `LOADER`와 serialized field를 다시 찾는다.
   - 0.3.0에서 아이디 적용, clip 연결, controller 교체, 검증 경로의 guard 누락을 보완했다.
 - Major: 패키지에 개인 ZEPETO 아이디가 기본값으로 들어 있었음.
-  - 0.3.0에서 제거했고, 자체 테스트가 소스에 개인 아이디가 다시 들어오는지 검사한다.
+  - 0.3.0에서 코드의 기본값을 제거했다.
+  - 재유입 검사 `no-personal-id-in-source`의 **현재 범위**: `CollectShippedPackageFiles`가 모으는
+    `Editor/` 아래 `.cs` 20개 전부와, 패키지 root · `docs/` · `Documentation~/`의 모든 `.md`를 읽고,
+    `PersonalTokens`의 토큰이 한 줄이라도 있으면 실패한다. 실패 메시지에 `파일:줄:토큰`이 찍힌다.
+    수집 결과가 0개면 vacuous pass가 되지 않도록 `Fail`을 낸다.
+    (범위를 넓히기 전에는 `Editor/ZepetoStudioHelperWindow.cs` **한 파일**만 읽었다. 그래서 아이디가 이
+    문서의 `### 계정별 아바타 로딩` 표와 README 예시 문장에 남아 tarball에 실려 나가는데도 통과했다.)
+  - **범위를 넓힌 뒤에도 `.cs`와 `.md`만 본다.** `.png`는 수집되지 않고, 텍스트 스캔이라 적용될 수도 없다.
+  - 0.9.0에서 실제로 한 일은 **문서 텍스트의 아이디 2개를 placeholder로 교체한 것까지**다.
+    캡처 이미지 안의 아이디는 **그대로 남아 있다.** 위 `배포 전 차단 항목` 참고.
 - Major: 배포 패키지에 개발용 Unity MCP bridge 코드가 남아 에디터 로드마다 실행되고 있었음.
   - 0.3.0에서 전부 제거했다.
 - Major: `Assets/Contents`나 SDK animation 폴더가 없을 때 `AssetDatabase.FindAssets`가 매 repaint마다
@@ -73,42 +112,56 @@ reflection으로 실제 SDK 어셈블리를 조사한 결과다. 코드가 의�
 다음 script reload 때 실행되며, 결과는 `zepeto-helper-selftest.result.txt`에 남는다.
 `Window > Easy > Run ZEPETO Helper Self Test` 메뉴로도 실행할 수 있다.
 
-### 최근 결과: 51 pass / 0 fail (공식 템플릿 프로젝트에서 실행)
+### 최근 결과: 60 pass / 0 fail (공식 템플릿 프로젝트에서 실행)
+
+`zepeto-helper-selftest.result.txt`의 `pass=60 fail=0`. 이 표는 그 파일의 검사 이름을 그룹으로 묶은 것이다.
+`NOTE` 줄은 pass/fail이 아니라 실측값 기록이라 개수에 들어가지 않는다.
 
 | 그룹 | 검사 내용 |
 | --- | --- |
 | **실제 템플릿** | `Assets/Playground.unity`의 진짜 `LOADER`에 세 필드 모두 바인딩, 계정 2개 전환, 의상 prefab 발견, SDK 동작 10개 발견 |
-| 개인 아이디 제거 | `BuiltInDefaultZepetoId` 상수 부재, 배포 소스에 개인 아이디 문자열 부재 |
+| 개인 아이디 제거 | `BuiltInDefaultZepetoId` 상수 부재, 배포되는 `.cs`·`.md` 전체에 개인 아이디 문자열 부재. **`.png`는 보지 않는다** — 위 `배포 전 차단 항목` 참고 |
 | MCP 코드 제거 | `GetUnityMcpBridgePort` 외 4개 멤버 부재 |
 | 버전 비교 | `3.2.16 > 3.2.12`, `3.2.9 < 3.2.12`, 동일 버전, prerelease suffix 처리 |
 | SDK 탐지 | 설치 감지, 최소 버전 충족, 설치 형태(embedded/registry) 보고 |
 | 아이디 정규화 | 앞의 `@` 제거, 앞뒤 공백 제거, 중간 공백 제거 |
 | 아이디 검증 | 정상 아이디 허용, 빈 값·기호·URL 거부 |
-| 여러 계정 | 계정 A 적용 → 계정 B 적용 → `@` 붙은 형태 → 계정 A 복귀, 목록에 둘 다 저장, 재시작 후 유지 |
-| 잘못된 아이디 | scene 값을 덮어쓰지 않고 거부, 목록에도 저장하지 않음 |
+| 여러 계정 | 계정 A 적용 → 계정 B 적용 → `@` 붙은 형태 → 계정 A 복귀 (`apply-id:*`) |
+| 잘못된 아이디 | scene 값을 덮어쓰지 않고 거부 (`apply-id:reject-invalid`) |
+| 저장 목록 제거 | 0.7.0에서 뺀 저장된 아이디 기능이 **다시 들어오지 않았는지** (`saved-ids:removed`), 창이 씬 LOADER에서 아이디를 읽어오는지 (`id-from-scene`) |
 | scene 탐색 | `LOADER`가 든 scene을 이름과 무관하게 발견, 하드코딩 경로 미사용 |
 | 필드 바인딩 | 필드가 자식 오브젝트에 있을 때, 다른 root 오브젝트에 있을 때 모두 바인딩 |
 | 재생 슬롯 | local override controller 생성, 슬롯이 선택한 동작으로 갱신, 정지 포즈가 남지 않음 |
+| 동작 카탈로그 | 목록이 채워짐(13개), SDK 클립이 Humanoid, 정지 포즈 감지, 기본 선택이 포즈가 아님, 포즈 적용 차단 (`catalog:*`) |
+| 라이브 확인 | 클립 내용을 덮어써도 GUID·instanceID 유지, 내용 교체, 이름 복구, 반복 설정 적용 (`live:*`) |
 
 ## 코드 구조
 
-`Editor/`는 하나의 `partial class ZepetoStudioHelperWindow`를 관심사별 파일로 나눈 것이다.
+`Editor/`는 하나의 `partial class ZepetoStudioHelperWindow`를 관심사별 파일 **20개**로 나눈 것이다.
 타입이 하나이므로 파일 이동만으로 동작이 달라지지 않는다.
+아래 표는 실제 디렉터리 목록과 각 파일 머리의 doc comment 기준이다.
 
 | 파일 | 담당 |
 | --- | --- |
-| `ZepetoStudioHelperWindow.cs` | 공유 상태, Unity 생명주기, 최상위 렌더 진입점 |
-| `.Accounts.cs` | 아이디 검증 규칙, 저장 목록, LOADER 적용 |
+| `ZepetoStudioHelperWindow.cs` | 창 껍데기. 공유 상태, Unity 생명주기, 최상위 렌더 진입점 |
+| `.Accounts.cs` | 아이디 정규화·검증 규칙, LOADER에 아이디 적용, 옛 저장 키 일회성 삭제 |
 | `.Loader.cs` | LOADER 바인딩, AnimatorOverrideController 재생 슬롯 |
-| `.Scenes.cs` | 작업 scene 탐색과 열기 |
+| `.Scenes.cs` | `LOADER`가 든 작업 scene 탐색과 열기 |
+| `.ScenePreview.cs` | 정지 중 Scene에 기본 몸 세우기. `HideFlags.DontSave`, Play 시작 시 제거 |
 | `.Motion.cs` | SDK 동작 목록, 편집용 복사본 |
+| `.MotionImport.cs` | 외부 애니메이션 FBX(Mixamo·Blender)를 아바타가 재생할 수 있는 클립으로 만들기 |
+| `.RigExport.cs` | 기본 몸을 FBX로 내보내기, 되가져온 모션의 리타게팅 소스 Avatar 지정 |
+| `.GoToBlender.cs` | Unity를 떠나는 지점. `.blend` 파일 찾기와 Blender 열기 |
+| `.LivePreview.cs` | Play 중 Blender 출력 폴더 감시. 고정 클립 애셋의 내용만 덮어써 리바인드 없이 반영 |
 | `.ClipEdit.cs` | 배속·구간·반복 편집, 새 `.anim` 저장 |
-| `.Export.cs` | `.zepeto` export 실행과 결과 보고 |
+| `.Export.cs` | 공식 `.zepeto` export 실행과 결과 보고 |
+| `.Publish.cs` | 만든 모션이 실제로 갈 수 있는 곳(ZEPETO World) 안내 |
 | `.Safety.cs` | Play 차단 판정, 로그 기반 안전 스냅샷 |
 | `.Validation.cs` | 진단 목록 검사 |
-| `.Workflow.cs` | 1~4단계 상태 기계 |
+| `.Flow.cs` | 7개 번호 단계의 배치. 단계 잠금 없음 (0.9.0 신설) |
+| `.Workflow.cs` | 7개 단계 카드를 움직이는 **내부 4단계 상태 기계**와 진행 표시. 단계 번호는 카드 번호가 아니다 (파일 머리 주석의 매핑 표 참고) |
 | `.Steps.cs` | 단계 카드 UI |
-| `.Ui.cs` | 재사용 그리기 요소 |
+| `.Ui.cs` | 재사용 그리기 요소와 단계 상태 표현 |
 | `.SdkPackage.cs` | SDK 설치 감지와 버전 비교 |
 
 ### 실제 재생 경로 (0.3.1에서 계측)
@@ -136,8 +189,8 @@ Play 중 `Animator`를 직접 읽어 확인한 사실이다.
 
 | 아이디 | LOADER 하위 | SkinnedMeshRenderer | 재생 clip |
 | --- | --- | --- | --- |
-| `darbams77` | `Zepeto Context` | 7 | `Videobooth_282` |
-| `sery_2750` | 없음 | 0 | 없음 |
+| `내_아이디_1` (아바타 있음) | `Zepeto Context` | 7 | `Videobooth_282` |
+| `내_아이디_2` (아바타 없음) | 없음 | 0 | 없음 |
 
 아바타가 로드되지 않으면 동작 설정과 무관하게 아무것도 보이지 않는다. 이 경우는 아이디 자체를 확인해야 한다.
 

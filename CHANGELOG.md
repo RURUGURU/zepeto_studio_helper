@@ -1,5 +1,215 @@
 # 변경 기록
 
+## 0.9.1 (미출시)
+
+**0.9.0을 전면 재검증하고, 그 과정에서 드러난 회귀 18건을 고쳤다.** 코드와 문서 양쪽이다.
+
+절차는 이랬다. 0.9.0의 변경을 적용한 뒤 그 diff 자체를 7개 관점으로 적대적으로 다시 읽었고
+(불변식 위반 · 라이프사이클 · 번호 매핑 · 임포트/익스포트 · 애드온 · 테스트 · 문서 사실성),
+나온 지적을 각각 코드로 재확인한 다음 confirmed 18건만 고쳤다. `csc.exe` 사전 검증은
+헬퍼 20파일 · 테스트 6파일 모두 **에러 0 · 경고 0**.
+
+교훈은 기록해둘 만하다. **컴파일이 깨끗한 것은 정확한 것과 다르다.** 아래 치명 2건은 둘 다
+컴파일 경고 하나 없이 통과하면서 기능을 죽이거나 개인정보를 유출하는 상태였다.
+
+`package.json`의 `version`은 이 항목과 함께 `0.9.1`로 올렸다.
+Blender 애드온은 `1.4.0`으로 올렸다 (경로 자동 유도와 `경로 자동 찾기` 오퍼레이터가 새 기능이다).
+
+### 창 레이아웃이 다시 로드되면 라이브 확인이 조용히 죽었다 (치명)
+
+`Maximize On Play`가 켜져 있으면 — Game 뷰 툴바의 기본 토글이다 — Play 진입 시 Unity가 레이아웃을
+저장하고 새 레이아웃을 불러오면서 다른 EditorWindow를 전부 닫는다. 헬퍼는 `OnDisable` → `OnDestroy`를
+받는다. 0.9.0이 새로 넣은 `OnDestroy` 복원은 이것을 **"사용자가 창을 닫았다"로 오인**했다.
+가드 2개(`isAssemblyReloadInProgress`, `HasAnotherLiveHelperWindow`)로는 잡히지 않는다 — 레이아웃
+리로드는 어셈블리 리로드가 아니고, Unity는 새 창을 만들기 전에 옛 창을 닫는다.
+
+결과: 무장 직후 `LiveReloadArmed`가 false로, `runInBackground`가 false로 되돌려지고, 사용자의 이전
+클립이 `LiveFromBlender.anim` 위에 다시 쓰였다. 재생성된 창의 `OnEnable`은
+`isPlayingOrWillChangePlaymode`가 true라 재무장하지 않는다. **Play는 돌고 있는데 라이브 연결만 없다.**
+`Window > Layouts` 수동 전환도 같은 경로다.
+
+- `ReturnLivePreviewBorrowOnTeardown` 첫 줄에 `isPlaying || isPlayingOrWillChangePlaymode` 조기 반환.
+  대차 기록은 SessionState에 그대로 두고, 이미 올바르게 동작하는 두 경로에 위임한다 —
+  Stop 시 `EnteredEditMode`, 다음 열기 시 `OnEnable` 지연 복구. 둘 다 레이아웃 리로드를 견딘다.
+- 같은 수정이 **불변식 I 위반**도 없앤다. 그 복원은 Play 중에 동기로
+  `ApplyClipToOverrideController` → `ApplyOverrides` + `SaveAssets` + `ImportAsset`을 실행했는데,
+  이것은 재생 중인 컨트롤러에 대한 미드플레이 리바인드이고 ZEPETO 컨텍스트를 끊는다.
+
+### 배포하면 개인 정보가 나가는 상태인데 문서는 해결됐다고 적혀 있었다 (치명)
+
+0.9.0의 아이디 제거는 **텍스트 전용**이었다. `grep`으로는 패키지 어디에도 아이디가 없지만, 캡처 PNG에는
+**픽셀로** 남아 있다. `docs/images/helper-window.png`와 `step-1-avatar-outfit.png`가 `현재 아이디` 줄과
+입력칸에 실제 아이디를 표시하고, `workflow-overview.png`는 그 캡처를 썸네일로 품고 있으며,
+`play-preview.png`에는 제작자 본인 아바타의 얼굴·머리·의상이 나온다. `.npmignore`는 문서 폴더 중
+`Documentation~/`만 빼고 `docs/`는 일부러 넣으므로 tarball에 그대로 들어가고, README가 이 이미지들을
+직접 불러온다.
+
+- CHANGELOG와 `QA_AUDIT.md`의 "placeholder로 교체했다"를 **실제로 한 일**로 정정했다 — 코드와 markdown은
+  정리했고, **캡처는 정리하지 않았다.**
+- README에 `캡처 이미지 경고` 절, `QA_AUDIT.md`에 `배포 전 차단 항목` 절을 새로 만들었다. 문제가 있는
+  4개 파일을 이름으로 지목하고, **tarball 발행 또는 저장소 공개 전에 재촬영하거나 가려야 한다**고 적었다.
+  README 최상단(캡처 바로 위)에도 같은 경고를 걸어 못 보고 지나칠 수 없게 했다.
+- `no-personal-id-in-source`가 `.cs`와 `.md`만 수집하므로 **PNG를 구조적으로 볼 수 없다**는 사실을
+  `QA_AUDIT.md`에 명시했다. 불변식이 깨진 채로 초록이 보고되는 것이 이 항목의 실제 결함이다.
+
+> **이건 아직 안 끝났다.** 재촬영은 사람이 해야 한다. 캡처 4장을 다시 찍거나 아이디 칸을 가리기 전까지
+> 발행하면 안 된다.
+
+### 스탠드인 몸 청소가 무력화됐다
+
+0.9.0이 `RemoveStrayPreviewBodies`에 넣은 `(hideFlags & DontSave) != DontSave` 게이트는 **청소 대상을
+정확히 전부 제외**한다. Unity는 `DontSave` 오브젝트를 직렬화하지 않으므로, 에디터 재시작을 넘어 살아남은
+스탠드인은 그 플래그를 **잃은** 상태다 — 즉 게이트가 영원히 건너뛴다. 그리고 플래그를 잃었으므로 그것은
+`.unity` 파일과 `.zepeto` export에 실제로 들어간다. 게이트를 제거하고 이름 기반 청소를 되살렸다.
+다중 창 보호(`IsOwnedByLiveHelperWindow`)는 유지 — 원래 의도했던 건 그쪽이었다.
+
+### 리그 export 실패가 여전히 "완료"로 보였다
+
+`DeleteRejectedRigExport`가 바이너리 검증 분기에만 연결돼 있었다. export 실패 분기와 예외 분기는
+파일을 남긴 채 `return false`했고, 3단계 완료 판정은 맨 `File.Exists`이므로 카드가 초록이 됐다.
+try 본문에서 조기 반환을 없애고 모든 실패를 한 출구로 모아 거절된 파일을 지운다.
+삭제는 `AssetDatabase.DeleteAsset`(`.meta`까지) — `File.Delete`는 `.meta`를 고아로 만든다.
+
+### avatar 오염을 막기만 하고 복구는 못 했다
+
+새 가드는 **첫 오염만** 막았다. 이미 오염된 `.meta`에는 가드 블록 자체가 건너뛰어져서, 사용자가
+손으로 `.meta`를 지우는 것 말고는 복구 경로가 없었다. 게다가 예상했던 판정 조건이 애초에 발화하지
+않는다 — Unity는 거절된 복사에서 `avatarSetup`/`sourceAvatar`를 되돌리면서 **복사된 뼈 매핑은 남긴다**
+(`ZepetoRig_Wave.fbx.meta`가 `avatarSetup: 1` + `instanceID: 0`인데도 55개 `boneName` 목록을 갖고 있다).
+그래서 `humanDescription.human`을 모델의 실제 transform 이름과 대조하고, 필요하면 `human[]`/`skeleton[]`을
+비워 복구한다. 유효한 `isHuman` Avatar가 나오는 동안에는 절대 다시 쓰지 않아 무한 재임포트를 막는다.
+
+또 실패 메시지가 "뼈 이름이 ZEPETO와 다릅니다"라고 **가장 흔한 원인이 아닌 것**을 단정하고
+`changes` 목록을 버리고 있었다. 이제 3단계를 안 한 경우와 실제 이름 불일치를 구분해서 말한다.
+
+### 애드온: 되돌리기가 리그 rest pose를 뭉갰다
+
+`clear_pose`가 `zepeto_baseline_odd`에 **없는** 모든 뼈의 `location`/`scale`을 초기화했다. 스냅샷이
+없는 씬(1단계를 거치지 않은 리그)에서는 그게 전체 뼈이므로 ZEPETO 몸의 출하 오프셋과 스케일을
+조용히 평탄화한다. 패널이 실제로 지목한 집합(`odd_bones(rig) - baseline`)만 되돌리도록 고쳤다.
+회전은 그대로 전체 초기화한다. 보고 개수도 실제 되돌린 집합과 일치시켰다 (이전 보고는 거짓이었다).
+
+경로 유도도 두 곳 고쳤다. 후보가 여럿일 때 **알파벳 첫 번째**를 조용히 골라서, 프로젝트 사본이
+두 개 있으면 Unity가 보지 않는 쪽으로 export될 수 있었다 — 이 파이프라인에서 가장 진단하기 어려운
+실패다. 근거 기반 순위(앵커 포함 > 이 파이프라인에 실제로 쓰인 흔적 > 최근 수정)로 바꾸고, 그래도
+동점이면 **추측하지 않고** 사용자에게 고르라고 보고한다. `경로 자동 찾기` 버튼도 아무것도 쓰지
+않았는데 성공을 보고하던 것을 실제로 쓴 값 기준으로 보고하게 했다.
+
+### 테스트: 거절이 기준선을 파괴했다
+
+dirty 씬 거절이 `Note()`로 자기를 기록하고 결과 파일을 덮어써서 `pass=0 fail=0`이 됐다 — **거절과
+깨끗한 통과가 구별되지 않고**, 추적 중인 60/0 기준선이 그 과정에서 사라졌다. 막으려던 문제보다 나쁘다.
+이제 거절은 결과 파일을 건드리지 않고 `.skipped.txt`에 `SKIPPED`로 남는다. 검사 0개면 아예 쓰지 않는
+2차 방어도 넣었다.
+
+`ZepetoRigExportRun`에는 dirty 씬 가드가 아예 없어서, 그것이 남긴 dirt가 가드를 가진 다른 두 러너를
+거절시켰다. 공용 가드(`ZepetoSelfTestSceneGuard.cs`)로 통일했다. `ZepetoCustomMotionRun`은
+사용자의 `Playground.unity`에 변경을 저장하고 아무것도 복원하지 않았다 — "finally는 도메인 리로드를
+못 넘는다"는 이유였지만, 이 러너는 이미 SessionState로 리로드를 넘고 이미 Play 이후 훅을 갖고 있다.
+헬퍼 자신의 복원 패턴(경로 + 이름, 서브애셋 대응)을 따라 스냅샷·복원을 넣었다.
+
+검사 개수 60개와 모든 검사 이름은 바이트 단위로 유지했다 — 추적 중인 결과 파일과 대조되기 때문이다.
+
+### 그 외 문서 정정
+
+**같은 배치에서 넓힌 검사를 옛 범위로 서술.** `QA_AUDIT.md`와 CHANGELOG가 **현재 시제로**
+"`no-personal-id-in-source`는 `ZepetoStudioHelperWindow.cs` 한 파일만 읽고 markdown은 보지 않는다"고
+적고 있었다. `CollectShippedPackageFiles`를 읽고 실제 범위로 고쳤다 — `Editor/` 아래 `.cs` 20개 전부,
+패키지 root · `docs/` · `Documentation~/`의 모든 `.md`, 수집 0개면 vacuous pass 대신 실패,
+실패 메시지에 `파일:줄:토큰`. `.cs`·`.md` 한정이라는 한계도 같이 적었다.
+
+**파일 구조 표가 그 파일의 머리 주석과 반대.** 표 자체가 "각 파일 머리의 doc comment 기준"이라고
+선언하는데 `.Workflow.cs` 행이 어긋났다. 0.9.0이 지운 옛 설명(`1~4단계 상태 기계와 진행 표시`)이
+맞는 설명이었다. 행을 되돌리고 단계 번호 ≠ 카드 번호를 표에 명시했다. 나머지 19행도 대조했다.
+
+**복사용 스니펫이 SDK를 다운그레이드.** `docs/ENVIRONMENT.md`와 README의 `manifest.json` 예시가
+`"zepeto.studio": "3.2.12"`인데 실제 프로젝트는 **`3.2.16`**이다. 스니펫을 `3.2.16`으로 바꾸고,
+최소 요구 버전은 문장으로 분리했다.
+
+**설치 확인 방법이 이 프로젝트에서 실패.** `ENVIRONMENT.md`는 `manifest.json`에
+`com.easy.zepeto-helper`가 있는지 보라고 했는데 **거기 없다.** 이 헬퍼는 임베디드 패키지
+(`Packages/` 아래 폴더로 존재)이고 Unity는 그것을 manifest 항목 없이 자동 인식한다. 임베디드와
+manifest 의존성 두 형태를 구분해 쓰고, 임베디드에서 실제로 통하는 확인 절차로 바꿨다.
+
+### 배포하면 개인 정보가 나가는 상태인데 문서는 해결됐다고 적혀 있었다 (치명)
+
+0.9.0의 아이디 제거는 **텍스트 전용**이었다. `grep`으로는 패키지 어디에도 아이디가 없지만, 캡처 PNG에는
+**픽셀로** 남아 있다. `docs/images/helper-window.png`와 `step-1-avatar-outfit.png`가 `현재 아이디` 줄과
+입력칸에 실제 아이디를 표시하고, `workflow-overview.png`는 그 캡처를 썸네일로 품고 있으며,
+`play-preview.png`에는 제작자 본인 아바타의 얼굴·머리·의상이 나온다. `.npmignore`는 문서 폴더 중
+`Documentation~/`만 빼고 `docs/`는 일부러 넣으므로 tarball에 그대로 들어가고, README가 이 이미지들을
+직접 불러온다.
+
+- CHANGELOG와 `QA_AUDIT.md`의 "placeholder로 교체했다"를 **실제로 한 일**로 정정했다 — 코드와 markdown은
+  정리했고, **캡처는 정리하지 않았다.**
+- README에 `캡처 이미지 경고` 절, `QA_AUDIT.md`에 `배포 전 차단 항목` 절을 새로 만들었다. 문제가 있는
+  4개 파일을 이름으로 지목하고, **tarball 발행 또는 저장소 공개 전에 재촬영하거나 가려야 한다**고 적었다.
+  README 최상단(캡처 바로 위)에도 같은 경고를 걸어 못 보고 지나칠 수 없게 했다.
+- `no-personal-id-in-source`가 `.cs`와 `.md`만 수집하므로 **PNG를 구조적으로 볼 수 없다**는 사실을
+  `QA_AUDIT.md`에 명시했다. 불변식이 깨진 채로 초록이 보고되는 것이 이 항목의 실제 결함이다.
+
+### 같은 배치에서 넓힌 검사를 옛 범위로 서술하고 있었다
+
+`QA_AUDIT.md`와 CHANGELOG가 **현재 시제로** "`no-personal-id-in-source`는 `ZepetoStudioHelperWindow.cs`
+한 파일만 읽고 markdown은 보지 않는다"고 적고 있었다. 그 검사는 같은 배치에서 이미 다시 쓰였다.
+`ZepetoHelperSelfTest.cs`의 `CollectShippedPackageFiles`를 읽고 실제 범위로 고쳤다 — `Editor/` 아래
+`.cs` 20개 전부, 패키지 root · `docs/` · `Documentation~/`의 모든 `.md`, 수집 0개면 vacuous pass 대신
+실패, 실패 메시지에 `파일:줄:토큰`. 그리고 여기서도 `.cs`·`.md` 한정이라는 한계를 같이 적었다.
+
+### 파일 구조 표가 그 파일의 머리 주석과 반대로 적혀 있었다
+
+표 자체가 "각 파일 머리의 doc comment 기준"이라고 선언하는데, `.Workflow.cs` 행은 그 파일 주석과
+어긋났다. 주석은 `The internal 4-stage state machine that drives the seven step cards, and its progress
+display.`이고, 카드 번호와 다른 단계 번호의 매핑까지 적어두고 있다. 0.9.0이 지운 옛 설명
+(`1~4단계 상태 기계와 진행 표시`)이 맞는 설명이었다.
+
+- 행을 주석대로 되돌리고, 단계 번호 ≠ 카드 번호라는 점을 표에 명시했다.
+- 그 옛 설명을 "멈춰 있었다"고 적은 CHANGELOG 문장도 정정했다.
+- 나머지 19개 행을 각 파일 머리 주석과 대조했다. 어긋난 곳은 없었고, `.Ui.cs`만 `단계 상태 표현`이
+  빠져 있어 채웠다.
+
+### 복사용 스니펫이 SDK를 다운그레이드시켰다
+
+`docs/ENVIRONMENT.md`와 README의 `manifest.json` 예시가 `"zepeto.studio": "3.2.12"`로 고정돼 있었다.
+두 문서가 검증했다고 적은 그 프로젝트의 `Packages/manifest.json`은 **`3.2.16`**이다. 그대로 붙여넣으면
+SDK가 내려간다.
+
+- 두 스니펫을 `3.2.16`으로 바꿨다. 스니펫은 항상 그대로 붙여넣어도 안전한 값만 담는다.
+- **최소 요구 버전(`3.2.12` 이상)** 은 스니펫과 분리해 문장으로 적고, 이미 더 높은 버전이 있으면 그 줄을
+  건드리지 말라는 경고를 붙였다.
+
+### 캡처 staleness 안내가 날짜도 대상도 틀렸다
+
+0.9.0은 캡처 2장에만 주석을 달고 촬영 시각을 `2026-07-25`로 적었다. 확인한 사실은 다르다.
+
+- `docs/images/`의 PNG 7장은 **전부** 저장소 이력상 `2026-05-24` 커밋(0.2.x, 4단계 시대)에 추가됐다.
+- 디스크상 파일 시각은 7장 모두 `2026-07-25 16:30`이고, 이는 복사 시각이지 촬영 시각이 아니다.
+- 어느 쪽이든 **7장 전부** 0.9.0의 7단계 재작성보다 앞선다. 주석이 없던 5장 — README 최상단의
+  `workflow-overview.png`와 `helper-window.png`를 포함해 — 이 현재 문서와 가장 크게 어긋난다.
+  `helper-window.png`는 `v7 ZEPETO 작업대` 헤더, `1. 아바타 / 2. 동작 / 3. 클립 / 4. Export` 4칸 레일,
+  `1-1 / 1-2 / 1-3` 하위 번호를 보여준다 — 어느 것도 지금 존재하지 않는다.
+
+캡처별 추측을 지우고, **7장 전체를 한 번에 다루는 문장 하나**로 바꿨다. 캡처의 제목을 현재 카드 번호로
+읽는 대조 표(`3. 클립 조정` → 6번, `4. 저장과 내보내기` → 7번)와, 지금은 없는 UI 요소 목록을 함께 넣었다.
+이미지는 지우거나 이름을 바꾸지 않았다.
+
+### 설치 확인 절차가 이 프로젝트에서 실패했다
+
+`docs/ENVIRONMENT.md`가 "`Packages/manifest.json`에 `com.easy.zepeto-helper`가 있음"으로 확인하라고
+안내했다. **거기에 없다.** 이 helper는 임베디드 패키지로 `Packages/com.easy.zepeto-helper/`에 물리적으로
+들어 있고, Unity는 그런 폴더를 manifest 항목 없이 자동 인식한다. `Packages/packages-lock.json`에만
+`"source": "embedded"`로 기록된다. 즉 문서가 스스로 검증했다고 적은 프로젝트에서 그 확인 절차가 실패했다.
+git 주소 경고가 안내하던 `file:` dependency도 이 프로젝트는 쓰지 않는다.
+
+- 설치 형태를 **임베디드**(폴더를 `Packages/` 아래 둔다, manifest 항목 없음 — 이 프로젝트)와
+  **manifest dependency**(git 주소 또는 `file:`)로 나눠 정확히 적었다.
+- 임베디드에서도 통하는 확인 방법으로 바꿨다: Package Manager 목록, `Window > Easy > ZEPETO Studio Helper`
+  메뉴, `Packages/com.easy.zepeto-helper/package.json`의 존재. `manifest.json`을 보는 방법은
+  **형태 B에서만** 통한다는 점을 명시했다.
+- README의 설치 경고에서도 임베디드를 `file:` 한 줄로 안내하던 부분을 같은 내용으로 고쳤다.
+- `docs/ENVIRONMENT.md`의 "실제 창은 `helper-window.png`처럼 표시됩니다"도 정정했다. 그 캡처는 0.2.x
+  화면이다.
+
 ## 0.9.0 - 2026-07-28
 
 ### 화면 구조를 다시 짰다 — 7개 번호 단계
@@ -52,6 +262,36 @@ Blender 왕복이 2번 카드 안에 A/B/C 하위 상자로 들어가 있었다.
 
 README 두 개를 7단계 기준으로 다시 썼다. 이전 문서대로 따라 하면 없는 버튼(`1번 적용 / 다음 단계`,
 `수정 잠금 해제`, `저장된 아이디` 드롭다운)을 찾게 됐다.
+
+뒤이어 나머지 문서도 정리했다.
+
+- **개인 ZEPETO 아이디 2개가 배포본의 문서 텍스트에 실려 나가고 있었다.** `Documentation~/QA_AUDIT.md`의
+  계정 대조 표와 README의 `@` 제거 예시. 코드에는 `[QC][Invariant:no_personal_defaults]`가 있는데 문서가
+  그것을 깨고 있었다. **텍스트 두 곳은** placeholder로 교체했다.
+  자체 테스트의 재유입 검사가 이걸 못 잡은 이유는 그때까지 `Editor/ZepetoStudioHelperWindow.cs`
+  **한 파일**만 읽었기 때문이다 — markdown도, 나머지 Editor 파일 19개도 보지 않았다. 그래서 검사 범위를
+  `Editor/` 아래 `.cs` 20개와 패키지 root · `docs/` · `Documentation~/`의 모든 `.md`로 넓혔고
+  (`CollectShippedPackageFiles`), 수집 결과가 0개면 vacuous pass 대신 실패하게 했다.
+- **그러나 캡처 이미지는 정리하지 않았다. 개인 정보는 여전히 배포본에 실려 나간다.** 이 정리는
+  **텍스트 전용**이었다. `docs/images/helper-window.png`와 `step-1-avatar-outfit.png`에 실제 아이디가
+  **픽셀로** 그대로 있고, `workflow-overview.png`는 그 캡처를 썸네일로 품고 있으며,
+  `play-preview.png`에는 제작자 본인 아바타의 얼굴·의상이 나온다. 넓힌 검사도 `.cs`와 `.md`만 읽으므로
+  이 4장에 대해서는 초록이 아무것도 보장하지 않는다. **재촬영 또는 마스킹이 배포 전 차단 항목이다**
+  (`Documentation~/QA_AUDIT.md`의 `배포 전 차단 항목`, README의 `캡처 이미지 경고`).
+- 버전 표기 정리. `docs/ENVIRONMENT.md` `0.3.2` → `0.9.0`, `QA_AUDIT.md` `0.3.0` → `0.9.0`,
+  자체 테스트 결과 `51 pass` → `60 pass` (`zepeto-helper-selftest.result.txt`의 `pass=60 fail=0` 기준).
+- `QA_AUDIT.md`의 파일 구조 표에 파일이 13개만 올라가 있었다. 실제 디렉터리 목록대로 20개로 다시 썼다.
+  (이때 `.Workflow.cs` 행을 잘못 고쳤다 — 기존 설명 `1~4단계 상태 기계와 진행 표시`는 그 파일 머리
+  주석과 일치하는 **맞는** 설명이었다. 위 `0.9.1` 항목 참고.)
+  0.7.0에서 뺀 저장된 아이디 테스트 2건도 지금 실제로 도는 `saved-ids:removed`로 교체했다.
+- **설치 안내가 없는 버전을 가리키고 있었다.** 저장소 `origin/main`은 0.2.4 — 4단계 마법사이고 Blender
+  파이프라인이 없다. 0.9.0은 push되지 않은 로컬 커밋에만 있다. 그래서 `Add package from git URL`은
+  이 README가 설명하는 것과 다른 패키지를 설치한다. 그 사실을 설치 절 맨 앞에 적고, 로컬(embedded)
+  설치를 안내했다. `npm pack` 레시피도 clone한 저장소가 아니라 로컬 패키지 폴더 기준으로 고쳤다.
+- `.npmignore`에 `Documentation~/`를 추가했다. 내부 QA 기록은 배포본에 넣지 않는다. `docs/`는 README가
+  직접 링크하고 이미지도 거기서 불러오므로 계속 포함한다.
+- 6·7번 캡처 옆에 "7단계 재작성 전 화면이라 번호가 3·4번으로 보인다"고 적었다. 3·4·5번 캡처는 아직 없다.
+  (이 주석을 2장에만 달았고 날짜도 파일 시각을 촬영 시각처럼 적었다 — 위 `0.9.1` 항목 참고.)
 
 
 ## 0.8.1 - 2026-07-27
@@ -219,6 +459,10 @@ Unity 자체 툴체인(`csc.exe`, langversion 7.3)으로 직접 컴파일해서 
 `.part`에 쓰고 `os.replace()`로 교체합니다. Unity가 폴더를 감시하고 있어서, 제자리에 쓰면 반쯤 쓰인 FBX를
 읽어 클립이 깨지고, Windows에서는 Unity가 파일을 잡고 있어 저장 자체가 `PermissionError`로 실패합니다.
 0.2초 간격 5회 재시도, 죽은 `.part` 정리 포함.
+
+> 이 재시도 정책은 애드온 1.3.0에서 지수 백오프로 교체됐습니다 (위 0.9.0 항목 참고).
+> 현재 `zepeto_motion_helper.py`의 대기 시간은 `0.1 / 0.2 / 0.4 / 0.8 / 1.6 / 2.0`초이고,
+> 마지막 시도 뒤에는 기다리지 않으므로 최대 대기는 3.1초입니다.
 
 ## Blender 애드온 1.1.0 - 2026-07-26
 
@@ -435,7 +679,7 @@ Unity 기본 설정인 `Script Changes While Playing = Recompile And Continue Pl
 
 ### 여러 아이디 지원
 
-- 패키지에 박혀 있던 개인 ZEPETO 아이디 기본값(`darbams77`)을 제거. 이제 기본 아이디는 없음
+- 패키지에 박혀 있던 개인 ZEPETO 아이디 기본값을 제거. 이제 기본 아이디는 없음
 - 아이디를 여러 개 저장하고 dropdown에서 골라 쓰는 기능 추가 (`목록에 추가` / `목록에서 삭제`)
 - 저장 목록은 `EditorPrefs`에 남아 Unity를 다시 켜도 유지되고, 프로젝트가 달라도 같은 목록을 사용
 - 0.2.x의 단일 아이디 설정(`defaultZepetoId`)은 첫 실행 시 자동으로 목록에 이전

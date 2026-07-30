@@ -16,6 +16,8 @@ namespace Easy.ZepetoHelper.Editor
     public sealed partial class ZepetoStudioHelperWindow
     {
         private const string BlendFilePrefKey = "com.easy.zepeto-helper.blendFilePath";
+        private const string BlenderMotionFolderName = "BlenderMotion";
+        private const string PreferredBlendFileName = "zepeto_motion.blend";
 
         private static string BlendFilePath
         {
@@ -24,8 +26,87 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
+        /// File.Exists with the throwing cases folded in. A path remembered on another machine can contain
+        /// characters or a root this one rejects, and then Path/File raise ArgumentException or
+        /// NotSupportedException instead of answering false.
+        /// </summary>
+        private static bool BlendFileExists(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return false;
+            }
+
+            try
+            {
+                return File.Exists(path);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The .blend to use out of one BlenderMotion folder, or empty when there is nothing usable in it.
+        /// The preferred name is checked first; after that the most recently written .blend wins, because a
+        /// renamed working file is far more likely than two unrelated projects sharing the folder.
+        /// </summary>
+        private static string FindBlendFileInFolder(string folder)
+        {
+            if (string.IsNullOrEmpty(folder))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                if (!Directory.Exists(folder))
+                {
+                    return string.Empty;
+                }
+
+                string preferred = Path.Combine(folder, PreferredBlendFileName);
+                if (File.Exists(preferred))
+                {
+                    return preferred.Replace('\\', '/');
+                }
+
+                string[] candidates = Directory.GetFiles(folder, "*.blend", SearchOption.TopDirectoryOnly);
+                string newest = string.Empty;
+                DateTime newestStamp = DateTime.MinValue;
+                for (int i = 0; i < candidates.Length; i++)
+                {
+                    // The same Windows 8.3 short-name trap the two fbx enumerations have to guard against with
+                    // ".part": a "*.blend" pattern can also hand back Blender's own zepeto_motion.blend1
+                    // rolling backup, and opening a .blend1 silently discards everything saved after it.
+                    if (!".blend".Equals(Path.GetExtension(candidates[i]), StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    DateTime stamp = File.GetLastWriteTimeUtc(candidates[i]);
+                    if (string.IsNullOrEmpty(newest) || stamp > newestStamp)
+                    {
+                        newest = candidates[i];
+                        newestStamp = stamp;
+                    }
+                }
+
+                return string.IsNullOrEmpty(newest) ? string.Empty : newest.Replace('\\', '/');
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
         /// Looks for the working .blend next to the Unity project before asking the user to find it.
-        /// The add-on's own layout puts it in a BlenderMotion folder beside the project.
+        ///
+        /// The add-on derives its own paths from wherever the .blend sits, so this only has to find the folder,
+        /// not a fixed file name: BlenderMotion beside the project (the shipped layout) or inside it. Neither
+        /// probe assumes the folder exists, and a folder with no .blend in it is the same as no folder.
         /// </summary>
         private static string GuessBlendFilePath()
         {
@@ -36,27 +117,38 @@ namespace Easy.ZepetoHelper.Editor
             }
 
             string parent = Path.GetDirectoryName(projectRoot);
-            string[] candidates =
+            // Same two locations, same order, as before: inside the project first, then beside it (which is where
+            // the shipped layout actually puts it).
+            string[] folders =
             {
-                Path.Combine(projectRoot, "BlenderMotion/zepeto_motion.blend"),
-                string.IsNullOrEmpty(parent) ? null : Path.Combine(parent, "BlenderMotion/zepeto_motion.blend")
+                Path.Combine(projectRoot, BlenderMotionFolderName),
+                string.IsNullOrEmpty(parent) ? null : Path.Combine(parent, BlenderMotionFolderName)
             };
 
-            for (int i = 0; i < candidates.Length; i++)
+            for (int i = 0; i < folders.Length; i++)
             {
-                if (!string.IsNullOrEmpty(candidates[i]) && File.Exists(candidates[i]))
+                string found = FindBlendFileInFolder(folders[i]);
+                if (!string.IsNullOrEmpty(found))
                 {
-                    return candidates[i].Replace('\\', '/');
+                    return found;
                 }
             }
 
             return string.Empty;
         }
 
+        /// <summary>
+        /// [QC][Invariant:blend_path_revalidated]
+        /// A remembered path is never trusted. EditorPrefs is scoped to the machine's editor install, not to the
+        /// project, so the stored value can name a file on a machine this project was copied off, or one the user
+        /// has since moved or deleted - and "Blender 열기" on a dead path opens nothing and explains nothing.
+        /// Every resolve re-tests the file, falls back to the folder probe, and erases the key when neither
+        /// answers, so a dead value cannot resurface on a later open.
+        /// </summary>
         private static string ResolveBlendFilePath()
         {
             string stored = BlendFilePath;
-            if (!string.IsNullOrEmpty(stored) && File.Exists(stored))
+            if (BlendFileExists(stored))
             {
                 return stored;
             }
@@ -65,9 +157,15 @@ namespace Easy.ZepetoHelper.Editor
             if (!string.IsNullOrEmpty(guessed))
             {
                 BlendFilePath = guessed;
+                return guessed;
             }
 
-            return guessed;
+            if (!string.IsNullOrEmpty(stored))
+            {
+                EditorPrefs.DeleteKey(BlendFilePrefKey);
+            }
+
+            return string.Empty;
         }
 
         private void DrawGoToBlenderBody()
@@ -102,20 +200,32 @@ namespace Easy.ZepetoHelper.Editor
             {
                 string picked = EditorUtility.OpenFilePanel("작업할 .blend 파일",
                     hasBlend ? Path.GetDirectoryName(blendPath) : Application.dataPath, "blend");
-                if (!string.IsNullOrEmpty(picked))
+                if (BlendFileExists(picked))
                 {
                     BlendFilePath = picked.Replace('\\', '/');
                     statusMessage = "Blender 작업 파일: " + BlendFilePath;
                 }
+                else if (!string.IsNullOrEmpty(picked))
+                {
+                    // Nothing is stored for a path that is not there, so the remembered value stays whatever was
+                    // last verified instead of being replaced by one that cannot be opened.
+                    statusMessage = "그 위치에 파일이 없습니다: " + picked;
+                }
             }
 
+            // The Blender add-on numbers its own panel sections, and those numbers are NOT the Unity card numbers
+            // (1~7) - this box is Unity card 4. The list below mirrors the add-on panel's section titles exactly
+            // (draw_zepeto_panel in BlenderMotion/zepeto_motion_helper.py) so there is only one set of Blender
+            // numbers anywhere, instead of the third, invented 1..4 sequence that used to be here.
             DrawMiniHelp(
-                "Blender에서 할 일 (오른쪽 사이드바 'ZEPETO 모션' 패널, 안 보이면 3D 화면에서 N 키):\n"
-                + "  1. 파란 뼈를 클릭 → R → Z → 마우스 → 좌클릭\n"
-                + "  2. '현재 포즈 저장' (프레임을 바꿔가며 2번 이상)\n"
-                + "  3. '처음과 끝 맞추기'\n"
-                + "  4. 'Unity로 보내기'\n\n"
-                + "그 다음 아래 5번으로 돌아옵니다.",
+                "Blender에서 할 일 — 오른쪽 사이드바의 'ZEPETO 모션' 패널 (안 보이면 3D 화면에서 N 키). "
+                + "아래 번호는 그 패널의 단계 번호입니다:\n"
+                + "  1단계 · 몸 불러오기 — 'ZEPETO 몸 불러오기' (리그를 이미 불러왔으면 이 칸은 사라집니다)\n"
+                + "  2단계 · 포즈 만들기 — 뼈를 클릭 → R → Z → 마우스 이동 → 좌클릭\n"
+                + "  3단계 · 이 순간 기록 — 프레임을 옮겨가며 '현재 포즈 저장'을 2번 이상\n"
+                + "  4단계 · 부드럽게 반복 — '처음과 끝 맞추기'\n"
+                + "  5단계 · Unity로 보내기 — 이름을 적고 'Unity로 보내기'\n\n"
+                + "그 다음 이 창의 5번 카드로 돌아옵니다.",
                 MessageType.None);
 
         }

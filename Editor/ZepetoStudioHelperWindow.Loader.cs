@@ -14,7 +14,10 @@ namespace Easy.ZepetoHelper.Editor
     {
         private void OnSceneViewGui(SceneView sceneView)
         {
-            if (!showScenePreviewOverlay || sceneView == null)
+            // ScenePreviewOverlayEnabled, not the old showScenePreviewOverlay field: that field had lost its
+            // toggle and was never written, so the overlay could not be turned off any more. The pref pair lives
+            // next to the preview-body toggle in ScenePreview.cs.
+            if (!ScenePreviewOverlayEnabled || sceneView == null)
             {
                 return;
             }
@@ -379,12 +382,25 @@ namespace Easy.ZepetoHelper.Editor
             }
         }
 
+        // [QC][Invariant:readonly_asset_roots]
+        // The helper must never write into the SDK's own package files - that is why EnsureLocalAnimatorController
+        // copies the controller to Assets/ZepetoHelper/Controllers first. But read-only-ness is a property of a
+        // path SEGMENT, not of a substring: matching "PackageCache" anywhere also condemned a perfectly writable
+        // user folder like "Assets/MyPackageCache/Controllers", and Play then dead-ended on a "make a local
+        // controller" requirement that was already satisfied and could never be satisfied again.
         private static bool IsPackageOrPackageCachePath(string assetPath)
         {
-            return !string.IsNullOrEmpty(assetPath)
-                && (assetPath.StartsWith("Packages/", StringComparison.OrdinalIgnoreCase)
-                    || assetPath.StartsWith("Library/PackageCache/", StringComparison.OrdinalIgnoreCase)
-                    || assetPath.IndexOf("PackageCache", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                return false;
+            }
+
+            // AssetDatabase hands out forward slashes, but a path built by hand or read from a log can be
+            // backslashed.
+            string normalized = assetPath.Replace('\\', '/');
+            return normalized.StartsWith("Packages/", StringComparison.OrdinalIgnoreCase)
+                || normalized.StartsWith("Library/PackageCache/", StringComparison.OrdinalIgnoreCase)
+                || normalized.IndexOf("/Library/PackageCache/", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private bool EnsureLocalAnimatorController(out string message)

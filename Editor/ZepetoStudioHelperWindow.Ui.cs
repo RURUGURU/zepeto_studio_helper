@@ -103,70 +103,12 @@ namespace Easy.ZepetoHelper.Editor
             EditorGUILayout.EndHorizontal();
         }
 
-        private static string GetStepStateLabel(StepState state)
-        {
-            if (state == StepState.Ready)
-            {
-                return "준비됨";
-            }
-
-            if (state == StepState.InProgress)
-            {
-                return "진행 필요";
-            }
-
-            if (state == StepState.Waiting)
-            {
-                return "대기중";
-            }
-
-            return state == StepState.Blocked ? "차단" : "필요";
-        }
-
-        private static MessageType GetStepStateMessageType(StepState state)
-        {
-            if (state == StepState.Ready)
-            {
-                return MessageType.Info;
-            }
-
-            if (state == StepState.InProgress)
-            {
-                return MessageType.Info;
-            }
-
-            if (state == StepState.Waiting)
-            {
-                return MessageType.None;
-            }
-
-            return state == StepState.Blocked ? MessageType.Error : MessageType.Warning;
-        }
-
-        private static Color GetStepStateColor(StepState state)
-        {
-            if (state == StepState.Ready)
-            {
-                return ReadyGreen;
-            }
-
-            if (state == StepState.InProgress)
-            {
-                return ActionBlue;
-            }
-
-            if (state == StepState.Blocked)
-            {
-                return BlockedRed;
-            }
-
-            if (state == StepState.Waiting)
-            {
-                return WaitingGray;
-            }
-
-            return NeededAmber;
-        }
+        // The StepState label / MessageType / Color presentation trio used to live here (GetStepStateLabel,
+        // GetStepStateMessageType, GetStepStateColor). Flow.cs owns the only step-header chip that ships -
+        // FlowStateLabel + FlowStateColor feeding DrawColoredBadge - so these three had no callers left and
+        // were a second, silently diverging answer to "how does a step look right now". The StepState enum
+        // itself stays: Workflow.cs GetSequentialStageState still returns it. Deleting GetStepStateColor is
+        // what makes BlockedRed unused.
 
         private static string FormatBytes(long value)
         {

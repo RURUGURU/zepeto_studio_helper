@@ -55,6 +55,9 @@ namespace Easy.ZepetoHelper.Editor
         private const string ClipAdjustStartSessionKey = "Easy.ZepetoHelper.ClipAdjust.Start";
         private const string ClipAdjustEndSessionKey = "Easy.ZepetoHelper.ClipAdjust.End";
         private const string ClipAdjustLoopSessionKey = "Easy.ZepetoHelper.ClipAdjust.Loop";
+        private const string MotionPreviewTemporarySessionKey = "Easy.ZepetoHelper.MotionPreview.Temporary";
+        private const string MotionPreviewRestorePathSessionKey = "Easy.ZepetoHelper.MotionPreview.RestorePath";
+        private const string MotionPreviewRestoreNameSessionKey = "Easy.ZepetoHelper.MotionPreview.RestoreName";
 
         // [AUDIT][Risk:Critical][Scope:play_stability]
         // A domain reload while Play is running orphans the ZEPETO SDK's UniRx subscriptions and native state.
@@ -69,7 +72,6 @@ namespace Easy.ZepetoHelper.Editor
         private const double LoaderSearchIntervalSeconds = 1d;
         private static readonly Color ReadyGreen = new Color(0.16f, 0.70f, 0.36f);
         private static readonly Color NeededAmber = new Color(0.82f, 0.58f, 0.18f);
-        private static readonly Color BlockedRed = new Color(0.84f, 0.23f, 0.20f);
         private static readonly Color ActionBlue = new Color(0.24f, 0.48f, 0.88f);
         private static readonly Color PlayGreen = new Color(0.24f, 0.66f, 0.38f);
         private static readonly Color StopRed = new Color(0.82f, 0.28f, 0.24f);
@@ -113,7 +115,6 @@ namespace Easy.ZepetoHelper.Editor
         [SerializeField] private GameObject pendingClothingPrefab;
         private AnimationClip copiedAnimationClip;
         private AnimationClip lastClipEditedClip;
-        private AnimationClip clipAdjustSource;
         private string clipAdjustSourcePath = string.Empty;
         private string[] packageAnimationNames = new string[0];
         private int selectedAnimationIndex = -1;
@@ -134,21 +135,87 @@ namespace Easy.ZepetoHelper.Editor
         private bool showDiagnosticsAdvanced;
         private bool showDetailedWorkflow;
         private bool showClipAdvancedOptions;
-        private bool showScenePreviewOverlay = true;
         private bool showPublishRecipe = true;
         private bool showManualImport;
         private bool avatarOutfitStageComplete;
         private bool motionSelectStageComplete;
         private bool clipStageComplete;
+        // Which preview Play session is running: one of the PreviewStage* constants (Workflow.cs), or -1 for
+        // "none". Those are internal stage numbers, NOT card numbers - stage 3 is card 6, stage 4 is card 7.
         private int activePreviewStage = -1;
-        private bool isTemporarySelectedMotionPreview;
-        private AnimationClip motionPreviewRestoreClip;
         private SerializedObject zepetoIdObject;
         private SerializedObject animationClipObject;
         private SerializedObject animatorControllerObject;
         private SerializedProperty zepetoIdProperty;
         private SerializedProperty animationClipProperty;
         private SerializedProperty animatorControllerProperty;
+
+        // [AUDIT][Risk:High][Scope:step2_preview]
+        // These two were plain instance fields, which cannot survive the domain reload that entering Play is.
+        // The sequence was: PlaySelectedMotionPreview borrows the LOADER's clip and sets the flag -> Play starts
+        // -> domain reload wipes the flag -> Stop calls RestoreTemporarySelectedMotionPreview (Safety.cs, on
+        // EnteredEditMode) -> it returns immediately at the `!isTemporarySelectedMotionPreview` guard. The
+        // previewed clip stayed in the LOADER *and* in the override controller, the user's work motion was never
+        // put back, and no message said so. The two sibling preview flows already use SessionState for exactly
+        // this reason: ClipAdjustPreviewActiveSessionKey / ClipAdjustPreviewRestorePathSessionKey (ClipEdit.cs)
+        // and LiveRestoreActiveSessionKey / LiveRestorePathSessionKey (LivePreview.cs).
+        //
+        // They stay properties with the original field names so every call site is unchanged - Motion.cs
+        // (PlaySelectedMotionPreview, RestoreTemporarySelectedMotionPreview) and Steps.cs (the "미리보기 Stop"
+        // label) keep reading and writing them exactly as before.
+        //
+        // SessionState is the right scope, not EditorPrefs: the borrow is only meaningful until the editor
+        // closes, and a stale restore path from a previous session would write the wrong clip into the LOADER.
+        private bool isTemporarySelectedMotionPreview
+        {
+            get { return SessionState.GetBool(MotionPreviewTemporarySessionKey, false); }
+            set { SessionState.SetBool(MotionPreviewTemporarySessionKey, value); }
+        }
+
+        private AnimationClip motionPreviewRestoreClip
+        {
+            get
+            {
+                string path = SessionState.GetString(MotionPreviewRestorePathSessionKey, string.Empty);
+                if (string.IsNullOrEmpty(path))
+                {
+                    // Also the "the LOADER had no clip before the preview" case, which restores to null on
+                    // purpose. isTemporarySelectedMotionPreview is what says a borrow happened, not this.
+                    return null;
+                }
+
+                string clipName = SessionState.GetString(MotionPreviewRestoreNameSessionKey, string.Empty);
+                AnimationClip direct = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+                if (direct != null && (string.IsNullOrEmpty(clipName) || direct.name == clipName))
+                {
+                    return direct;
+                }
+
+                // The borrowed clip can be a sub-asset - an FBX take, or one clip of several in an SDK asset -
+                // where LoadAssetAtPath returns whichever clip comes first rather than the one we borrowed.
+                UnityEngine.Object[] assetsAtPath = AssetDatabase.LoadAllAssetsAtPath(path);
+                for (int i = 0; i < assetsAtPath.Length; i++)
+                {
+                    AnimationClip candidate = assetsAtPath[i] as AnimationClip;
+                    if (candidate != null && candidate.name == clipName)
+                    {
+                        return candidate;
+                    }
+                }
+
+                return direct;
+            }
+
+            set
+            {
+                SessionState.SetString(
+                    MotionPreviewRestorePathSessionKey,
+                    value == null ? string.Empty : AssetDatabase.GetAssetPath(value));
+                SessionState.SetString(
+                    MotionPreviewRestoreNameSessionKey,
+                    value == null ? string.Empty : value.name);
+            }
+        }
 
         [MenuItem("Window/Easy/ZEPETO Studio Helper")]
         public static void Open()

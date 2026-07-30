@@ -240,16 +240,6 @@ namespace Easy.ZepetoHelper.Editor
             }
         }
 
-        private StepState GetOutfitChoiceState(WorkflowStatus workflow)
-        {
-            if (workflow.HasOutfit && pendingClothingPrefab == clothingPrefab)
-            {
-                return StepState.Ready;
-            }
-
-            return pendingClothingPrefab == null ? StepState.Needed : StepState.InProgress;
-        }
-
         private void DrawOutfitChoiceRow(WorkflowStatus workflow)
         {
             List<GameObject> prefabs = FindAllOutfitPrefabs();
@@ -433,7 +423,6 @@ namespace Easy.ZepetoHelper.Editor
         private void DrawStagePlayStopButtons(string playLabel, bool canPlay, string stopLabel, string disabledReason = "", int stageToKeepOpen = -1)
         {
             bool isPlaying = EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode;
-            bool isThisStagePreview = stageToKeepOpen >= 0 && activePreviewStage == stageToKeepOpen;
             EditorGUILayout.BeginHorizontal();
             if (DrawColoredActionButton(playLabel, canPlay && !isPlaying, PlayGreen, GUILayout.Height(34f)))
             {
@@ -445,10 +434,11 @@ namespace Easy.ZepetoHelper.Editor
             // Stop is enabled whenever Play is running, never gated on which stage started it.
             //
             // It used to require activePreviewStage == stageToKeepOpen, so a Play started any other way -
-            // Unity's own toolbar button, or the live-preview panel, which owns no stage - left EVERY Stop in
-            // this window greyed out while the Game view was clearly running. There is no situation where
-            // taking away the way back to edit mode is the right answer, least of all for a beginner.
-            // isThisStagePreview still decides the emphasis, just not whether the button works.
+            // Unity's own toolbar button, or the live-preview panel, which back then claimed no stage at all -
+            // left EVERY Stop in this window greyed out while the Game view was clearly running. There is no
+            // situation where taking away the way back to edit mode is the right answer, least of all for a
+            // beginner. (Live preview now claims PreviewStageMotion, but this button no longer cares either way:
+            // nothing here reads activePreviewStage.)
             // Always red while it works. Colouring a non-owning stage's Stop grey made an enabled button look
             // dead - which is how it was reported ("stop이 계속 검은색이여"). If a stage distinction is ever
             // wanted it belongs in the label, never in a colour that reads as disabled on the one control that
@@ -474,9 +464,8 @@ namespace Easy.ZepetoHelper.Editor
         private void DrawSelectedMotionPlayStopButtons(WorkflowStatus workflow, bool isActiveStage)
         {
             bool isPlaying = EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode;
-            bool isStageAccessible = isActiveStage || !IsStageWaiting(workflow, 2);
+            bool isStageAccessible = isActiveStage || !IsStageWaiting(workflow, PreviewStageMotion);
             bool canPlaySelected = isStageAccessible && CanPlaySelectedMotion(workflow);
-            bool isThisStagePreview = activePreviewStage == 2;
             EditorGUILayout.BeginHorizontal();
             if (DrawColoredActionButton("미리보기 Play", canPlaySelected && !isPlaying, PlayGreen, GUILayout.Height(34f)))
             {
@@ -600,12 +589,6 @@ namespace Easy.ZepetoHelper.Editor
             AnimationClip assignedClip = GetAssignedAnimationClip();
             EnsureClipAdjustDefaults(assignedClip);
 
-            StepState state = GetSequentialStageState(workflow, 3);
-            string summary = workflow.CanClipEdit
-                ? "배속, 반복, 시작/끝 시간을 조정합니다. Play 중에는 화면 확인만 하고 Stop 후 새 .anim으로 저장합니다."
-                : "먼저 2번에서 동작을 고르고 '2번 적용 / 이 동작 쓰기'를 누르세요.";
-
-
             float clipLength = assignedClip == null ? 0f : Mathf.Max(0.01f, assignedClip.length);
             DrawStatusRow("대상 clip / Target", assignedClip == null ? "없음" : assignedClip.name + "  " + FormatClipLength(assignedClip));
 
@@ -613,7 +596,7 @@ namespace Easy.ZepetoHelper.Editor
             DrawStatusRow(
                 "실제 재생될 동작",
                 playbackClip == null ? "없음" : playbackClip.name + "  " + FormatClipLength(playbackClip));
-            if (playbackClip != null && playbackClip.length <= 0.1f)
+            if (playbackClip != null && playbackClip.length <= StaticPoseMaxLength)
             {
                 DrawMiniHelp(
                     "재생 슬롯이 정지 포즈(" + playbackClip.name + ")입니다. 이대로 Play하면 아바타가 움직이지 않습니다. "
@@ -640,7 +623,7 @@ namespace Easy.ZepetoHelper.Editor
                 {
                     // [QA][State:dirty_stage]
                     // Any speed/range/loop change invalidates the previously completed clip step.
-                    // The user must press the blue step-3 apply button again so the saved .anim matches the UI.
+                    // The user must press the blue '6번 적용' button below again so the saved .anim matches the UI.
                     SetClipStageComplete(false);
                     SaveClipAdjustSessionState(GetClipAdjustStatePath(assignedClip));
                 }
@@ -648,7 +631,7 @@ namespace Easy.ZepetoHelper.Editor
 
             DrawMiniHelp("저장 결과: 2.0x는 길이가 절반, 0.5x는 길이가 두 배가 됩니다. 원본 package와 기존 복사본은 직접 수정하지 않습니다. 반복 재생은 저장될 clip의 Loop 설정입니다.", MessageType.None);
 
-            DrawStagePlayStopButtons("Play로 배속 확인", workflow.CanPlayMotion, "Stop", GetPlayDisabledReason(workflow, true), 3);
+            DrawStagePlayStopButtons("Play로 배속 확인", workflow.CanPlayMotion, "Stop", GetPlayDisabledReason(workflow, true), PreviewStageClipAdjust);
 
             bool hasClipAdjustInput = HasClipAdjustInput(assignedClip);
             string applyLabel = hasClipAdjustInput ? "6번 적용 / 저장" : "6번 적용";
@@ -689,12 +672,6 @@ namespace Easy.ZepetoHelper.Editor
 
         private void DrawSaveExportBody(WorkflowStatus workflow)
         {
-            StepState state = GetSequentialStageState(workflow, 4);
-            string summary = workflow.HasEditableAssignedAnimation
-                ? "저장된 결과를 다시 Play로 확인한 뒤 Stop 상태에서 공식 export 메뉴를 엽니다."
-                : "먼저 동작을 선택하고 필요한 clip 조정을 저장하세요.";
-
-
             string exportPackagePath = GetExpectedZepetoPackagePath();
             DrawStatusRow("Export 대상 동작", workflow.AssignedAnimation == null ? "없음" : workflow.AssignedAnimation.name);
             DrawStatusRow("출력 파일", GetExportPackageStatusText(exportPackagePath));
@@ -718,7 +695,7 @@ namespace Easy.ZepetoHelper.Editor
             }
             EditorGUILayout.EndHorizontal();
 
-            DrawStagePlayStopButtons("Play로 저장 결과 확인", workflow.CanPlayMotion, "Stop", GetPlayDisabledReason(workflow, true), 4);
+            DrawStagePlayStopButtons("Play로 저장 결과 확인", workflow.CanPlayMotion, "Stop", GetPlayDisabledReason(workflow, true), PreviewStageExport);
 
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode || !workflow.HasOutfit))
             {
@@ -755,7 +732,7 @@ namespace Easy.ZepetoHelper.Editor
             {
                 DrawMiniHelp(
                     "LOADER가 들어 있는 scene이 프로젝트에 없습니다. ZEPETO Studio에서 받은 의상 템플릿 프로젝트의 scene과 "
-                    + "의상 prefab을 Assets 아래에 넣어야 1~4단계를 진행할 수 있습니다.",
+                    + "의상 prefab을 Assets 아래에 넣어야 1~7단계를 진행할 수 있습니다.",
                     MessageType.Warning);
             }
 

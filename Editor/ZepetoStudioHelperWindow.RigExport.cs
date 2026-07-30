@@ -55,7 +55,13 @@ namespace Easy.ZepetoHelper.Editor
         /// ExportModelOptions defaults to ExportFormat.ASCII, and Blender refuses ASCII fbx outright
         /// ("ASCII FBX files are not supported"). Unity reports a successful export either way, so this only
         /// shows up when the file is actually opened in Blender.
-        /// Returns null when the options type is unavailable, in which case the caller falls back.
+        ///
+        /// Returns null when the options type is unavailable. The caller then has to use the 2-argument
+        /// ExportObject overload, which passes exportOptions: null - and that does NOT fall back to the
+        /// project's Fbx Export settings, it builds a fresh ExportModelSettingsSerialize whose exportFormat
+        /// field is ASCII (verified in com.unity.formats.fbx 5.1.6, ExportOptionsSettingsSerializeBase:251).
+        /// So the fallback can only ever write ASCII, which is why TryExportZepetoRigToFbx deletes what it
+        /// produced instead of keeping it.
         /// </summary>
         private static object BuildBinaryExportOptions()
         {
@@ -138,6 +144,9 @@ namespace Easy.ZepetoHelper.Editor
             GameObject instance = UnityEngine.Object.Instantiate(baseModel);
             instance.name = "ZepetoBaseModel";
 
+            bool requestedBinary = false;
+            bool exportOk = false;
+
             try
             {
                 string absolute = ToAbsoluteProjectPath(ExportedRigPath);
@@ -146,8 +155,9 @@ namespace Easy.ZepetoHelper.Editor
                 MethodInfo withOptions = binaryOptions == null
                     ? null
                     : FindFbxExportMethodWithOptions(binaryOptions.GetType());
+                requestedBinary = withOptions != null;
 
-                object result = withOptions != null
+                object result = requestedBinary
                     ? withOptions.Invoke(null, new object[] { absolute, instance, binaryOptions })
                     : exportObject.Invoke(null, new object[] { absolute, instance });
 
@@ -156,23 +166,61 @@ namespace Easy.ZepetoHelper.Editor
                 if (string.IsNullOrEmpty(written) || !File.Exists(absolute))
                 {
                     message = "FBX 내보내기가 실패했습니다. Console을 확인하세요.";
-                    return false;
                 }
-
-                if (withOptions == null)
+                else
                 {
-                    Debug.LogWarning("Easy ZEPETO Helper: binary fbx options were unavailable, the exported rig may be "
-                        + "ASCII and Blender cannot open ASCII fbx.");
+                    exportOk = true;
+
+                    if (!requestedBinary)
+                    {
+                        Debug.LogWarning("Easy ZEPETO Helper: the installed FBX Exporter did not expose the "
+                            + "ExportModelOptions overload, so ExportFormat.Binary could not be requested. The rig "
+                            + "was written as ASCII and is about to be rejected and deleted.");
+                    }
                 }
             }
             catch (Exception exception)
             {
                 message = "FBX 내보내기 중 오류: " + exception.Message;
-                return false;
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(instance);
+            }
+
+            // [AUDIT][Risk:Major][Scope:rig_export_done_means_openable]
+            // Every failure leaves through this one exit instead of returning from inside the try, because a
+            // reported failure and a thrown exception can both leave a partial fbx at ExportedRigPath just as
+            // easily as an ASCII one - the exporter writes as it walks the hierarchy. Step 3's done test is a
+            // bare File.Exists on that path (Flow.cs:172), so any file left behind turns the card green on a
+            // broken export and takes step 4's "3번을 먼저 하세요" warning away. DeleteRejectedRigExport is a
+            // no-op when nothing was written, so calling it on every failure costs nothing.
+            if (!exportOk)
+            {
+                DeleteRejectedRigExport();
+                return false;
+            }
+
+            // [AUDIT][Risk:Major][Scope:blender_roundtrip]
+            // The magic-byte check decides, not the exporter's return value: ExportObject hands back a path for
+            // an ASCII file exactly as happily as for a binary one. It runs BEFORE the importer work for two
+            // reasons. Configuring animationType on a file that is about to be thrown away is a full
+            // SaveAndReimport of a 1.4MB model for nothing, and it dirties the AssetDatabase on the way. And the
+            // only thing that says "step 3 is done" is a bare File.Exists on ExportedRigPath (Flow.cs:172), so a
+            // rejected file left on disk turns the card green and takes step 4's warning away - pointing the
+            // user at a file Blender refuses to open.
+            if (!IsBinaryFbx(ToAbsoluteProjectPath(ExportedRigPath)))
+            {
+                DeleteRejectedRigExport();
+                message = "내보낸 FBX가 ASCII 형식이라 삭제했습니다. Blender는 ASCII FBX를 열지 못합니다"
+                    + " (\"ASCII FBX files are not supported\"). "
+                    + (requestedBinary
+                        ? "설치된 FBX Exporter 패키지가 Binary 형식 지정을 받아들이지 않았습니다. "
+                        : "설치된 FBX Exporter 패키지 버전에서는 Binary 모드를 지정할 방법이 없었습니다. ")
+                    + "Package Manager에서 FBX Exporter(com.unity.formats.fbx)를 설치하거나, 이미 있다면 "
+                    + "Remove 후 다시 Install 해서 복구한 뒤 3번을 다시 누르세요. "
+                    + "Project Settings의 Fbx Export 설정을 바꾸는 것으로는 해결되지 않습니다.";
+                return false;
             }
 
             AssetDatabase.ImportAsset(ExportedRigPath, ImportAssetOptions.ForceUpdate);
@@ -183,13 +231,6 @@ namespace Easy.ZepetoHelper.Editor
             {
                 importer.animationType = ModelImporterAnimationType.Human;
                 importer.SaveAndReimport();
-            }
-
-            if (!IsBinaryFbx(ToAbsoluteProjectPath(ExportedRigPath)))
-            {
-                message = "내보낸 FBX가 ASCII 형식입니다. Blender가 열지 못합니다. "
-                    + "Edit > Project Settings > Fbx Export에서 Export Format을 Binary로 바꾸고 다시 시도하세요.";
-                return false;
             }
 
             Avatar avatar = FindExportedRigAvatar();
@@ -231,6 +272,62 @@ namespace Easy.ZepetoHelper.Editor
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Removes an export that must not be left behind, .meta included. Called from every failing exit of
+        /// TryExportZepetoRigToFbx - the binary check, the exporter reporting failure, and the exception path -
+        /// because all three can leave a partial or unopenable file at ExportedRigPath.
+        ///
+        /// [QC][Invariant:rig_export_done_means_openable]
+        /// Nothing tracks "was the export usable" - step 3's done test and step 4's gate are both a bare
+        /// File.Exists on ExportedRigPath (Flow.cs:172, GoToBlender.cs:174). So a rejected file may not be left
+        /// behind: it would turn the card green, hide step 4's "3번을 먼저 하세요" warning, and name a file
+        /// Blender cannot open. The .meta goes with it, otherwise the next attempt inherits the dead file's
+        /// importer settings and Unity logs an orphaned-meta warning.
+        ///
+        /// Nothing on disk means nothing to do, and that exit comes first so a failure that never produced a
+        /// file does not pay for an AssetDatabase.Refresh.
+        ///
+        /// DeleteAsset is tried before the filesystem because it handles the .meta and the AssetDatabase entry
+        /// together, but it returns false for a path the AssetDatabase has never imported - which is the usual
+        /// case here, since the verification runs before ImportAsset. The filesystem delete covers that, with a
+        /// Refresh in case an earlier export had been imported at this path.
+        /// </summary>
+        private static void DeleteRejectedRigExport()
+        {
+            string absolute = ToAbsoluteProjectPath(ExportedRigPath);
+            if (!File.Exists(absolute) && !File.Exists(absolute + ".meta"))
+            {
+                return;
+            }
+
+            if (AssetDatabase.DeleteAsset(ExportedRigPath))
+            {
+                return;
+            }
+
+            try
+            {
+                if (File.Exists(absolute))
+                {
+                    File.Delete(absolute);
+                }
+
+                string metaPath = absolute + ".meta";
+                if (File.Exists(metaPath))
+                {
+                    File.Delete(metaPath);
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning("Easy ZEPETO Helper: could not delete the rejected rig export at "
+                    + ExportedRigPath + " (" + exception.Message + "). Delete it by hand - step 3 keeps "
+                    + "reporting done while that file is there.");
+            }
+
+            AssetDatabase.Refresh();
         }
 
         /// <summary>

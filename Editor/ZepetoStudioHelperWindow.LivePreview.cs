@@ -49,14 +49,26 @@ namespace Easy.ZepetoHelper.Editor
         private long livePendingSize = -1L;
         private bool liveReloadInFlight;
 
+        // True only while Unity is tearing the domain down. OnDisable fires for a domain reload as well as for a
+        // window that is really going away, and live preview must return its borrow in the second case only - the
+        // SessionState booking exists precisely so the borrow SURVIVES the reload that entering Play is. The flag
+        // is static on purpose: the reload wipes it, so the fresh domain starts at false again.
+        private static bool isAssemblyReloadInProgress;
+
         internal static string LiveClipAssetPath
         {
             get { return LivePreviewClipPath; }
         }
 
-        internal static string LiveWatchFolder
+        [InitializeOnLoadMethod]
+        private static void HookAssemblyReloadForLivePreview()
         {
-            get { return LiveWatchRoot; }
+            AssemblyReloadEvents.beforeAssemblyReload += MarkAssemblyReloadInProgress;
+        }
+
+        private static void MarkAssemblyReloadInProgress()
+        {
+            isAssemblyReloadInProgress = true;
         }
 
         // All cross-Play state lives in SessionState. Entering Play triggers a domain reload, which resets every
@@ -111,9 +123,17 @@ namespace Easy.ZepetoHelper.Editor
         {
             EditorApplication.update += PumpLiveReload;
 
-            // Closing the helper window mid-Play unsubscribes playModeStateChanged, so EnteredEditMode never
-            // fires and nothing puts the playback slot or Run In Background back. Catch that on the next open:
-            // if we are not playing, any leftover live-preview state is stale by definition.
+            // OnEnable can only run in a domain that is not reloading, so this is the natural place to clear the
+            // flag. A completed reload starts the fresh domain at false anyway; this also unsticks the flag if a
+            // reload was ever announced and then did not happen, which would otherwise suppress the teardown
+            // restore for the rest of the session.
+            isAssemblyReloadInProgress = false;
+
+            // The catch-up for every exit that no live window was around to handle. OnDestroy deliberately does
+            // NOT restore while Play is running - OnDestroy also fires for a window-LAYOUT reload, see
+            // ReturnLivePreviewBorrowOnTeardown - so the helper being closed mid-Play, the editor quitting while
+            // Play runs, and a restore that gave up because the LOADER was not bound yet all land here instead.
+            // If we are not playing, any leftover live-preview state is stale by definition.
             //
             // isPlayingOrWillChangePlaymode, not isPlaying: OnEnable also runs during the domain reload that
             // ENTERS Play, and isPlaying is not reliably true yet at that point. Using isPlaying would disarm
@@ -124,13 +144,133 @@ namespace Easy.ZepetoHelper.Editor
             {
                 // Deferred: OnEnable runs SubscribeLiveReload before RefreshAll, so the LOADER's serialized
                 // fields are not bound yet and ApplyClipToOverrideController would fail silently.
-                EditorApplication.delayCall += RestoreLivePreviewState;
+                //
+                // The window can be closed between this schedule and the callback, and the callback would then
+                // run against a destroyed EditorWindow. A destroyed EditorWindow compares == null, and the
+                // teardown path has already returned the borrow by then, so dropping the call is correct.
+                EditorApplication.delayCall += () =>
+                {
+                    if (this == null)
+                    {
+                        return;
+                    }
+
+                    RestoreLivePreviewState();
+                };
             }
         }
 
         private void UnsubscribeLiveReload()
         {
             EditorApplication.update -= PumpLiveReload;
+
+            // Deliberately does NOT return the live-preview borrow, even though OnDisable is where the window
+            // stops listening. OnDisable fires for two things that need opposite handling: the window really
+            // going away (must restore) and the domain reload that entering Play is (must NOT restore - the
+            // SessionState booking exists so the borrow survives that reload). From inside OnDisable the two are
+            // indistinguishable: isPlayingOrWillChangePlaymode is true for both, and beforeAssemblyReload is not
+            // guaranteed to have fired yet for the play-mode reload. Restoring one tick too early would disarm
+            // the watcher at the exact moment it is supposed to start. So the borrow is returned from OnDestroy,
+            // which Unity does not call for a reload - and even there only while Play is stopped, because
+            // OnDestroy cannot tell a closed window from a reloaded window LAYOUT either.
+        }
+
+        /// <summary>
+        /// The window's only OnDestroy. Unity does not call it for a domain reload, but it does call it for a
+        /// window-LAYOUT reload just as it does for a window the user really closed, so nothing here may read it
+        /// as "the user closed the helper" on its own - see ReturnLivePreviewBorrowOnTeardown.
+        /// </summary>
+        private void OnDestroy()
+        {
+            ReturnLivePreviewBorrowOnTeardown();
+            UnsubscribeActiveSceneWatch();
+        }
+
+        /// <summary>
+        /// Returns everything PrepareLivePreview borrowed when the window itself is going away WHILE PLAY IS
+        /// STOPPED. That single case is all this method handles; every mid-Play teardown is delegated.
+        ///
+        /// HANDLES: the helper being closed in Edit mode with a borrow still booked - a restore that gave up
+        /// earlier because the LOADER was not bound yet, or a live session that ended with no window open to hear
+        /// EnteredEditMode. Without this, runInBackground stays forced on as a stray ProjectSettings diff and the
+        /// user's own motion stays replaced by LiveFromBlender.anim, with no UI left to fix either.
+        ///
+        /// DELEGATES everything that happens while Play is running, because OnDestroy does NOT mean "the user
+        /// closed the window" then. Unity destroys every EditorWindow when the window LAYOUT is reloaded, and a
+        /// layout reload happens mid-Play for free: the Game view's stock "Maximize On Play" saves the layout and
+        /// loads a replacement one, as does any manual Window &gt; Layouts switch. Neither guard below sees it - a
+        /// layout reload is not an assembly reload, and Unity closes the old windows before creating the new ones,
+        /// so HasAnotherLiveHelperWindow is false. Restoring there disarmed live preview at the exact moment it
+        /// armed (LiveReloadArmed cleared, runInBackground turned back off, the user's clip written back over the
+        /// live clip) and the recreated window's OnEnable deliberately does not re-arm while playing, so the
+        /// feature died silently with Play still running. The clip half is worse than losing the arm: mid-Play it
+        /// is an ApplyOverrides + SaveAssets + ImportAsset on the very controller the live avatar is using, which
+        /// is the rebind this file's class docstring exists to avoid - it breaks the ZEPETO context.
+        ///
+        /// The two paths that take over are both already correct, and both survive a layout reload because the
+        /// booking lives in SessionState rather than on this instance:
+        ///   - OnPlayModeStateChanged/EnteredEditMode (Safety.cs) restores on Stop, through whichever window is
+        ///     open at that point.
+        ///   - the deferred OnEnable catch-up in SubscribeLiveReload restores on the next open, whenever we are
+        ///     not playing and LiveReloadArmed / LiveRestoreActive are still booked.
+        /// </summary>
+        private void ReturnLivePreviewBorrowOnTeardown()
+        {
+            // Play is running or starting: this OnDestroy carries no information about whether the helper was
+            // really closed, so it must not act. Returning here, before ANY restore work, is also what keeps the
+            // mid-Play controller rebind inside RestoreLivePreviewState out of reach. The SessionState booking is
+            // left exactly as it is on purpose - it is what the two delegated paths above read.
+            if (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                return;
+            }
+
+            // Belt and braces: a domain reload must never reach the restore. OnDestroy is not called for a
+            // reload, so this only matters if that ever changes.
+            if (isAssemblyReloadInProgress)
+            {
+                return;
+            }
+
+            // The borrow belongs to whichever window is still open, not to this one. The test runners create a
+            // ZepetoStudioHelperWindow with CreateInstance and DestroyImmediate it, which fires OnDestroy while a
+            // real window still holds the booking; returning the borrow there would clear it out from under that
+            // window. Mid-Play the check above has already returned, so this covers the stopped case only.
+            if (HasAnotherLiveHelperWindow())
+            {
+                return;
+            }
+
+            bool hasClipBorrow = SessionState.GetBool(LiveRestoreActiveSessionKey, false);
+            bool hasRunInBackgroundBorrow = !SessionState.GetBool(LiveRunInBackgroundSessionKey, true);
+            if (!LiveReloadArmed && !hasClipBorrow && !hasRunInBackgroundBorrow)
+            {
+                return;
+            }
+
+            // Synchronous on purpose. Deferring with delayCall would run the callback after this window is gone,
+            // and RestoreLivePreviewState needs this instance's bound LOADER fields to reach the playback slot.
+            // Safe to do synchronously here precisely because Play is stopped: the controller write it performs
+            // rebinds nothing that is running.
+            RestoreLivePreviewState();
+        }
+
+        /// <summary>
+        /// Whether any other helper window instance is still alive. A destroyed EditorWindow compares == null even
+        /// while its managed wrapper is still in the list, which is exactly what the null check filters out.
+        /// </summary>
+        private bool HasAnotherLiveHelperWindow()
+        {
+            ZepetoStudioHelperWindow[] windows = Resources.FindObjectsOfTypeAll<ZepetoStudioHelperWindow>();
+            for (int i = 0; i < windows.Length; i++)
+            {
+                if (windows[i] != null && windows[i] != this)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -528,12 +668,30 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// Puts back what live preview borrowed. Called from OnPlayModeStateChanged/EnteredEditMode, alongside
-        /// the two restore paths that already existed for the other preview flows.
+        /// Puts back what live preview borrowed and clears what the watcher was reporting. Called from
+        /// OnPlayModeStateChanged/EnteredEditMode, alongside the two restore paths that already existed for the
+        /// other preview flows, from the deferred OnEnable catch-up, and from window teardown while Play is
+        /// stopped (OnDestroy -> ReturnLivePreviewBorrowOnTeardown, which never calls this mid-Play).
+        ///
+        /// Every caller is therefore in Edit mode. That is a hard requirement, not a coincidence: the clip half
+        /// goes through ApplyClipToOverrideController, i.e. ApplyOverrides + SaveAssets + ImportAsset on the
+        /// controller, and doing that while the live avatar is playing breaks the ZEPETO context. Never call this
+        /// from a path that can run during Play.
         /// </summary>
         private void RestoreLivePreviewState()
         {
             LiveReloadArmed = false;
+
+            // The watch triple and the message describe a watcher that no longer exists. Left in SessionState they
+            // outlive the thing they describe: after Stop the panel kept showing an old warning about a file it is
+            // not watching any more. Same reset block PrepareLivePreview runs when it arms the watcher.
+            // LiveWatchedSize stays a string (SessionState has no long overload); -1 is its "nothing watched"
+            // value, which is exactly what its getter reports for a missing key.
+            LiveWatchedFile = string.Empty;
+            LiveWatchedSize = -1L;
+            LiveWatchedStamp = string.Empty;
+            LiveMessage = string.Empty;
+            livePendingSize = -1L;
 
             if (SessionState.GetBool(LiveRunInBackgroundSessionKey, true) == false)
             {

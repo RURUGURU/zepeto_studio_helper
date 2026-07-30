@@ -18,6 +18,7 @@ namespace Easy.ZepetoHelper.Editor
     {
         private const string PreviewBodyName = "[미리보기] ZEPETO 기본 몸 - Play 하면 사라집니다";
         private const string PreviewBodyEnabledPrefKey = "com.easy.zepeto-helper.showPreviewBody";
+        private const string ScenePreviewOverlayPrefKey = "com.easy.zepeto-helper.showScenePreviewOverlay";
 
         private GameObject previewBody;
         private bool previewBodySyncQueued;
@@ -26,6 +27,16 @@ namespace Easy.ZepetoHelper.Editor
         {
             get { return EditorPrefs.GetBool(PreviewBodyEnabledPrefKey, true); }
             set { EditorPrefs.SetBool(PreviewBodyEnabledPrefKey, value); }
+        }
+
+        /// <summary>
+        /// Whether OnSceneViewGui draws its helper box over the Scene view. A view preference, so EditorPrefs like
+        /// the stand-in toggle above - not SessionState, which is for state that must not outlive the session.
+        /// </summary>
+        private static bool ScenePreviewOverlayEnabled
+        {
+            get { return EditorPrefs.GetBool(ScenePreviewOverlayPrefKey, true); }
+            set { EditorPrefs.SetBool(ScenePreviewOverlayPrefKey, value); }
         }
 
         /// <summary>
@@ -100,16 +111,58 @@ namespace Easy.ZepetoHelper.Editor
             RemoveStrayPreviewBodies();
         }
 
+        /// <summary>
+        /// Recovery path for stand-ins nobody owns any more - the ones a previous session left behind in the scene
+        /// file. The tracked `previewBody` reference is the normal way one gets removed.
+        ///
+        /// The match is the NAME, and it has to stay that way. Do not add a "must carry HideFlags.DontSave" gate:
+        /// that would skip exactly the objects this sweep exists for. Unity never serialises a DontSave object, so
+        /// anything that survived an editor restart under this name provably LOST the flag (an older build, a
+        /// Hierarchy duplicate, a user clearing it) and is a leaked stand-in by definition - and one that now does
+        /// land in the .unity file and in any .zepeto export. A DontSave gate made the sweep a no-op twice over,
+        /// because FindObjectsOfType does not return DontSave objects in the first place. The name is
+        /// self-describing enough ("[미리보기] ... Play 하면 사라집니다") that nothing else in a user's scene wears it.
+        ///
+        /// One guard remains, and it is the one that was actually wanted: a body another open helper window still
+        /// owns is left alone (a second window used to lose its stand-in the moment this one swept).
+        /// </summary>
         private static void RemoveStrayPreviewBodies()
         {
+            ZepetoStudioHelperWindow[] windows = Resources.FindObjectsOfTypeAll<ZepetoStudioHelperWindow>();
             GameObject[] all = UnityEngine.Object.FindObjectsOfType<GameObject>(true);
             for (int i = 0; i < all.Length; i++)
             {
-                if (all[i] != null && all[i].name == PreviewBodyName)
+                GameObject candidate = all[i];
+                if (candidate == null || candidate.name != PreviewBodyName)
                 {
-                    UnityEngine.Object.DestroyImmediate(all[i]);
+                    continue;
+                }
+
+                if (IsOwnedByLiveHelperWindow(candidate, windows))
+                {
+                    continue;
+                }
+
+                UnityEngine.Object.DestroyImmediate(candidate);
+            }
+        }
+
+        private static bool IsOwnedByLiveHelperWindow(GameObject body, ZepetoStudioHelperWindow[] windows)
+        {
+            if (windows == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < windows.Length; i++)
+            {
+                if (windows[i] != null && windows[i].previewBody == body)
+                {
+                    return true;
                 }
             }
+
+            return false;
         }
 
         /// <summary>
@@ -169,6 +222,14 @@ namespace Easy.ZepetoHelper.Editor
                 previewBodySyncQueued = true;
                 EditorApplication.delayCall += () =>
                 {
+                    // The window can be closed between the schedule and the callback. A destroyed EditorWindow
+                    // compares == null; without this the callback would instantiate a stand-in that no window
+                    // owns and then Repaint a window that no longer exists.
+                    if (this == null)
+                    {
+                        return;
+                    }
+
                     previewBodySyncQueued = false;
                     SyncPreviewBody();
                     Repaint();
@@ -200,6 +261,21 @@ namespace Easy.ZepetoHelper.Editor
                 }
             }
             EditorGUILayout.EndHorizontal();
+
+            // The Scene-view overlay toggle. It reads and writes an EditorPrefs pair exactly like the stand-in
+            // toggle above; OnSceneViewGui is the only reader. Drawn unconditionally, like every control here.
+            EditorGUI.BeginChangeCheck();
+            bool overlayEnabled = EditorGUILayout.ToggleLeft(
+                "Scene View에 도움말 겹쳐 보이기",
+                ScenePreviewOverlayEnabled);
+            if (EditorGUI.EndChangeCheck())
+            {
+                ScenePreviewOverlayEnabled = overlayEnabled;
+
+                // The Scene view is a different window, so it repaints on its own schedule and would keep the old
+                // state on screen until something else made it redraw.
+                SceneView.RepaintAll();
+            }
 
             if (!hasRig)
             {

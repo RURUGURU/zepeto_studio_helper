@@ -111,14 +111,42 @@ namespace Easy.ZepetoHelper.Editor
             {
                 validationMessages.Add(new ValidationMessage("LOADER AnimationClip points to a package source. Copy it before editing: " + path, MessageType.Warning));
             }
-            else if (path.StartsWith(AnimationCopyRoot + "/", StringComparison.OrdinalIgnoreCase))
+            else if (IsClipEditEligiblePath(path))
             {
                 validationMessages.Add(new ValidationMessage("LOADER AnimationClip is ready for clip adjust: " + path, MessageType.Info));
             }
             else
             {
-                validationMessages.Add(new ValidationMessage("LOADER AnimationClip points to a project asset. Clip adjust only supports " + AnimationCopyRoot + ": " + path, MessageType.Warning));
+                validationMessages.Add(new ValidationMessage(
+                    "LOADER AnimationClip points to a project asset. Clip adjust only supports "
+                    + AnimationCopyRoot + " or " + CustomMotionRoot + ": " + path, MessageType.Warning));
             }
+        }
+
+        /// <summary>
+        /// Whether a clip at this path may be used as the SOURCE of a clip edit.
+        /// </summary>
+        /// <remarks>
+        /// Both helper roots qualify because both are project-writable folders this package owns:
+        /// AnimationCopyRoot ("Assets/ZepetoHelper/Animations") holds the step-2 "_editable" copies, and
+        /// CustomMotionRoot ("Assets/ZepetoHelper/Motions") is where the Blender add-on bridge and manual FBX
+        /// import land their motions (LiveFromBlender.anim, extracted takes). Accepting only the first one made
+        /// step 6 permanently unreachable for everything the Blender / import pipeline produces.
+        /// The SDK's own package folders must stay ineligible: Packages/ and Library/PackageCache/ are read-only
+        /// and shared across projects, so an edit there would corrupt the SDK for every project on the machine -
+        /// IsPackageOrPackageCachePath rejects those before this check runs.
+        /// This widens ELIGIBILITY (which clip may be read) only. It does not merge the two path constants, and
+        /// it does not change where edits are WRITTEN - saves still go to ClipEditRoot.
+        /// </remarks>
+        private static bool IsClipEditEligiblePath(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                return false;
+            }
+
+            return assetPath.StartsWith(AnimationCopyRoot + "/", StringComparison.OrdinalIgnoreCase)
+                || assetPath.StartsWith(CustomMotionRoot + "/", StringComparison.OrdinalIgnoreCase);
         }
 
         private void ValidateAnimatorController()
@@ -156,7 +184,7 @@ namespace Easy.ZepetoHelper.Editor
             {
                 validationMessages.Add(new ValidationMessage("재생 슬롯이 비어 있습니다. 2번에서 동작을 다시 적용하세요.", MessageType.Warning));
             }
-            else if (playbackClip.length <= 0.1f)
+            else if (playbackClip.length <= StaticPoseMaxLength)
             {
                 validationMessages.Add(new ValidationMessage(
                     "재생 슬롯이 정지 포즈입니다 (" + playbackClip.name + ", " + playbackClip.length.ToString("0.00") + "s). "

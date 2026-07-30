@@ -131,7 +131,7 @@ namespace Easy.ZepetoHelper.Editor
         private string GetExpectedZepetoPackagePath()
         {
             // [QA][Acceptance:visible_output_path]
-            // Step 4 reads this path before and after export so users can see exactly where the .zepeto file should be.
+            // Step 7 reads this path before and after export so users can see exactly where the .zepeto file should be.
             string officialPath = GetOfficialZepetoPackagePath();
             if (string.IsNullOrEmpty(officialPath))
             {

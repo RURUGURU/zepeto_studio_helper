@@ -90,7 +90,7 @@ namespace Easy.ZepetoHelper.Editor
             EditorGUILayout.EndHorizontal();
 
             DrawMiniHelp(
-                "이 창의 1~4단계는 '내가 만든 의상이 움직일 때 어떻게 보이는지' 확인하는 미리보기 흐름입니다. "
+                "이 창의 1~7단계는 '내가 만든 의상이 움직일 때 어떻게 보이는지' 확인하는 미리보기 흐름입니다. "
                 + "여기서 고른 동작은 .zepeto 파일에 들어가지 않습니다 — 업로드되는 것은 의상뿐입니다.",
                 MessageType.None);
 

@@ -129,7 +129,9 @@ namespace Easy.ZepetoHelper.Editor
                 motionPreviewRestoreClip = null;
             }
 
-            RequestPlayMode(2);
+            // Internal stage number, not a card number: PreviewStageMotion is 2, and card 2's preview shares it
+            // with card 5's live preview because both are "a Play session that borrowed the playback slot".
+            RequestPlayMode(PreviewStageMotion);
             if (!EditorApplication.isPlayingOrWillChangePlaymode && isTemporarySelectedMotionPreview)
             {
                 RestoreTemporarySelectedMotionPreview();

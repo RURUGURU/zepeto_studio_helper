@@ -13,8 +13,15 @@ namespace Easy.ZepetoHelper.Editor
     public sealed partial class ZepetoStudioHelperWindow
     {
         // [QC][Invariant:sdk_detection]
-        // Detection must not depend on how the SDK was installed. A registry package lives in Library/PackageCache,
-        // an embedded or file: package lives in Packages/, and both resolve through the Packages/<name> virtual path.
+        // Detection must not depend on how the SDK was installed, so both places Unity can physically put it are
+        // probed: an embedded package is a real folder at Packages/<name>, while a registry dependency (and a
+        // "file:" TARBALL dependency) is extracted to Library/PackageCache/<name>@<version>.
+        // Verified against this project, which resolves zepeto.studio 3.2.16 out of
+        // Library/PackageCache/zepeto.studio@3.2.16 via the ZEPETO scoped registry in Packages/manifest.json -
+        // there is no Packages/zepeto.studio folder, so the embedded probe misses and the registry probe answers.
+        // NOT covered: a "file:<folder>" dependency, which Unity leaves where it points and copies into neither
+        // location; only the Packages/<name> *virtual* path resolves for those, and this probe is a filesystem
+        // probe. No dependency in this project is of that form.
         private static bool TryGetZepetoStudioPackage(out string version, out string source)
         {
             version = string.Empty;
@@ -42,10 +49,22 @@ namespace Easy.ZepetoHelper.Editor
                 string bestVersion = string.Empty;
                 for (int i = 0; i < directories.Length; i++)
                 {
+                    string folderName = Path.GetFileName(directories[i]);
+
+                    // Windows wildcard matching also tests a directory's 8.3 short name - the same trap that
+                    // forces both fbx enumerations to skip ".part" by hand - so "<name>@*" can hand back an entry
+                    // whose long name is not that at all. Confirm the prefix on the long name, then read the
+                    // version from the '@' instead of from RequiredPackage.Length, which would throw
+                    // ArgumentOutOfRangeException on any shorter name that slipped through.
+                    if (!folderName.StartsWith(RequiredPackage + "@", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
                     string manifest = Path.Combine(directories[i], "package.json");
                     string candidate = File.Exists(manifest)
                         ? ReadPackageVersion(manifest)
-                        : Path.GetFileName(directories[i]).Substring(RequiredPackage.Length + 1);
+                        : folderName.Substring(folderName.IndexOf('@') + 1);
                     if (string.IsNullOrEmpty(candidate))
                     {
                         continue;

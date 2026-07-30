@@ -12,6 +12,10 @@
 [![Guide](https://img.shields.io/badge/guide-beginner%20friendly-2563eb)](#처음-사용하는-순서)
 [![QA](https://img.shields.io/badge/QA-60%20self%20tests%20passing-22c55e)](Documentation~/QA_AUDIT.md)
 
+**아래 캡처를 포함해 `docs/images/`의 캡처 7장은 배포 전에 반드시 교체해야 합니다.**
+**제작자의 개인 ZEPETO 아이디와 개인 아바타가 그대로 보이고, 화면 구조도 0.2.x(4단계) 시절입니다.**
+**바로 아래 `캡처 이미지 경고`를 먼저 읽으세요.**
+
 ![ZEPETO Studio Helper 전체 워크플로우](docs/images/workflow-overview.png)
 
 ### 실제 Play 확인 화면
@@ -28,6 +32,58 @@ Helper의 `Play` 버튼을 누르면 Unity `Game View`에서 아래처럼 아바
 </details>
 
 </div>
+
+## 캡처 이미지 경고 (배포 전 필독)
+
+> **`docs/images/`의 캡처 7장은 아직 아무것도 고치지 않은 0.2.x 시절 원본입니다.**
+> 0.9.0에서 정리한 것은 **코드와 markdown 텍스트뿐이고, 캡처 이미지는 손대지 않았습니다.**
+> `npm pack`은 `docs/`를 포함하고 이 README가 캡처를 직접 불러오므로, tarball과 GitHub에 렌더링된 README
+> 양쪽에 아래 내용이 그대로 노출됩니다.
+
+### 1. 개인 정보가 픽셀로 남아 있습니다
+
+아이디가 **텍스트가 아니라 이미지 픽셀**이라 `grep`으로는 찾을 수 없습니다. 자체 테스트의
+`no-personal-id-in-source` 검사도 `.cs`와 `.md`만 읽으므로 **구조적으로 PNG를 볼 수 없습니다** —
+그 검사가 초록이어도 이미지는 검증된 것이 아닙니다.
+
+| 파일 | 화면에 보이는 것 |
+| --- | --- |
+| `docs/images/helper-window.png` | `현재 아이디` 줄과 `아이디` 입력칸에 제작자의 실제 ZEPETO 아이디 |
+| `docs/images/step-1-avatar-outfit.png` | 같은 두 곳에 같은 아이디 |
+| `docs/images/workflow-overview.png` | 위 `step-1` 캡처를 썸네일로 품고 있어 아이디가 작게 그대로 보임. 오른쪽 `PLAY` 칸에는 표 마지막 줄의 `play-preview` 캡처도 그대로 들어 있음 |
+| `docs/images/play-preview.png` | 제작자 본인 아바타의 얼굴·머리·의상 |
+
+**tarball을 만들거나 저장소를 공개하기 전에 위 4개를 다시 찍거나 해당 영역을 가려야 합니다.**
+(나머지 3장 — `step-2-motion-select.png`, `step-3-clip-adjust.png`, `step-4-save-export.png` — 에서는
+1번 카드가 접혀 있어 아이디가 보이지 않습니다.)
+
+### 2. 7장 전부가 7단계 재작성보다 앞섭니다
+
+저장소 이력상 이 이미지들은 모두 **2026-05-24 커밋에 추가된 0.2.x(4단계 마법사) 화면**입니다
+(`git log --diff-filter=A -- docs/images`). 디스크상 파일 시각은 `2026-07-25 16:30`으로 찍혀 있지만
+그것은 복사 시각이지 촬영 시각이 아닙니다. 어느 쪽 날짜든 0.9.0 7단계 재작성(2026-07-28)보다 이전입니다.
+
+그래서 캡처에는 **지금은 존재하지 않는 화면**이 나옵니다.
+
+- 헤더의 `v7 ZEPETO 작업대` 와 `1. 아바타 / 2. 동작 / 3. 클립 / 4. Export` 4칸 레일
+- `1-1. 아이디 입력` / `1-2. 의상 선택` / `1-3. Play 확인` 하위 번호
+- `1번 적용 / 다음 단계`, `수정 잠금 해제`, `이전 단계를 완료하면 열립니다` — 단계 잠금은 0.9.0에서 제거됐습니다
+
+캡처의 번호를 지금 화면의 카드 번호로 읽는 표:
+
+| 캡처에 보이는 제목 | 현재 카드 |
+| --- | --- |
+| `1. 아바타와 의상 준비` | **1**번 아바타 준비 |
+| `2. 동작 선택` | **2**번 동작 고르기 |
+| `3. 클립 조정` | **6**번 클립 조정 |
+| `4. 저장과 내보내기` | **7**번 제페토로 내보내기 |
+
+최상단 `workflow-overview.png`는 Unity 캡처 하나가 아니라 위 캡처들을 모아 만든 도식이고, 도식 자체도
+`1 아바타와 의상 → 2 동작 선택 → 3 클립 조정 → 4 저장과 내보내기` 4단계에 `완료 단계는 잠기고 다음
+단계가 열립니다`라고 적혀 있습니다. **지금은 7단계이고 잠기는 단계가 없습니다.**
+
+3·4·5번(Blender 왕복) 캡처는 **없습니다.** 그 기능이 생긴 뒤에 찍은 캡처가 한 장도 없습니다.
+버튼 이름과 조정 항목 자체는 대체로 그대로이므로, 번호와 배치만 위 표로 바꿔 읽으면 됩니다.
 
 ## 한 줄 요약
 
@@ -53,7 +109,7 @@ Window > Easy > ZEPETO Studio Helper
 
 | 지금 상태 | 바로 할 일 |
 | --- | --- |
-| ZEPETO SDK 프로젝트가 이미 있음 | `설치 방법`에서 Git URL로 helper 추가 |
+| ZEPETO SDK 프로젝트가 이미 있음 | `설치 방법`을 보고 helper 추가 (Git URL 주의 사항을 먼저 읽으세요) |
 | helper 설치는 끝났는데 창을 못 찾겠음 | `Window > Easy > ZEPETO Studio Helper` 열기 |
 | 창은 열렸는데 1번에서 막힘 | `LOADER`가 있는 scene인지 확인 |
 | 의상 선택 목록이 비어 있음 | 의상 prefab을 `Assets/Contents` 아래로 옮기기 |
@@ -94,7 +150,7 @@ Unity 창을 다시 클릭할 때마다 내 아바타에 바로 반영됩니다.
 1번의 `아이디` 칸에 직접 입력하고 `ID 적용`을 누릅니다.
 
 - 아이디는 **씬의 `LOADER`에만** 저장됩니다. 창을 다시 열면 거기 있는 값을 그대로 읽어옵니다.
-- 앞의 `@`와 공백은 자동으로 지워집니다. `@sery_2750`을 붙여넣어도 `sery_2750`으로 들어갑니다.
+- 앞의 `@`와 공백은 자동으로 지워집니다. `@my_zepeto_id`를 붙여넣어도 `my_zepeto_id`로 들어갑니다.
 - 쓸 수 있는 문자는 영문, 숫자, `_`, `.`, `-` 입니다.
 - 아이디를 바꾸면 아바타가 달라지므로 1번을 다시 확인하게 됩니다.
 
@@ -123,6 +179,9 @@ ZEPETO는 **Humanoid 애니메이션만** 재생합니다.
 | `(Humanoid 아님)` | 재생 불가. `1. FBX를 ZEPETO용으로 설정`을 먼저 하세요 |
 
 ## 실제 화면으로 따라하기
+
+> 이 절의 캡처 전부가 0.2.x(4단계) 화면입니다. 번호와 배치를 지금 화면으로 바꿔 읽는 방법과,
+> 캡처에 남아 있는 개인 정보는 위 `캡처 이미지 경고`에 한 번에 정리해 두었습니다.
 
 ### 1. 아바타 준비
 
@@ -178,7 +237,27 @@ Blender에서 ZEPETO의 실제 뼈 이름·뼈대로 작업하기 위한 파일�
 
 ## 설치 방법
 
-### 가장 쉬운 설치
+> **먼저 읽어주세요. Git URL로 설치하면 이 README의 기능이 들어오지 않습니다.**
+>
+> 공개 저장소의 `origin/main`에 올라가 있는 것은 **0.2.4**입니다. 4단계 마법사 버전이고
+> **Blender 왕복(3·4·5번)이 없습니다.** 이 문서가 설명하는 0.9.1은 아직 push하지 않은 로컬 커밋에만
+> 있습니다. 그래서 아래 `Add package from git URL`과 `manifest.json`의 git 주소는 0.9.1이 아니라
+> 0.2.4를 설치합니다.
+>
+> 7단계 흐름과 Blender 왕복을 쓰려면 이 패키지 폴더를 프로젝트의 `Packages/` 아래에 그대로 두세요
+> (임베디드 설치).
+>
+> ```text
+> <Unity 프로젝트 폴더>/Packages/com.easy.zepeto-helper/
+> ```
+>
+> **이때 `manifest.json`에는 아무것도 적지 않습니다.** Unity가 `Packages/` 아래 폴더를 자동으로
+> 인식합니다. 이 프로젝트의 `Packages/manifest.json`에도 `com.easy.zepeto-helper` 항목이 없습니다.
+>
+> 자세한 방법은 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)의 `helper 패키지 추가`에 있습니다.
+> 아래 git 주소 방법은 저장소가 갱신된 뒤에 쓸 수 있습니다.
+
+### 가장 쉬운 설치 (다만 지금은 0.2.4가 설치됩니다)
 
 Unity에서 아래 순서대로 클릭합니다.
 
@@ -190,6 +269,9 @@ Unity에서 아래 순서대로 클릭합니다.
 ```text
 https://github.com/RURUGURU/zepeto_studio_helper.git
 ```
+
+이 주소로 받은 것은 위에서 설명한 대로 **0.2.4**입니다. 창에 1~4번만 보이고 `Blender 열기`,
+`내 캐릭터로 확인 시작 (Play)` 버튼이 없으면 이 버전을 받은 것입니다.
 
 설치가 끝나면 아래 메뉴가 생깁니다.
 
@@ -205,7 +287,7 @@ Unity 프로젝트의 `Packages/manifest.json`에 필요한 줄만 추가합니�
 {
   "dependencies": {
     "com.easy.zepeto-helper": "https://github.com/RURUGURU/zepeto_studio_helper.git",
-    "zepeto.studio": "3.2.12"
+    "zepeto.studio": "3.2.16"
   },
   "scopedRegistries": [
     {
@@ -221,23 +303,38 @@ Unity 프로젝트의 `Packages/manifest.json`에 필요한 줄만 추가합니�
 
 이미 `dependencies`나 `scopedRegistries`가 있다면 전체 파일을 덮어쓰지 말고 위 항목만 합쳐 넣습니다.
 
+`zepeto.studio` 줄에 대해:
+
+- 위 값 `3.2.16`은 **검증한 프로젝트에 실제로 들어 있는 버전**입니다. 그대로 붙여넣어도 안전합니다.
+- helper가 요구하는 **최소** 버전은 `3.2.12`입니다. 그보다 낮으면 helper가 안내를 표시합니다.
+- 이미 `zepeto.studio`가 있고 버전이 `3.2.16` 이상이면 **그 줄은 건드리지 마세요.** 낮은 값으로 바꾸면
+  SDK가 다운그레이드됩니다.
+
 ### tarball로 설치
 
 GitHub가 아니라 파일로 설치하고 싶을 때 사용합니다.
 
+`npm pack`은 **지금 checkout되어 있는 내용을 그대로** 압축합니다. 저장소를 clone해서 압축하면
+위에서 말한 0.2.4가 나오므로, 0.9.1 tarball은 0.9.1이 들어 있는 로컬 패키지 폴더에서 만들어야 합니다.
+
 ```powershell
-git clone https://github.com/RURUGURU/zepeto_studio_helper.git
-cd zepeto_studio_helper
+cd <Unity 프로젝트 폴더>\Packages\com.easy.zepeto-helper
 npm pack
 ```
 
-생성되는 파일:
+생성되는 파일 (이름의 버전은 `package.json`의 `version`을 따릅니다):
 
 ```text
-com.easy.zepeto-helper-0.9.0.tgz
+com.easy.zepeto-helper-0.9.1.tgz
 ```
 
 Unity에서는 `Window > Package Manager > + > Add package from tarball...`을 누르고 `.tgz` 파일을 선택합니다.
+
+tarball에 들어가는 것은 `.npmignore`가 정합니다. README가 링크하는 `docs/`(환경 문서 + 캡처 이미지)는
+포함되고, 내부 QA 기록인 `Documentation~/`는 **빠집니다**. QA 기록은 저장소에서만 볼 수 있습니다.
+
+> **여기서 멈추세요.** `docs/`가 포함된다는 것은 **캡처 이미지 4장의 개인 아이디와 개인 아바타가 이
+> tarball에 그대로 들어간다**는 뜻입니다. 위 `캡처 이미지 경고`를 처리하기 전에는 배포하지 마세요.
 
 ## 버튼 이름이 헷갈릴 때
 
@@ -298,10 +395,11 @@ Assets/Contents/TRANSPARENT_1/ZEPETO_TRANSPARENT_1_VideoBooth_139_v02.zepeto
 | Unity | `2020.3.9f1` |
 | ZEPETO Studio | `3.2.12` 이상 (`3.2.16`에서 확인) |
 | 패키지 이름 | `com.easy.zepeto-helper` |
-| 패키지 버전 | `0.9.0` |
+| 패키지 버전 | `0.9.1` |
 | ZEPETO registry | `https://upm.zepeto.run` |
 
 환경 설정 상세는 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md), 검증 기록은 [Documentation~/QA_AUDIT.md](Documentation~/QA_AUDIT.md)에 정리되어 있습니다.
+`Documentation~/`는 배포 tarball에 넣지 않으므로, QA 기록은 저장소에서 보세요.
 
 ## 개발자 명령어
 
@@ -327,11 +425,11 @@ npm pack
 
 ```powershell
 New-Item -ItemType Directory -Force -Path ..\..\Build\Packages
-Move-Item -Force .\com.easy.zepeto-helper-0.9.0.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.9.0.tgz
+Move-Item -Force .\com.easy.zepeto-helper-0.9.1.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.9.1.tgz
 ```
 
 압축 파일 내용 확인:
 
 ```powershell
-tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.9.0.tgz
+tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.9.1.tgz
 ```

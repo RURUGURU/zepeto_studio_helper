@@ -8,10 +8,38 @@ using UnityEngine;
 namespace Easy.ZepetoHelper.Editor
 {
     /// <summary>
-    /// The 1-4 stage state machine and its progress display.
+    /// The internal 4-stage state machine that drives the seven step cards, and its progress display.
+    /// The stage numbers are NOT card numbers - see the PreviewStage constants below for the mapping.
     /// </summary>
     public sealed partial class ZepetoStudioHelperWindow
     {
+        // ------------------------------------------------------------ preview stage identity
+        //
+        // The window draws SEVEN numbered cards (Flow.cs). This state machine still has only FOUR stages: it
+        // predates the card layout and its numbers do not line up with the card numbers. The mapping is:
+        //
+        //     PreviewStageAvatarOutfit = 1  ->  card 1  "아바타 준비"
+        //     PreviewStageMotion       = 2  ->  card 2  "동작 고르기"  AND  card 5  "내 캐릭터로 확인"
+        //     PreviewStageClipAdjust   = 3  ->  card 6  "클립 조정"
+        //     PreviewStageExport       = 4  ->  card 7  "제페토로 내보내기"
+        //
+        // Cards 3 and 4 (the Blender round trip) own no stage of their own. What they produce comes back through
+        // card 2's motion list, so the whole detour lives inside stage 2.
+        //
+        // Stage 2 is deliberately shared by two cards: card 2's preview enters Play through
+        // RequestPlayMode(2) (Motion.cs) and card 5's live preview sets the same stage in RequestLivePreviewPlay
+        // (Safety.cs). Both mean "a motion is being tried on the avatar", and the only thing the stage decides is
+        // which Play session is active - so one stage for both is correct, not a leftover.
+        //
+        // The VALUES are load-bearing and must never be renumbered to match the card numbers. activePreviewStage
+        // is persisted in SessionState (ActivePreviewStageSessionKey), so a live editor session can already hold
+        // one of these ints, and Motion.cs passes its stage as a literal 2. Renumbering silently kills the
+        // clip-adjust preview, whose Play path is gated on stage 3 alone (Safety.cs, RequestPlayMode).
+        private const int PreviewStageAvatarOutfit = 1;
+        private const int PreviewStageMotion = 2;
+        private const int PreviewStageClipAdjust = 3;
+        private const int PreviewStageExport = 4;
+
         private enum StepState
         {
             Ready,
@@ -26,20 +54,15 @@ namespace Easy.ZepetoHelper.Editor
             public SafetySnapshot Safety;
             public string CurrentZepetoId;
             public bool HasLoader;
-            public bool HasZepetoIdField;
             public bool HasZepetoId;
             public bool HasOutfit;
             public bool OutfitIsUnderContents;
             public bool HasSelectedPackageAnimation;
-            public bool HasCopiedAnimation;
             public bool HasAssignedAnimation;
             public bool HasEditableAssignedAnimation;
             public bool HasLocalAnimatorController;
-            public bool HasPreviewInputs;
             public bool HasAvatarPlayInputs;
             public bool HasMotionPlayInputs;
-            public bool CanPlay;
-            public bool CanPlayAvatarOutfit;
             public bool CanPlayMotion;
             public bool CanClipEdit;
             public string OutfitPath;
@@ -145,34 +168,47 @@ namespace Easy.ZepetoHelper.Editor
         {
             if (!workflow.HasAvatarPlayInputs || !workflow.HasOutfit || !avatarOutfitStageComplete)
             {
-                return 1;
+                return PreviewStageAvatarOutfit;
             }
 
             if (!workflow.HasEditableAssignedAnimation || !motionSelectStageComplete)
             {
-                return 2;
+                return PreviewStageMotion;
             }
 
             if (!clipStageComplete)
             {
-                return 3;
+                return PreviewStageClipAdjust;
             }
 
-            return 4;
+            return PreviewStageExport;
         }
 
+        /// <summary>
+        /// The header's "현재 작업" row. Every number printed here must be a number the user can find on a card
+        /// below, so each line quotes its card's title verbatim (Flow.cs).
+        ///
+        /// Four stages cover seven cards. Stage 2 spans card 2 and cards 3-5, and the live-preview card is the
+        /// only one of those with its own detectable state - the Blender watcher being armed - so it gets its own
+        /// line. Cards 3 and 4 have no state to report while the user is away in Blender; the "다음 행동" row
+        /// below points at them instead.
+        /// </summary>
         private string GetCurrentStageText(WorkflowStatus workflow)
         {
             switch (GetActiveStageNumber(workflow))
             {
-                case 1:
-                    return "1. 아바타+의상 준비";
-                case 2:
-                    return "2. 동작 선택";
-                case 3:
-                    return "3. 클립 조정";
+                case PreviewStageAvatarOutfit:
+                    return "1. 아바타 준비";
+                case PreviewStageMotion:
+                    // Label-only branch. Card 5's own Done check (Flow.cs) uses the same two values, and only the
+                    // TEXT varies here - no control's existence depends on it, per the unconditional-draw rule.
+                    return EditorApplication.isPlaying && LiveReloadArmed
+                        ? "5. 내 캐릭터로 확인"
+                        : "2. 동작 고르기";
+                case PreviewStageClipAdjust:
+                    return "6. 클립 조정";
                 default:
-                    return "4. 저장/Export";
+                    return "7. 제페토로 내보내기";
             }
         }
 
@@ -180,13 +216,13 @@ namespace Easy.ZepetoHelper.Editor
         {
             switch (stage)
             {
-                case 1:
+                case PreviewStageAvatarOutfit:
                     return workflow.HasAvatarPlayInputs && workflow.HasOutfit && avatarOutfitStageComplete;
-                case 2:
+                case PreviewStageMotion:
                     return workflow.HasEditableAssignedAnimation && motionSelectStageComplete;
-                case 3:
+                case PreviewStageClipAdjust:
                     return workflow.CanClipEdit && clipStageComplete;
-                case 4:
+                case PreviewStageExport:
                     return workflow.HasEditableAssignedAnimation && workflow.HasOutfit && avatarOutfitStageComplete && motionSelectStageComplete && clipStageComplete;
                 default:
                     return false;
@@ -270,27 +306,27 @@ namespace Easy.ZepetoHelper.Editor
             workflow.Safety = snapshot;
             workflow.CurrentZepetoId = GetCurrentZepetoId();
             workflow.HasLoader = loader != null;
-            workflow.HasZepetoIdField = zepetoIdProperty != null;
             workflow.HasZepetoId = !string.IsNullOrEmpty(workflow.CurrentZepetoId);
             workflow.HasOutfit = clothingPrefab != null;
             workflow.OutfitPath = clothingPrefab == null ? string.Empty : AssetDatabase.GetAssetPath(clothingPrefab);
             workflow.OutfitIsUnderContents = !string.IsNullOrEmpty(workflow.OutfitPath)
                 && workflow.OutfitPath.StartsWith(ContentsRoot + "/", StringComparison.OrdinalIgnoreCase);
             workflow.HasSelectedPackageAnimation = GetSelectedPackageAnimation() != null;
-            workflow.HasCopiedAnimation = copiedAnimationClip != null;
             workflow.AssignedAnimation = GetAssignedAnimationClip();
             workflow.HasAssignedAnimation = workflow.AssignedAnimation != null;
             workflow.AssignedAnimationPath = workflow.AssignedAnimation == null ? string.Empty : AssetDatabase.GetAssetPath(workflow.AssignedAnimation);
+            // [QC][Invariant:clip_edit_reachable]
+            // AnimationCopyRoot alone is not the answer: step 2's _editable copies land there, but everything the
+            // Blender/live pipeline produces lands in CustomMotionRoot, and testing only the copy root made card 6
+            // permanently unreachable for exactly the motions this tool exists to author. Both roots are eligible,
+            // and the two-root test lives in IsClipEditEligiblePath so this and Validation.cs cannot drift apart.
             workflow.HasEditableAssignedAnimation = workflow.HasAssignedAnimation
-                && workflow.AssignedAnimationPath.StartsWith(AnimationCopyRoot + "/", StringComparison.OrdinalIgnoreCase);
+                && IsClipEditEligiblePath(workflow.AssignedAnimationPath);
             workflow.AnimatorControllerPath = GetAnimatorControllerPath();
             workflow.HasLocalAnimatorController = !string.IsNullOrEmpty(workflow.AnimatorControllerPath)
                 && !IsPackageOrPackageCachePath(workflow.AnimatorControllerPath);
-            workflow.HasPreviewInputs = workflow.HasLoader && workflow.HasOutfit && workflow.HasAssignedAnimation && workflow.HasLocalAnimatorController;
             workflow.HasAvatarPlayInputs = workflow.HasLoader && workflow.HasZepetoId;
             workflow.HasMotionPlayInputs = workflow.HasAvatarPlayInputs && workflow.HasAssignedAnimation;
-            workflow.CanPlay = workflow.HasPreviewInputs && CanEnterPlayMode(snapshot);
-            workflow.CanPlayAvatarOutfit = workflow.HasAvatarPlayInputs && CanEnterPlayMode(snapshot);
             workflow.CanPlayMotion = workflow.HasMotionPlayInputs && CanEnterPlayMode(snapshot);
             workflow.CanClipEdit = workflow.HasEditableAssignedAnimation && !snapshot.HasBlockingRisk;
             return workflow;
