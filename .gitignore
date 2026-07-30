@@ -1,0 +1,55 @@
+# ── Unity 생성물 (재생성 가능, 292MB) ────────────────────────────────
+/ZEPETO Studio Unity Project File 3.2.16/Library/
+/ZEPETO Studio Unity Project File 3.2.16/Temp/
+/ZEPETO Studio Unity Project File 3.2.16/Obj/
+/ZEPETO Studio Unity Project File 3.2.16/obj/
+/ZEPETO Studio Unity Project File 3.2.16/Logs/
+/ZEPETO Studio Unity Project File 3.2.16/UserSettings/
+/ZEPETO Studio Unity Project File 3.2.16/MemoryCaptures/
+/ZEPETO Studio Unity Project File 3.2.16/Recordings/
+
+# IDE / 자동 생성 프로젝트 파일
+*.csproj
+*.sln
+*.user
+*.pidb
+*.booproj
+*.suo
+*.unityproj
+.vs/
+.idea/
+
+# ── 헬퍼 패키지는 자체 git 저장소를 가집니다 ──────────────────────────
+# Packages/com.easy.zepeto-helper/.git 이 존재하고 origin은
+#   https://github.com/RURUGURU/zepeto_studio_helper.git
+# 이 바깥 저장소가 그 폴더를 추적하면 gitlink(내용 없는 참조)만 남아
+# 오히려 백업이 되지 않으므로 통째로 제외합니다.
+# 패키지 변경은 반드시 그 폴더 안에서 커밋하세요.
+/ZEPETO Studio Unity Project File 3.2.16/Packages/com.easy.zepeto-helper/
+
+# ── 테스트 트리거 (떠돌면 위험) ──────────────────────────────────────
+# 무장된 트리거는 아무 재컴파일에서 자동 발화하고, 자체 테스트는
+# dirty 체크 없이 NewScene(Single)을 호출해 미저장 씬 편집을 날립니다.
+*.trigger
+
+# 테스트 결과 기록(.result.txt)은 증거로 남기므로 추적합니다.
+
+# ── Blender ─────────────────────────────────────────────────────────
+*.blend1
+*.blend2
+__pycache__/
+*.pyc
+
+# ── 빌드 산출물 ──────────────────────────────────────────────────────
+*.tgz
+*.zip
+*.unitypackage
+*.apk
+*.aab
+*.app
+
+# ── OS ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+desktop.ini

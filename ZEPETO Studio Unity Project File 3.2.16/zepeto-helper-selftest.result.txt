@@ -1,0 +1,82 @@
+ZEPETO Helper self test
+pass=60 fail=0
+----
+PASS no-builtin-id-const
+PASS no-personal-id-in-source
+PASS mcp-removed:GetUnityMcpBridgePort
+PASS mcp-removed:CanPingUnityMcpBridge
+PASS mcp-removed:TryRestartUnityMcpBridge
+PASS mcp-removed:BuildMcpStatusText
+PASS mcp-removed:AutoRecoverUnityMcpBridgeOnLoad
+PASS version-compare:newer
+PASS version-compare:older
+PASS version-compare:equal
+PASS version-compare:suffix
+PASS sdk-detect:installed
+NOTE sdk-detect:version :: detected zepeto.studio 3.2.16
+PASS sdk-detect:at-least-minimum
+PASS sdk-detect:source
+NOTE sdk-detect:source-value :: source = embedded
+PASS id-sanitize:at
+PASS id-sanitize:spaces
+PASS id-sanitize:inner
+PASS id-valid:sery_2750
+PASS id-valid:darbams77
+PASS id-valid:dotted
+PASS id-invalid:empty
+PASS id-invalid:symbol
+PASS id-invalid:url
+NOTE sdk-loader-shape :: ZepetoStudioLoader fields = [_loader:ZepetoCharacterCustomLoader, Deformations:TextAsset[], Clips:AnimationClip[], playgroundController:PlaygroundController, _oldDeformer:String, _room3DSpace:ZepetoRoom3DSpace, _spaceGuideRenderer:SpaceGuideRenderer, _guiStyle:GUIStyle]
+NOTE field-owner:zepetoId :: ZEPETO/ZepetoCharacterCustomLoader (String)
+NOTE field-owner:AnimationClip :: ZEPETO.Studio/PlaygroundController (AnimationClip)
+NOTE field-owner:AnimatorController :: ZEPETO.Studio/PlaygroundController (AnimatorOverrideController)
+NOTE sdk-customloader-shape :: Zepeto.ZepetoCharacterCustomLoader fields = [destroyWhenContextLoaded:Boolean, deformations:TextAsset, _oldDeformations:TextAsset, allProperties:CustomProperty[], metadataProvider:ZepetoCustomMetadataProvider, zepetoId:String, Hashcode:String, Inplace:Boolean, editMode:Boolean, baked:Boolean, OnInitialized:UnityEvent, ContextCreated:UnityEvent]
+NOTE sdk-playgroundcontroller-shape :: PlaygroundController fields = [TargetCamera:Camera, updateCamera:Boolean, AnimatorController:AnimatorOverrideController, AnimationClip:AnimationClip, loader:ZepetoCharacterLoaderBase, _loaders:LinkedList`1, thetaSpeed:Single, phiSpeed:Single, moveSpeed:Single, zoomSpeed:Single, phiBoundMin:Single, phiBoundMax:Single, rotateSmoothing:Single, moveSmoothing:Single, distance:Single, euler:Vector2, targetRot:Quaternion, targetLookAt:Vector3, targetDist:Single, distanceVec:Vector3, target:Transform, IsDragging:Boolean]
+PASS saved-ids:removed
+PASS loader-bound
+PASS apply-id:first
+PASS apply-id:second
+PASS apply-id:at-prefix
+PASS apply-id:switch-back
+PASS apply-id:reject-invalid
+PASS id-from-scene
+PASS scene-discovery:finds-loader-scene
+PASS scene-discovery:not-name-based
+PASS split-binding:zepetoId
+PASS split-binding:AnimationClip
+PASS split-binding:AnimatorController
+PASS split-binding:apply-id
+PASS split-binding:sibling-object
+NOTE real-template:component :: UnityEngine.Transform -> [m_LocalRotation:Quaternion, m_LocalPosition:Vector3, m_LocalScale:Vector3]
+NOTE real-template:component :: Zepeto.ZepetoCharacterCustomLoader -> [m_Script:ObjectReference, Inplace:Boolean, editMode:Boolean, baked:Boolean, OnInitialized:Generic, ContextCreated:Generic, destroyWhenContextLoaded:Boolean, deformations:ObjectReference, metadataProvider:ObjectReference, zepetoId:String, Hashcode:String]
+NOTE real-template:component :: ZepetoStudioLoader -> [m_Script:ObjectReference, Deformations:Generic, Clips:Generic, playgroundController:ObjectReference]
+NOTE real-template:component :: PlaygroundController -> [m_Script:ObjectReference, TargetCamera:ObjectReference, AnimatorController:ObjectReference, AnimationClip:ObjectReference, loader:ObjectReference]
+PASS real-template:bind-AnimationClip
+PASS real-template:bind-AnimatorController
+PASS real-template:bind-zepetoId
+PASS real-template:apply-first
+PASS real-template:apply-second
+PASS real-template:switch-back
+PASS real-template:outfit-prefab
+NOTE real-template:outfit :: Assets/Contents/TRANSPARENT_1/TRANSPARENT_1.prefab
+PASS real-template:sdk-motions
+NOTE real-template:sdk-motion-count :: 10 clips
+PASS playback-slot:local-controller
+PASS playback-slot:assign
+PASS playback-slot:updated
+PASS playback-slot:not-a-pose
+NOTE playback-slot:value :: Videobooth_282 23.13s
+PASS catalog:populated
+NOTE catalog:count :: 13 motions
+PASS catalog:sdk-is-humanoid
+PASS catalog:pose-detected
+PASS catalog:default-not-pose
+NOTE catalog:default :: Videobooth_282 index=9
+PASS catalog:pose-blocked
+NOTE live:clip-path :: Assets/ZepetoHelper/Motions/LiveFromBlender.anim
+PASS live:guid-preserved
+PASS live:instanceid-preserved
+PASS live:content-replaced
+PASS live:name-restored
+PASS live:loop-applied
+NOTE live:probe :: len=23.13s guid=5c7f5907401e5c7429683a559cfeb3af
