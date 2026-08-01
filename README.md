@@ -5,7 +5,7 @@
 Blender에서 춤을 만들어 Unity의 내 ZEPETO 아바타 위에서 바로 확인하는 작업대.
 **Blender 버튼 다섯 개 → Unity 창 클릭.** 그게 한 사이클 전부입니다.
 
-<img src="BlenderMotion/docs/dance-demo.gif" alt="이 도구로 만든 10초 안무" width="240">
+<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/dance-demo.gif" alt="이 도구로 만든 10초 안무" width="240">
 
 *이 도구로 만든 10초 안무 — 20비트 @ 120 BPM. `BlenderMotion/make_dance.py`가 그대로 다시 만들어 냅니다.*
 
