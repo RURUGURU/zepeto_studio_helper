@@ -5,9 +5,13 @@
 Blender에서 춤을 만들어 Unity의 내 ZEPETO 아바타 위에서 바로 확인하는 작업대.
 **Blender 버튼 다섯 개 → Unity 창 클릭.** 그게 한 사이클 전부입니다.
 
-<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/dance-demo.gif" alt="이 도구로 만든 10초 안무" width="240">
+<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/dance-on-avatar.gif" alt="내 ZEPETO 아바타가 이 안무를 추는 화면" width="230">
+&nbsp;&nbsp;
+<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/dance-demo.gif" alt="Blender에서 만든 같은 안무" width="230">
 
-*이 도구로 만든 10초 안무 — 20비트 @ 120 BPM. `BlenderMotion/make_dance.py`가 그대로 다시 만들어 냅니다.*
+**왼쪽이 결과입니다** — Unity Play 중 서버에서 내려온 내 실제 ZEPETO 아바타가, 오른쪽 Blender에서
+만든 그 안무를 그대로 추고 있습니다. 10초 · 20비트 @ 120 BPM ·
+`BlenderMotion/make_dance.py`가 언제든 다시 만들어 냅니다.
 
 </div>
 
@@ -121,12 +125,15 @@ Unity Hub에서 `Add > Add project from disk`로 `ZEPETO Studio Unity Project Fi
 
 ## 사용법 — 전체 그림
 
-```
- Unity 1·2번        Unity 3번         Blender 5단계        Unity 5번          Unity 6·7번
-┌──────────┐      ┌──────────┐      ┌────────────┐      ┌──────────┐      ┌──────────┐
-│ 아바타·의상 │ ──▶ │ 리그 내보내기│ ──▶ │ 포즈·키·루프 │ ──▶ │ 라이브 확인 │ ──▶ │ 조정·내보내기│
-└──────────┘      └──────────┘      └────────────┘      └──────────┘      └──────────┘
-   처음 한 번         평생 한 번            매번              매번            마지막
+```mermaid
+flowchart LR
+    A["<b>Unity 1·2번</b><br/>아바타 · 의상<br/><i>처음 한 번</i>"]
+    B["<b>Unity 3번</b><br/>리그 내보내기<br/><i>평생 한 번</i>"]
+    C["<b>Blender 5단계</b><br/>포즈 · 키 · 루프<br/><i>매번</i>"]
+    D["<b>Unity 5번</b><br/>내 캐릭터로 라이브 확인<br/><i>매번</i>"]
+    E["<b>Unity 6·7번</b><br/>조정 · 내보내기<br/><i>마지막</i>"]
+    A --> B --> C --> D --> E
+    D -. "고칠 게 있으면 여기만 반복" .-> C
 ```
 
 **한 사이클은 Blender 버튼 하나 + Unity 창 클릭입니다.** 5번의 초록 버튼으로 Play를 켜 두면,

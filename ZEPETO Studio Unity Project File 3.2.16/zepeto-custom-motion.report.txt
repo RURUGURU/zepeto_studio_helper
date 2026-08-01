@@ -3,12 +3,20 @@ fbx = Assets/CustomMotions/DanceDemo10s.fbx
 ----
 stage flags: 3 stage flag(s) captured
 PASS custom-motion:configured
-step 1 configure -> True : DanceDemo10s.fbx 설정 완료 — Animation Type = Humanoid, Avatar는 이 FBX에서 생성 (모션 자체의 뼈대를 기준으로 읽습니다), Root Transform 고정 (1개 클립)
+step 1 configure -> True : DanceDemo10s.fbx 설정 완료 — Avatar는 이 FBX에서 생성 (모션 자체의 뼈대를 기준으로 읽습니다), Root Transform 고정 (1개 클립)
 animationType = Human
 avatarSetup = CreateFromThisModel  sourceAvatar = NULL
 sub-assets in fbx: 222
-  AnimationClip '__preview__Scene' hideFlags=HideInHierarchy, NotEditable
   GameObject 'DanceDemo10s' hideFlags=NotEditable
+  GameObject 'body' hideFlags=NotEditable
+  GameObject 'hips' hideFlags=NotEditable
+  Material 'body' hideFlags=NotEditable
+  Material 'eye' hideFlags=NotEditable
+  Material 'eyelash' hideFlags=NotEditable
+  Mesh 'body' hideFlags=NotEditable
+  Avatar 'DanceDemo10sAvatar' hideFlags=NotEditable
+    avatar isValid=True isHuman=True
+  AnimationClip '__preview__Scene' hideFlags=HideInHierarchy, NotEditable
   GameObject 'lowerLegTwist_L' hideFlags=HideInHierarchy, NotEditable
   Transform 'lowerArmTwist_L' hideFlags=HideInHierarchy, NotEditable
   GameObject 'upperArm_L_scale' hideFlags=HideInHierarchy, NotEditable
@@ -16,13 +24,11 @@ sub-assets in fbx: 222
   Transform 'neck' hideFlags=HideInHierarchy, NotEditable
   GameObject 'jBone' hideFlags=HideInHierarchy, NotEditable
   Transform 'chestUpper_scale' hideFlags=HideInHierarchy, NotEditable
-  Material 'eye' hideFlags=NotEditable
   Transform 'DanceDemo10s' hideFlags=HideInHierarchy, NotEditable
   GameObject 'indexPro_L' hideFlags=HideInHierarchy, NotEditable
   GameObject 'headUpper' hideFlags=HideInHierarchy, NotEditable
   Transform 'chest_scale' hideFlags=HideInHierarchy, NotEditable
   GameObject 'lowerReg_R' hideFlags=HideInHierarchy, NotEditable
-  Mesh 'body' hideFlags=NotEditable
   Transform 'hairAll' hideFlags=HideInHierarchy, NotEditable
   Transform 'thumbDis_L' hideFlags=HideInHierarchy, NotEditable
   Transform 'chestUpper' hideFlags=HideInHierarchy, NotEditable
@@ -63,7 +69,6 @@ sub-assets in fbx: 222
   GameObject 'upperRegTwist_R_scale' hideFlags=HideInHierarchy, NotEditable
   Transform 'middleDis_R' hideFlags=HideInHierarchy, NotEditable
   GameObject 'chestUpper' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'body' hideFlags=NotEditable
   Transform 'middleInt_R' hideFlags=HideInHierarchy, NotEditable
   Transform 'hips_scale' hideFlags=HideInHierarchy, NotEditable
   Transform 'littlePro_R' hideFlags=HideInHierarchy, NotEditable
@@ -73,7 +78,6 @@ sub-assets in fbx: 222
   Transform 'lowerReg_R' hideFlags=HideInHierarchy, NotEditable
   GameObject 'jaw' hideFlags=HideInHierarchy, NotEditable
   Transform 'heel_L' hideFlags=HideInHierarchy, NotEditable
-  Material 'eyelash' hideFlags=NotEditable
   Transform 'upperArm_R_scale' hideFlags=HideInHierarchy, NotEditable
   Transform 'lowerRegTwist_R' hideFlags=HideInHierarchy, NotEditable
   Transform 'ringDis_L' hideFlags=HideInHierarchy, NotEditable
@@ -81,6 +85,7 @@ sub-assets in fbx: 222
   GameObject 'chest' hideFlags=HideInHierarchy, NotEditable
   GameObject 'hips_scale' hideFlags=HideInHierarchy, NotEditable
   GameObject 'lowerArm_L_scale' hideFlags=HideInHierarchy, NotEditable
+  Object 'Import Logs' hideFlags=HideInHierarchy
   GameObject 'shoulder_R_scale' hideFlags=HideInHierarchy, NotEditable
   GameObject 'thumbInt_R' hideFlags=HideInHierarchy, NotEditable
   GameObject 'upperArmTwist_R' hideFlags=HideInHierarchy, NotEditable
@@ -113,8 +118,6 @@ sub-assets in fbx: 222
   GameObject 'upperArmTwist_L_scale' hideFlags=HideInHierarchy, NotEditable
   Transform 'lip_L' hideFlags=HideInHierarchy, NotEditable
   Transform 'pelvis_scale' hideFlags=HideInHierarchy, NotEditable
-  Avatar 'DanceDemo10sAvatar' hideFlags=NotEditable
-    avatar isValid=True isHuman=True
   Transform 'shoulder_R_scale' hideFlags=HideInHierarchy, NotEditable
   GameObject 'lowerReg_R_scale' hideFlags=HideInHierarchy, NotEditable
   GameObject 'thumbPro_R' hideFlags=HideInHierarchy, NotEditable
@@ -160,7 +163,6 @@ sub-assets in fbx: 222
   GameObject 'lowerLeg_L' hideFlags=HideInHierarchy, NotEditable
   Transform 'lowerArm_R_scale' hideFlags=HideInHierarchy, NotEditable
   Transform 'neck_scale' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'hips' hideFlags=NotEditable
   Transform 'littleInt_L' hideFlags=HideInHierarchy, NotEditable
   Transform 'upperReg_R' hideFlags=HideInHierarchy, NotEditable
   Transform 'spine' hideFlags=HideInHierarchy, NotEditable
@@ -195,7 +197,6 @@ sub-assets in fbx: 222
   Transform 'upperArmTwist_L' hideFlags=HideInHierarchy, NotEditable
   Transform 'thumbDis_R' hideFlags=HideInHierarchy, NotEditable
   Transform 'upperArmTwist_R_scale' hideFlags=HideInHierarchy, NotEditable
-  Material 'body' hideFlags=NotEditable
   GameObject 'mouth' hideFlags=HideInHierarchy, NotEditable
   Transform 'jaw' hideFlags=HideInHierarchy, NotEditable
   GameObject 'thumbDis_R' hideFlags=HideInHierarchy, NotEditable
@@ -228,7 +229,6 @@ sub-assets in fbx: 222
   GameObject 'neck' hideFlags=HideInHierarchy, NotEditable
   GameObject 'upperArm_R' hideFlags=HideInHierarchy, NotEditable
   Transform 'lowerReg_R_scale' hideFlags=HideInHierarchy, NotEditable
-  Object 'Import Logs' hideFlags=HideInHierarchy
   AnimationClip 'Scene' hideFlags=NotEditable
 defaultClipAnimations: 1
 clipAnimations: 1
@@ -245,7 +245,7 @@ step 3 assign -> True
 playback slot = DanceDemo10s
 --- entering Play ---
 --- Play active ---
-right hand height relative to hips: min=-0.021 max=0.633 travel=0.654m
+right hand height relative to hips: min=-0.021 max=0.648 travel=0.669m
 PASS custom-motion:avatar-animating
 playing: DanceDemo10s (9.96s)
 --- finished: done (serial 21) ---

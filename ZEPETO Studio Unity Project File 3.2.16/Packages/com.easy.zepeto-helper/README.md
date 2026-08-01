@@ -16,7 +16,13 @@
 
 ### 이 도구로 만든 10초짜리 춤
 
-<img src="docs/images/dance-demo.gif" alt="이 도구로 만든 10초 안무" width="240">
+<img src="docs/images/dance-on-avatar.gif" alt="내 ZEPETO 아바타가 추는 안무" width="230">
+&nbsp;&nbsp;
+<img src="docs/images/dance-demo.gif" alt="Blender에서 만든 같은 안무" width="230">
+
+**왼쪽이 결과물입니다** — Unity Play 중 서버에서 내려온 실제 ZEPETO 아바타(머리·안경·의상 전부)가,
+오른쪽 Blender에서 만든 그 안무를 그대로 추고 있습니다. 회색 몸은 작업용 리그일 뿐이고, 실제로
+보게 되는 것은 왼쪽입니다.
 
 Blender에서 뼈를 돌려 찍은 **20비트(120 BPM) · 240프레임 · 10.0초** 루프입니다.
 `BlenderMotion/make_dance.py`가 이 안무를 그대로 다시 만들어 냅니다 — 손으로 만든 뒤 캡처한 것이
@@ -27,7 +33,7 @@ Blender에서 뼈를 돌려 찍은 **20비트(120 BPM) · 240프레임 · 10.0�
 | 길이 | 240프레임 @ 24fps = **10.0초**, Unity 임포트 후 클립 **9.96초** |
 | 루프 | 첫 프레임과 끝 프레임의 각도차 **0.00e+00 rad** (완전히 이어짐) |
 | 손 이동 거리 (Blender, 한 바퀴) | 왼손 **7.82m** / 오른손 **7.77m** |
-| 머리 · 발 | 머리 **2.25m**, 양발 각 **1.20m** |
+| 머리 · 발 | 머리 **2.25m**, 왼발 **3.61m** / 오른발 **3.22m** |
 | Unity Play 중 실제 아바타 | 오른손이 골반 기준 **0.654m** 이동 (`custom-motion:avatar-animating`) |
 
 > 특정 곡의 실제 안무는 저작물이라 옮기지 않았습니다. 위 동작은 **창작**이고, 120 BPM에 맞춰
@@ -64,7 +70,8 @@ Helper의 `Play` 버튼을 누르면 Unity `Game View`에서 아바타, 의상, 
 | `docs/images/step-3-clip-adjust.png` | 실제 **6번** 클립 조정 화면 (파일명은 옛 4단계 시절 이름) |
 | `docs/images/step-4-save-export.png` | 실제 **7번** 제페토로 내보내기 화면 (파일명 동일 사유) |
 | `docs/images/play-preview.png` | Play 중 Game View. **제작자 본인 아바타가 나옵니다** — 공개해도 된다는 판단 하에 유지합니다 |
-| `docs/images/dance-demo.gif` | 이 도구로 만든 10초 안무. Blender Workbench 렌더 120프레임(2프레임 간격), 12fps 재생 = 원래 속도. `BlenderMotion/make_dance.py`로 언제든 다시 만들 수 있습니다 |
+| `docs/images/dance-on-avatar.gif` | **결과물.** Unity Play 중 Game View를 8.7fps로 잡아 만든 GIF입니다. 제작자 본인 아바타가 나옵니다 — `play-preview.png`와 같은 판단입니다 |
+| `docs/images/dance-demo.gif` | 같은 안무를 Blender에서 렌더한 것. 3/4 각도로 찍습니다 — 정면에서는 앞뒤 다리 동작이 카메라 축으로 단축돼 보이지 않습니다. Blender Workbench 렌더 120프레임(2프레임 간격), 12fps 재생 = 원래 속도. `BlenderMotion/make_dance.py`로 언제든 다시 만들 수 있습니다 |
 
 `npm pack`은 `docs/`를 포함하므로 이 이미지들은 tarball과 GitHub 렌더링 양쪽에 나갑니다.
 `play-preview.png`에 아바타가 보이는 것은 **의도된 상태**입니다. 다른 계정으로 배포하거나 아바타를

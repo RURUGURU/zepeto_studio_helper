@@ -26,12 +26,12 @@ ModelImporter:
       does not match position in animation file:\n\t'upperLeg_L' : position error
       = 8962.747070 mm\n\t'upperLegTwist_L' : position error = 20830.556641 mm\n\t'lowerLeg_L'
       : position error = 20830.607422 mm\n\t'lowerLegTwist_L' : position error =
-      19048.005859 mm\n\t'foot_L' : position error = 19047.998047 mm\n\t'toes_L'
-      : position error = 15538.997070 mm\n\t'upperReg_R' : position error = 8962.736328
-      mm\n\t'upperRegTwist_R' : position error = 20830.564453 mm\n\t'lowerReg_R'
-      : position error = 20830.603516 mm\n\t'lowerRegTwist_R' : position error =
+      19048.009766 mm\n\t'foot_L' : position error = 19048.003906 mm\n\t'toes_L'
+      : position error = 15539.001953 mm\n\t'upperReg_R' : position error = 8962.736328
+      mm\n\t'upperRegTwist_R' : position error = 20830.566406 mm\n\t'lowerReg_R'
+      : position error = 20830.605469 mm\n\t'lowerRegTwist_R' : position error =
       19048.013672 mm\n\t'foot_R' : position error = 19048.005859 mm\n\t'toes_R'
-      : position error = 15539.002930 mm\n\t'spine' : position error = 10247.800781
+      : position error = 15538.992188 mm\n\t'spine' : position error = 10247.800781
       mm\n\t'chest' : position error = 10247.769531 mm\n\t'chestUpper' : position
       error = 10248.433594 mm\n\t'neck' : position error = 19446.435547 mm\n\t'head'
       : position error = 12150.952148 mm\n\t'iScale_L' : position error = 21474.613281
