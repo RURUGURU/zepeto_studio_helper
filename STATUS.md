@@ -193,11 +193,22 @@ null을 반환하고** 자체 테스트가 NRE로 중단됩니다. 실제로 그
 
 | 저장소 | 무엇을 추적 | 원격 |
 | --- | --- | --- |
-| `zepeto/.git` (신규) | 애드온 · `.blend` · STATUS.md · 테스트 · 씬 · 리그 meta · ProjectSettings · manifest | 없음 |
-| `.../Packages/com.easy.zepeto-helper/.git` | 헬퍼 패키지만 | `github.com/RURUGURU/zepeto_studio_helper` — **`origin/main`은 0.2.4** |
+| `zepeto/.git` | **전부** — 애드온 · `.blend` · STATUS.md · 테스트 · 씬 · 리그 meta · ProjectSettings · manifest · **헬퍼 패키지** | `github.com/RURUGURU/zepeto_studio_helper` |
 
-루트 저장소는 `.gitignore`로 헬퍼 패키지 폴더를 제외합니다. 중첩 저장소를 추적하면 gitlink(내용 없는
-참조)만 남아 오히려 백업이 안 되기 때문입니다. **패키지 변경은 그 폴더 안에서 커밋하세요.**
+**저장소는 하나입니다.** 예전에는 둘이었습니다 — 헬퍼 패키지가 자체 `.git`을 갖고 있었고 루트가
+그 폴더를 `.gitignore`로 제외했습니다. 중첩 저장소를 추적하면 gitlink(내용 없는 참조)만 남기 때문에
+그 자체는 타당한 결정이었지만, 대가가 있었습니다: **루트만 클론하면 그 폴더가 비어서
+`Assets/ZepetoHelperTests`가 참조하는 `Easy.ZepetoHelper.Editor` 어셈블리가 없고 Unity가 컴파일
+에러를 냈습니다.** 클론 두 번을 정확히 기억해야만 열리는 프로젝트였습니다.
+
+`git subtree add --prefix=...`로 패키지 커밋 전부를 제자리 경로에 붙였습니다. 패키지 저장소의 마지막
+커밋이 지금 히스토리의 **조상**이라 force push 없이 올라갔고, 양쪽 커밋이 한 DAG 안에 다 살아 있습니다.
+
+> **주의:** `git log -- 'ZEPETO*/Packages/com.easy.zepeto-helper'`로는 합치기 이전 커밋이 안 보입니다.
+> 그 커밋들은 파일 경로가 저장소 루트 기준(`CHANGELOG.md` 등)이라 경로 필터에 걸리지 않습니다.
+> 필터 없이 `git log`를 보거나 합치기 커밋의 두 번째 부모를 따라가세요.
+
+앞으로 패키지 변경은 **다른 파일과 똑같이** 이 저장소에서 커밋하면 됩니다.
 
 > `origin/main`이 0.2.4라서 README의 `Add package from git URL`을 따르면 Blender 파이프라인이 없는
 > 4단계 헬퍼가 설치됩니다. README·ENVIRONMENT에 그 경고를 넣어뒀습니다.

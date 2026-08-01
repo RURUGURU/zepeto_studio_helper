@@ -244,41 +244,28 @@ Blender에서 ZEPETO의 실제 뼈 이름·뼈대로 작업하기 위한 파일�
 
 ## 설치 방법
 
-> **먼저 읽어주세요. Git URL로 설치하면 이 README의 기능이 들어오지 않습니다.**
+> **이 저장소를 클론했다면 설치할 것이 없습니다.**
 >
-> 공개 저장소의 `origin/main`에 올라가 있는 것은 **0.2.4**입니다. 4단계 마법사 버전이고
-> **Blender 왕복(3·4·5번)이 없습니다.** 이 문서가 설명하는 0.10.0은 아직 push하지 않은 로컬 커밋에만
-> 있습니다. 그래서 아래 `Add package from git URL`과 `manifest.json`의 git 주소는 0.10.0이 아니라
-> 0.2.4를 설치합니다.
->
-> 7단계 흐름과 Blender 왕복을 쓰려면 이 패키지 폴더를 프로젝트의 `Packages/` 아래에 그대로 두세요
-> (임베디드 설치).
+> 저장소 루트가 곧 Unity 프로젝트를 품고 있고, 이 패키지는 이미 그 안 제자리에 있습니다.
 >
 > ```text
-> <Unity 프로젝트 폴더>/Packages/com.easy.zepeto-helper/
+> ZEPETO Studio Unity Project File 3.2.16/Packages/com.easy.zepeto-helper/
 > ```
 >
-> **이때 `manifest.json`에는 아무것도 적지 않습니다.** Unity가 `Packages/` 아래 폴더를 자동으로
-> 인식합니다. 이 프로젝트의 `Packages/manifest.json`에도 `com.easy.zepeto-helper` 항목이 없습니다.
+> Unity는 `Packages/` 아래 폴더를 자동으로 인식하므로(임베디드 패키지) `manifest.json`에 아무것도
+> 적지 않습니다 — 실제로 이 프로젝트의 `Packages/manifest.json`에는 `com.easy.zepeto-helper` 항목이
+> 없습니다. 프로젝트를 열고 `Window > Easy > ZEPETO Studio Helper`를 누르면 끝입니다.
 >
-> 자세한 방법은 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)의 `helper 패키지 추가`에 있습니다.
-> 아래 git 주소 방법은 저장소가 갱신된 뒤에 쓸 수 있습니다.
+> 아래 두 방법은 **다른 Unity 프로젝트에 이 패키지만 넣고 싶을 때**를 위한 것입니다.
 
-### 가장 쉬운 설치 (다만 지금은 0.2.4가 설치됩니다)
+### 방법 A — 폴더째 복사 (확실합니다)
 
-Unity에서 아래 순서대로 클릭합니다.
-
-1. `Window > Package Manager`
-2. 왼쪽 위 `+`
-3. `Add package from git URL...`
-4. 아래 주소 붙여넣기
+이 폴더(`com.easy.zepeto-helper/`) 전체를 대상 프로젝트의 `Packages/` 아래에 복사합니다.
+`manifest.json`은 건드리지 않습니다.
 
 ```text
-https://github.com/RURUGURU/zepeto_studio_helper.git
+<대상 Unity 프로젝트>/Packages/com.easy.zepeto-helper/
 ```
-
-이 주소로 받은 것은 위에서 설명한 대로 **0.2.4**입니다. 창에 1~4번만 보이고 `Blender 열기`,
-`내 캐릭터로 확인 시작 (Play)` 버튼이 없으면 이 버전을 받은 것입니다.
 
 설치가 끝나면 아래 메뉴가 생깁니다.
 
@@ -286,14 +273,27 @@ https://github.com/RURUGURU/zepeto_studio_helper.git
 Window > Easy > ZEPETO Studio Helper
 ```
 
-### manifest.json으로 설치
+`zepeto.studio` SDK는 대상 프로젝트에 따로 있어야 합니다 (최소 `3.2.12`, 검증한 것은 `3.2.16`).
+없으면 헬퍼 창이 그 사실을 안내합니다.
 
-Unity 프로젝트의 `Packages/manifest.json`에 필요한 줄만 추가합니다.
+### 방법 B — Git URL (⚠️ 검증하지 않았습니다)
+
+> **주의.** 예전에는 이 저장소의 루트가 곧 패키지여서 git 주소만으로 설치됐습니다. 지금은 패키지가
+> 하위 폴더로 들어갔으므로 UPM에 `?path=`로 위치를 알려줘야 합니다. **그런데 그 경로에 공백이
+> 있습니다.** 아래 주소는 공백을 `%20`으로 인코딩한 형태인데, **저는 이 방법을 실제로 실행해 보지
+> 않았습니다.** 되지 않으면 방법 A를 쓰세요 — 그쪽은 확실합니다.
+
+```text
+https://github.com/RURUGURU/zepeto_studio_helper.git?path=/ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper
+```
+
+`Window > Package Manager > + > Add package from git URL...`에 붙여넣습니다.
+`manifest.json`에 직접 쓴다면 이렇게 됩니다.
 
 ```json
 {
   "dependencies": {
-    "com.easy.zepeto-helper": "https://github.com/RURUGURU/zepeto_studio_helper.git",
+    "com.easy.zepeto-helper": "https://github.com/RURUGURU/zepeto_studio_helper.git?path=/ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper",
     "zepeto.studio": "3.2.16"
   },
   "scopedRegistries": [
@@ -321,8 +321,8 @@ Unity 프로젝트의 `Packages/manifest.json`에 필요한 줄만 추가합니�
 
 GitHub가 아니라 파일로 설치하고 싶을 때 사용합니다.
 
-`npm pack`은 **지금 checkout되어 있는 내용을 그대로** 압축합니다. 저장소를 clone해서 압축하면
-위에서 말한 0.2.4가 나오므로, 0.10.0 tarball은 0.10.0이 들어 있는 로컬 패키지 폴더에서 만들어야 합니다.
+`npm pack`은 **지금 checkout되어 있는 내용을 그대로** 압축하므로, 이 저장소를 클론한 뒤 이 폴더에서
+실행하면 그 시점의 버전이 그대로 나옵니다.
 
 ```powershell
 cd <Unity 프로젝트 폴더>\Packages\com.easy.zepeto-helper
@@ -332,7 +332,7 @@ npm pack
 생성되는 파일 (이름의 버전은 `package.json`의 `version`을 따릅니다):
 
 ```text
-com.easy.zepeto-helper-0.10.0.tgz
+com.easy.zepeto-helper-0.10.1.tgz
 ```
 
 Unity에서는 `Window > Package Manager > + > Add package from tarball...`을 누르고 `.tgz` 파일을 선택합니다.
@@ -440,11 +440,11 @@ npm pack
 
 ```powershell
 New-Item -ItemType Directory -Force -Path ..\..\Build\Packages
-Move-Item -Force .\com.easy.zepeto-helper-0.10.0.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.10.0.tgz
+Move-Item -Force .\com.easy.zepeto-helper-0.10.1.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.10.1.tgz
 ```
 
 압축 파일 내용 확인:
 
 ```powershell
-tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.10.0.tgz
+tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.10.1.tgz
 ```

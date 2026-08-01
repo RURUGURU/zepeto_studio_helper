@@ -37,28 +37,8 @@ Blender에서 춤을 만들어 Unity의 내 ZEPETO 아바타 위에서 바로 �
 | --- | --- |
 | [`BlenderMotion/`](BlenderMotion/) | Blender 애드온 + 초보자 가이드 + 검사 스크립트 |
 | `ZEPETO Studio Unity Project File 3.2.16/` | ZEPETO Studio 아이템 제작 템플릿 (SDK 3.2.16) |
-| └ `Packages/com.easy.zepeto-helper/` | Unity 헬퍼 패키지 — **자체 git 저장소입니다** ([RURUGURU/zepeto_studio_helper](https://github.com/RURUGURU/zepeto_studio_helper)) |
+| └ `Packages/com.easy.zepeto-helper/` | Unity 헬퍼 패키지 — 7단계 창, 라이브 미리보기, 자체 문서 |
 | └ `Assets/ZepetoHelperTests/` | Unity 자체 테스트 + 러너 4개 |
-
-## ⚠️ 저장소 두 개 — 이 저장소만 클론하면 Unity가 컴파일되지 않습니다
-
-Unity 헬퍼 패키지는 **자기 git 저장소**를 갖고 있고, 이 저장소는 그 폴더를
-[`.gitignore`](.gitignore)로 통째로 제외합니다. 바깥 저장소가 그 폴더를 추적하면 내용 없는
-gitlink만 남아서 백업이 되지 않기 때문입니다.
-
-그래서 이 저장소만 클론하면 `Packages/com.easy.zepeto-helper/`가 **빈 폴더**로 남고,
-`Assets/ZepetoHelperTests`가 참조하는 `Easy.ZepetoHelper.Editor` 어셈블리가 없어서
-**Unity가 컴파일 에러를 냅니다.** 두 개를 같이 받으세요.
-
-```bash
-git clone https://github.com/RURUGURU/zepeto-motion-pipeline.git
-cd zepeto-motion-pipeline
-git clone https://github.com/RURUGURU/zepeto_studio_helper.git \
-    "ZEPETO Studio Unity Project File 3.2.16/Packages/com.easy.zepeto-helper"
-```
-
-두 번째 줄까지 끝나야 Unity를 여실 수 있습니다. 패키지를 고칠 때는 **그 폴더 안에서** 커밋하세요 —
-바깥에서는 아예 보이지 않습니다.
 
 ## 설치 — 처음부터 순서대로
 
@@ -75,14 +55,20 @@ ZEPETO SDK 3.2.16이 이 버전에 맞춰져 있습니다.
 [blender.org](https://www.blender.org/download/)에서 받습니다. 여기서 검증한 것은 **5.2.0 LTS**이고,
 애드온이 요구하는 최소 버전은 4.2입니다.
 
-### 3. 저장소 두 개 클론 — 위 경고 참고
+### 3. 클론
 
 ```bash
-git clone https://github.com/RURUGURU/zepeto-motion-pipeline.git
-cd zepeto-motion-pipeline
-git clone https://github.com/RURUGURU/zepeto_studio_helper.git \
-    "ZEPETO Studio Unity Project File 3.2.16/Packages/com.easy.zepeto-helper"
+git clone https://github.com/RURUGURU/zepeto_studio_helper.git
+cd zepeto_studio_helper
 ```
+
+**한 번이면 됩니다.** Unity 헬퍼 패키지도 이 안에 들어 있습니다
+(`ZEPETO Studio Unity Project File 3.2.16/Packages/com.easy.zepeto-helper/`).
+
+> 예전에는 패키지가 별도 저장소여서 클론을 두 번 해야 했고, 한 번만 하면 그 폴더가 비어서
+> `Assets/ZepetoHelperTests`가 참조하는 어셈블리가 없어 **Unity가 컴파일 에러로 맞이했습니다.**
+> `git subtree`로 패키지 커밋 전부를 이 저장소 안 제자리에 붙여서 그 함정을 없앴습니다 —
+> 히스토리도 그대로 남아 있습니다.
 
 ### 4. Blender 애드온 설치
 
@@ -104,8 +90,9 @@ Unity Hub에서 `Add > Add project from disk`로 `ZEPETO Studio Unity Project Fi
 고릅니다. 열리면 상단 메뉴 **`Window > Easy > ZEPETO Studio Helper`** 로 헬퍼 창을 띄웁니다.
 
 헬퍼 패키지는 `Packages/` 안에 들어 있으므로(embedded) Unity가 알아서 인식합니다. **따로 설치할 것이
-없습니다.** 다른 Unity 프로젝트에 이 패키지만 넣고 싶다면 패키지 저장소의
-[`설치 방법`](https://github.com/RURUGURU/zepeto_studio_helper#설치-방법) 절에 세 가지 방법이 있습니다.
+없습니다.** 다른 Unity 프로젝트에 이 패키지만 넣고 싶다면 패키지 README의
+[`설치 방법`](ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/README.md#설치-방법)
+절을 보세요.
 
 ### 6. 내 제페토 아이디 넣기
 
@@ -145,7 +132,7 @@ Blender 쪽 5단계는 **몸 불러오기 → 포즈 → 키프레임 → 루프
 | 문서 | 누구를 위한 것 |
 | --- | --- |
 | [`BlenderMotion/README_모션만들기.md`](BlenderMotion/README_모션만들기.md) | **처음이라면 이것 하나만.** Blender를 한 번도 안 써봤다는 전제로 쓰였고, 막히는 지점마다 화면에 뜨는 한국어 문구를 그대로 표로 옮겨 뒀습니다 |
-| [패키지 README](https://github.com/RURUGURU/zepeto_studio_helper) | Unity 헬퍼 창 7개 카드의 실제 화면 캡처와 버튼별 설명 |
+| [패키지 README](ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/README.md) | Unity 헬퍼 창 7개 카드의 실제 화면 캡처와 버튼별 설명 |
 | [`STATUS.md`](STATUS.md) | 현재 상태·검증 기록·함정 16개. 이 프로젝트를 이어받는 사람용 |
 
 ## 검증
