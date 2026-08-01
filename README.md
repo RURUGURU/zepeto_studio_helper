@@ -10,7 +10,7 @@
 [![ZEPETO](https://img.shields.io/badge/ZEPETO%20Studio-3.2.12%2B-2563eb)](https://studio.zepeto.me/)
 [![Package](https://img.shields.io/badge/package-com.easy.zepeto--helper-16a34a)](package.json)
 [![Guide](https://img.shields.io/badge/guide-beginner%20friendly-2563eb)](#처음-사용하는-순서)
-[![QA](https://img.shields.io/badge/QA-60%20self%20tests%20passing-22c55e)](Documentation~/QA_AUDIT.md)
+[![QA](https://img.shields.io/badge/QA-67%20self%20tests%20passing-22c55e)](Documentation~/QA_AUDIT.md)
 
 ![ZEPETO Studio Helper 전체 워크플로우](docs/images/workflow-overview.png)
 
@@ -69,13 +69,6 @@ Helper의 `Play` 버튼을 누르면 Unity `Game View`에서 아바타, 의상, 
 | `2. 동작 선택` | **2**번 동작 고르기 |
 | `3. 클립 조정` | **6**번 클립 조정 |
 | `4. 저장과 내보내기` | **7**번 제페토로 내보내기 |
-
-최상단 `workflow-overview.png`는 Unity 캡처 하나가 아니라 위 캡처들을 모아 만든 도식이고, 도식 자체도
-`1 아바타와 의상 → 2 동작 선택 → 3 클립 조정 → 4 저장과 내보내기` 4단계에 `완료 단계는 잠기고 다음
-단계가 열립니다`라고 적혀 있습니다. **지금은 7단계이고 잠기는 단계가 없습니다.**
-
-3·4·5번(Blender 왕복) 캡처는 **없습니다.** 그 기능이 생긴 뒤에 찍은 캡처가 한 장도 없습니다.
-버튼 이름과 조정 항목 자체는 대체로 그대로이므로, 번호와 배치만 위 표로 바꿔 읽으면 됩니다.
 
 ## 한 줄 요약
 
@@ -172,9 +165,6 @@ ZEPETO는 **Humanoid 애니메이션만** 재생합니다.
 
 ## 실제 화면으로 따라하기
 
-> 이 절의 캡처 전부가 0.2.x(4단계) 화면입니다. 번호와 배치를 지금 화면으로 바꿔 읽는 방법과,
-> 캡처에 남아 있는 개인 정보는 위 `캡처 이미지 경고`에 한 번에 정리해 두었습니다.
-
 ### 1. 아바타 준비
 
 아이디를 넣고 `ID 적용`, `Assets/Contents` 아래 의상 prefab을 골라 `의상 적용`을 누릅니다.
@@ -237,8 +227,8 @@ Blender에서 ZEPETO의 실제 뼈 이름·뼈대로 작업하기 위한 파일�
 > **먼저 읽어주세요. Git URL로 설치하면 이 README의 기능이 들어오지 않습니다.**
 >
 > 공개 저장소의 `origin/main`에 올라가 있는 것은 **0.2.4**입니다. 4단계 마법사 버전이고
-> **Blender 왕복(3·4·5번)이 없습니다.** 이 문서가 설명하는 0.9.1은 아직 push하지 않은 로컬 커밋에만
-> 있습니다. 그래서 아래 `Add package from git URL`과 `manifest.json`의 git 주소는 0.9.1이 아니라
+> **Blender 왕복(3·4·5번)이 없습니다.** 이 문서가 설명하는 0.10.0은 아직 push하지 않은 로컬 커밋에만
+> 있습니다. 그래서 아래 `Add package from git URL`과 `manifest.json`의 git 주소는 0.10.0이 아니라
 > 0.2.4를 설치합니다.
 >
 > 7단계 흐름과 Blender 왕복을 쓰려면 이 패키지 폴더를 프로젝트의 `Packages/` 아래에 그대로 두세요
@@ -312,7 +302,7 @@ Unity 프로젝트의 `Packages/manifest.json`에 필요한 줄만 추가합니�
 GitHub가 아니라 파일로 설치하고 싶을 때 사용합니다.
 
 `npm pack`은 **지금 checkout되어 있는 내용을 그대로** 압축합니다. 저장소를 clone해서 압축하면
-위에서 말한 0.2.4가 나오므로, 0.9.1 tarball은 0.9.1이 들어 있는 로컬 패키지 폴더에서 만들어야 합니다.
+위에서 말한 0.2.4가 나오므로, 0.10.0 tarball은 0.10.0이 들어 있는 로컬 패키지 폴더에서 만들어야 합니다.
 
 ```powershell
 cd <Unity 프로젝트 폴더>\Packages\com.easy.zepeto-helper
@@ -322,7 +312,7 @@ npm pack
 생성되는 파일 (이름의 버전은 `package.json`의 `version`을 따릅니다):
 
 ```text
-com.easy.zepeto-helper-0.9.1.tgz
+com.easy.zepeto-helper-0.10.0.tgz
 ```
 
 Unity에서는 `Window > Package Manager > + > Add package from tarball...`을 누르고 `.tgz` 파일을 선택합니다.
@@ -330,8 +320,9 @@ Unity에서는 `Window > Package Manager > + > Add package from tarball...`을 �
 tarball에 들어가는 것은 `.npmignore`가 정합니다. README가 링크하는 `docs/`(환경 문서 + 캡처 이미지)는
 포함되고, 내부 QA 기록인 `Documentation~/`는 **빠집니다**. QA 기록은 저장소에서만 볼 수 있습니다.
 
-> **여기서 멈추세요.** `docs/`가 포함된다는 것은 **캡처 이미지 4장의 개인 아이디와 개인 아바타가 이
-> tarball에 그대로 들어간다**는 뜻입니다. 위 `캡처 이미지 경고`를 처리하기 전에는 배포하지 마세요.
+`docs/`가 들어간다는 것은 캡처 이미지도 tarball에 실린다는 뜻입니다. 무엇이 들어 있는지는 위
+`캡처 이미지에 대하여` 표가 파일 단위로 적어둔 그대로이고, 그중 배포를 다시 판단해야 하는 것은
+`play-preview.png` 한 장뿐입니다.
 
 ## 버튼 이름이 헷갈릴 때
 
@@ -350,11 +341,18 @@ tarball에 들어가는 것은 `.npmignore`가 정합니다. README가 링크하
 | --- | --- | --- |
 | Blender용 리그 | `Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx` | 3번 내보내기 후 |
 | Blender에서 온 모션 FBX | `Assets/CustomMotions` | Blender의 `Unity로 보내기` |
+| 내 모션 clip | `Assets/ZepetoHelper/Motions/<FBX 이름>.anim` | `2. 내 모션으로 추가` 후 |
 | 라이브 확인용 clip | `Assets/ZepetoHelper/Motions/LiveFromBlender.anim` | 5번 시작 시 |
 | 작업용 동작 복사본 | `Assets/ZepetoHelper/Animations` | 2번 적용 후 |
+| **재생용 컨트롤러 사본** | `Assets/ZepetoHelper/Controllers/PlaygroundAnimatorController_local.overrideController` | 동작을 처음 적용할 때 |
 | 조정된 clip | `Assets/ZepetoHelper/Animations/ClipEdits` | 6번 적용 후 |
 | 임시 미리보기 clip | `Assets/ZepetoHelper/Animations/Preview/clip_adjust_preview.anim` | Play 확인 중 |
 | 최종 `.zepeto` | 의상 prefab이 있는 폴더 | 7번 생성 후 |
+
+재생용 컨트롤러 사본은 helper가 알아서 만들고 알아서 다시 씁니다. 아바타가 무엇을 재생할지는 이 파일의
+override 슬롯이 정하고 `AnimationClip` 필드가 정하지 않으므로, 동작을 바꿀 때마다 이 파일이 바뀝니다.
+지우면 다음 적용에서 다시 만들어집니다. 계측 근거는 `Documentation~/QA_AUDIT.md`의 `실제 재생 경로`에
+있습니다. SDK가 패키지에 넣어 배포하는 원본 컨트롤러는 건드리지 않습니다.
 
 최종 파일명 예시:
 
@@ -392,7 +390,7 @@ Assets/Contents/TRANSPARENT_1/ZEPETO_TRANSPARENT_1_VideoBooth_139_v02.zepeto
 | Unity | `2020.3.9f1` |
 | ZEPETO Studio | `3.2.12` 이상 (`3.2.16`에서 확인) |
 | 패키지 이름 | `com.easy.zepeto-helper` |
-| 패키지 버전 | `0.9.1` |
+| 패키지 버전 | `0.10.0` |
 | ZEPETO registry | `https://upm.zepeto.run` |
 
 환경 설정 상세는 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md), 검증 기록은 [Documentation~/QA_AUDIT.md](Documentation~/QA_AUDIT.md)에 정리되어 있습니다.
@@ -422,11 +420,11 @@ npm pack
 
 ```powershell
 New-Item -ItemType Directory -Force -Path ..\..\Build\Packages
-Move-Item -Force .\com.easy.zepeto-helper-0.9.1.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.9.1.tgz
+Move-Item -Force .\com.easy.zepeto-helper-0.10.0.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.10.0.tgz
 ```
 
 압축 파일 내용 확인:
 
 ```powershell
-tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.9.1.tgz
+tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.10.0.tgz
 ```

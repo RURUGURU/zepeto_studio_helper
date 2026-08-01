@@ -4,22 +4,36 @@ using UnityEngine;
 namespace Easy.ZepetoHelper.Editor
 {
     /// <summary>
-    /// The window's step layout: seven numbered steps, top to bottom, one job each.
+    /// 창의 step 레이아웃: 번호 붙은 일곱 단계를 위에서 아래로, 한 단계에 한 가지 일씩.
     ///
-    /// Replaces the old four-card layout, where the whole Blender round trip lived as lettered sub-boxes
-    /// (A/B/C/C-2) buried inside step 2. That made step 2 hold six help boxes and two green Play buttons, put
-    /// the FIRST thing you do (export the body) below the LAST thing (import the finished fbx), and - because
-    /// a step card collapses when its stage is locked or complete - made the whole Blender toolbox vanish
-    /// exactly while it was being used.
+    /// 예전 4카드 레이아웃을 대체했다. 거기서는 Blender 왕복 전체가 step 2 안에 A/B/C/C-2 라는 알파벳
+    /// 하위 상자로 묻혀 있었다. 그 탓에 step 2 하나가 help box 여섯 개와 초록 Play 버튼 두 개를 담았고,
+    /// 가장 먼저 하는 일(몸 내보내기)이 가장 마지막 일(완성된 fbx 가져오기) 아래에 놓였으며, step 카드는
+    /// 자기 stage가 잠기거나 완료되면 접히기 때문에 Blender 도구함 전체가 하필 그것을 쓰는 동안 사라졌다.
     ///
-    /// Two rules this layout keeps:
-    ///  1. Every step is a NUMBER. If it is a thing the user does, it has a number and a fixed place.
-    ///  2. Nothing is hidden behind a stage lock. A step shows its state and says what is missing; it never
-    ///     replaces its own contents with "이전 단계를 완료하면 열립니다". Locking is what produced the
-    ///     dead ends: buttons that cannot be pressed, with the explanation collapsed out of sight.
+    /// 이 레이아웃이 지키는 규칙 둘:
+    ///  1. 모든 step은 번호다. 사용자가 하는 일이면 번호와 고정된 자리를 갖는다.
+    ///  2. stage 잠금 뒤에 아무것도 숨기지 않는다. step은 자기 상태를 보여주고 무엇이 빠졌는지 말할 뿐,
+    ///     자기 내용을 "이전 단계를 완료하면 열립니다"로 바꿔치지 않는다. 막다른 길을 만든 것이 바로
+    ///     잠금이었다 - 누를 수 없는 버튼, 그리고 접혀서 보이지 않는 설명.
     /// </summary>
+    /// <remarks>
+    /// [QC][Invariant:sequential_unlock]
+    /// 순차 잠금은 규칙 2 이전의 모델이었다. 그 규칙은 "뒤 stage에는 이전 실행이 남긴 낡은 완료 에셋이 있을
+    /// 수 있으므로, 앞의 필수 단계가 끝나지 않았으면 뒤 stage는 잠긴 채로 있어야 하고 완료 여부보다 대기
+    /// 여부를 먼저 본다"였다. 위 규칙 2를 택하면서 폐기했고, 그것을 강제하던 기계(Workflow.cs의
+    /// GetSequentialStageState / IsStageComplete / IsStageWaiting / enum StepState)는 호출자가 하나도 남지
+    /// 않아 함께 지웠다. 이 기록을 규칙 2 옆에 붙여 두는 이유는, 둘이 떨어져 있던 동안 서로 정반대 말을
+    /// 하면서도 아무도 눈치채지 못했기 때문이다. 잠금을 되살리고 싶으면 규칙 2부터 뒤집어야 한다.
+    /// </remarks>
     public sealed partial class ZepetoStudioHelperWindow
     {
+        // 카드 머리의 배지가 이 넷 중 하나를 고른다. 사용자에게 보이는 뜻은 FlowStateLabel이 붙이는 글자다.
+        //   Done     "완료" - 이 카드에서 할 일은 끝났다.
+        //   Now      "지금" - 지금 손댈 카드.
+        //   Later    "아직" - 순서상 나중. 잠긴 것이 아니라 내용은 그대로 다 보인다(위 규칙 2).
+        //   Optional "선택" - 건너뛰어도 되는 카드.
+        // 배지는 색과 글자만 정한다. 어떤 컨트롤의 존재 여부도 여기에 걸려 있지 않다.
         private enum FlowState
         {
             Done,
@@ -51,9 +65,14 @@ namespace Easy.ZepetoHelper.Editor
         // ---------------------------------------------------------------- card chrome
 
         /// <summary>
-        /// One step card. Always draws its body - the caller decides what to put in it, including a line about
-        /// what is missing. The state only colours the header and the badge.
+        /// step 카드 하나. 본문은 언제나 그린다 - 무엇이 빠졌는지 알리는 줄까지 포함해서 무엇을 담을지는
+        /// 호출자가 정한다. state는 머리 띠 색과 배지만 칠한다.
         /// </summary>
+        /// <remarks>
+        /// 여기서 연 세로 그룹은 EndFlowStep이 닫는다. 둘 사이에서 `return`하면 그룹이 닫히지 않은 채로
+        /// 프레임이 끝나 그 OnGUI의 GUILayout 스택이 통째로 어긋난다 - 위 규칙 2가 막으려는 바로 그 함정이다.
+        /// 카드 본문은 조기 반환 대신 DrawMissing 한 줄로 부족한 것을 말하고 끝까지 그린다.
+        /// </remarks>
         private void BeginFlowStep(int number, string title, FlowState state, string oneLiner)
         {
             EditorGUILayout.Space(6f);
@@ -103,7 +122,7 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// The "what is missing" line. Never a lock - just the sentence that tells the user what to go do.
+        /// "무엇이 빠졌는가" 줄. 잠금이 아니라, 무엇을 하러 가면 되는지 알려 주는 문장일 뿐이다.
         /// </summary>
         private static void DrawMissing(string what)
         {
@@ -160,7 +179,7 @@ namespace Easy.ZepetoHelper.Editor
                 DrawMiniHelp(blockReason, MessageType.Warning);
             }
 
-            DrawSelectedMotionPlayStopButtons(workflow, true);
+            DrawSelectedMotionPlayStopButtons(workflow);
             DrawUseSelectedMotionButton(workflow);
             EndFlowStep();
         }
@@ -181,6 +200,8 @@ namespace Easy.ZepetoHelper.Editor
 
         private void DrawStep4Blender()
         {
+            // 배지를 Now로 고정한다. 이 카드의 일은 Unity 밖 Blender에서 끝나므로 여기에는 "끝났다"로 볼
+            // 신호 자체가 없다. 결과물이 돌아왔는지는 카드 5의 라이브 확인과 카드 2의 목록이 대신 보여준다.
             BeginFlowStep(4, "Blender에서 모션 만들기", FlowState.Now,
                 "여기서 Unity를 잠깐 떠납니다. Blender에서 포즈를 만들고 'Unity로 보내기'를 누르세요.");
 
@@ -228,6 +249,9 @@ namespace Easy.ZepetoHelper.Editor
 
         private void DrawStep7Export(WorkflowStatus workflow)
         {
+            // 배지를 Later로 고정한다. .zepeto 파일이 실제로 있는지는 DrawSaveExportBody 안에서
+            // GetExportPackageStatusText가 "출력 파일" 줄에 그대로 찍는다. 파일이 생겼다고 배지를 완료로
+            // 바꾸면, 실제 업로드는 ZEPETO Studio 웹에서 아직 남았는데도 다 끝난 것으로 읽힌다.
             BeginFlowStep(7, "제페토로 내보내기", FlowState.Later,
                 "의상은 .zepeto로 내보내고, 모션은 ZEPETO World에 넣습니다.");
 

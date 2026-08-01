@@ -9,7 +9,7 @@
 | 운영체제 | Windows 11 |
 | Unity | `2020.3.9f1` |
 | ZEPETO Studio | `3.2.12` 이상 (`3.2.16`에서 확인) |
-| helper 패키지 | `com.easy.zepeto-helper@0.9.1` |
+| helper 패키지 | `com.easy.zepeto-helper@0.10.0` |
 | ZEPETO registry | `https://upm.zepeto.run` |
 
 ## 필요한 준비물
@@ -86,14 +86,14 @@
   }
   ```
 
-- **0.9.1(Blender 왕복 3·4·5번)은 지금 이 형태로만 들어옵니다.** 0.9.1이 들어 있는 폴더를 직접 두는
+- **0.10.0(Blender 왕복 3·4·5번)은 지금 이 형태로만 들어옵니다.** 0.10.0이 들어 있는 폴더를 직접 두는
   것이기 때문입니다.
 
 ### 형태 B. `manifest.json`의 dependency로 적기
 
 `dependencies`에 줄을 추가하는 방식입니다. 이 경우에만 `manifest.json`에 항목이 보입니다.
 
-git 주소 (**주의: 지금 이 주소로는 0.2.4가 들어옵니다.** 저장소 `origin/main`이 0.2.4이고 0.9.1은 아직
+git 주소 (**주의: 지금 이 주소로는 0.2.4가 들어옵니다.** 저장소 `origin/main`이 0.2.4이고 0.10.0은 아직
 push되지 않았습니다. 4단계 마법사이고 Blender 왕복이 없습니다):
 
 ```json
@@ -145,8 +145,8 @@ Assets > Refresh
 `Packages/manifest.json`에서 `com.easy.zepeto-helper`를 찾는 방법은 **형태 B에서만** 통합니다.
 임베디드 형태에서는 거기에 없는 것이 정상이므로, 그것만 보고 "설치가 안 됐다"고 판단하면 안 됩니다.
 
-실제 창 모습은 README의 캡처로 볼 수 있지만, **그 캡처는 0.2.x(4단계) 시절 화면이라 현재 7단계 화면과
-다릅니다.** README의 `캡처 이미지 경고` 절을 함께 보세요.
+실제 창 모습은 README의 캡처로 볼 수 있습니다. 어느 캡처가 무엇을 담고 있는지는 README의
+`캡처 이미지에 대하여` 표가 파일 단위로 관리합니다 — 이 문서는 그 내용을 옮겨 적지 않습니다.
 
 ## 초보자 확인 순서
 
@@ -167,13 +167,21 @@ Assets/
   Contents/
     TRANSPARENT_1/            # 예시 의상 폴더. 이름은 달라도 됩니다
       TRANSPARENT_1.prefab
-  ZepetoHelper/
-    Animations/
-      ClipEdits/
-      Preview/
+  CustomMotions/              # Blender 애드온이 FBX를 떨어뜨리는 곳. 5번이 이 폴더를 감시합니다
+  ZepetoHelper/               # 아래 4개는 helper가 직접 만들고 씁니다
+    Rig/                      # 3번이 내보낸 ZepetoBaseModel.fbx (Blender 작업용 몸)
+    Motions/                  # FBX에서 뽑아낸 내 모션 .anim + 라이브 확인용 LiveFromBlender.anim
+    Animations/               # 2번이 만드는 편집용 복사본
+      ClipEdits/              # 6번이 저장한 조정 결과
+      Preview/                # Play 확인 중에만 쓰는 임시 clip
+    Controllers/              # 재생 슬롯을 바꿔 쓰는 override controller 사본
 Packages/
   manifest.json               # zepeto.studio 와 scopedRegistries 가 여기 있습니다
   packages-lock.json          # Unity가 관리합니다. 손으로 고치지 않습니다
   com.easy.zepeto-helper/     # 임베디드 설치일 때. manifest.json에는 적지 않습니다
     package.json
 ```
+
+`CustomMotions`와 `ZepetoHelper/Motions`와 `ZepetoHelper/Animations`는 **서로 다른 세 폴더**입니다.
+이름이 비슷해서 하나로 합치고 싶어지지만, 첫 번째는 애드온과의 약속(애드온이 여기로만 내보내고 helper가
+여기만 감시합니다), 두 번째는 내 모션 보관함, 세 번째는 편집 자격이 있는 복사본 자리입니다.

@@ -8,15 +8,15 @@ using UnityEngine;
 namespace Easy.ZepetoHelper.Editor
 {
     /// <summary>
-    /// Binding to the ZEPETO template LOADER and driving the SDK playback slot.
+    /// ZEPETO 템플릿의 LOADER에 바인딩하고 SDK 재생 슬롯을 조작하는 부분.
     /// </summary>
     public sealed partial class ZepetoStudioHelperWindow
     {
         private void OnSceneViewGui(SceneView sceneView)
         {
-            // ScenePreviewOverlayEnabled, not the old showScenePreviewOverlay field: that field had lost its
-            // toggle and was never written, so the overlay could not be turned off any more. The pref pair lives
-            // next to the preview-body toggle in ScenePreview.cs.
+            // 옛 showScenePreviewOverlay 필드가 아니라 ScenePreviewOverlayEnabled를 쓴다: 그 필드는 토글을
+            // 잃어버린 채 아무 데서도 쓰이지 않아서 오버레이를 더 이상 끌 수 없었다. 이 pref 쌍은
+            // ScenePreview.cs의 미리보기 몸 토글 옆에 산다.
             if (!ScenePreviewOverlayEnabled || sceneView == null)
             {
                 return;
@@ -38,7 +38,12 @@ namespace Easy.ZepetoHelper.Editor
             {
                 if (GUILayout.Button("선택 / Select", EditorStyles.miniButtonLeft))
                 {
-                    SelectAndFrameLoader();
+                    // "선택"은 "초점"에 안내 문구 한 줄을 더한 것이 전부다. 예전에는 별도 메서드였는데 그
+                    // 메서드가 FrameLoaderForScenePreview의 LOADER 재탐색 가드를 그대로 한 벌 더 들고 있었다.
+                    FrameLoaderForScenePreview();
+                    statusMessage = loader == null
+                        ? "LOADER를 찾지 못했습니다. 작업 준비 / Setup에서 LOADER를 다시 찾으세요."
+                        : "Scene View에서 LOADER를 선택했습니다. 아바타와 의상 관통을 확인하세요.";
                 }
 
                 if (GUILayout.Button("초점 / Focus", EditorStyles.miniButtonRight))
@@ -63,27 +68,12 @@ namespace Easy.ZepetoHelper.Editor
             Handles.EndGUI();
         }
 
-        private void SelectAndFrameLoader()
-        {
-            if (loader == null)
-            {
-                FindLoaderAndSerializedFields();
-            }
-
-            if (loader == null)
-            {
-                statusMessage = "LOADER를 찾지 못했습니다. 작업 준비 / Setup에서 LOADER를 다시 찾으세요.";
-                return;
-            }
-
-            FrameLoaderForScenePreview();
-
-            statusMessage = "Scene View에서 LOADER를 선택했습니다. 아바타와 의상 관통을 확인하세요.";
-        }
-
         // [QC][Guard:repaint_cost]
-        // These getters run from OnGUI. Without a LOADER the rebind would otherwise walk every scene root on every
-        // repaint, so rebinding is throttled while explicit user actions reset the timer for an immediate retry.
+        // 이 게터들은 OnGUI에서 불린다. LOADER가 없으면 재바인딩이 매 repaint마다 씬의 모든 루트를 훑게 되므로
+        // 재바인딩에 시간 제한을 둔다. 사용자가 명시적으로 누른 동작은 타이머를 초기화해서 즉시 다시 찾게 한다.
+        //
+        // 다른 파일에서 보이는 `lastLoaderSearchTime = -1000d`가 그 초기화 관용구다. 실제 시각과 절대 겹칠 수
+        // 없는 음수를 넣어 다음 EnsureLoaderBinding 호출이 무조건 다시 찾게 만드는 "강제 재탐색"이다.
         private void EnsureLoaderBinding()
         {
             double now = EditorApplication.timeSinceStartup;
@@ -150,8 +140,8 @@ namespace Easy.ZepetoHelper.Editor
         private static bool TryUpdateSerializedObject(SerializedObject serializedObject)
         {
             // [QC][Guard:stale_serialized_object]
-            // ZEPETO export and domain reloads can destroy the target behind a cached SerializedObject.
-            // Returning false lets callers refind LOADER instead of throwing "target has been destroyed".
+            // ZEPETO export나 도메인 리로드는 캐시된 SerializedObject 뒤의 대상을 파괴할 수 있다. false를
+            // 돌려주면 호출자가 "target has been destroyed" 예외를 맞는 대신 LOADER를 다시 찾을 수 있다.
             if (serializedObject == null || serializedObject.targetObject == null)
             {
                 return false;
@@ -183,20 +173,20 @@ namespace Easy.ZepetoHelper.Editor
             animatorControllerProperty = null;
 
             // [QC][Guard:no_text_clobber]
-            // This runs from OnGUI through GetCurrentZepetoId, so it must never overwrite what the user typed.
-            // Without a LOADER the id field keeps its value so accounts can still be registered.
+            // 이 메서드는 GetCurrentZepetoId를 통해 OnGUI에서 돌기 때문에 사용자가 입력 중인 값을 절대 덮어써서
+            // 는 안 된다. LOADER가 없어도 아이디 입력란은 값을 유지해서 계정 등록은 계속할 수 있다.
             if (loader == null)
             {
                 return;
             }
 
             // [QC][Invariant:field_binding_scope]
-            // In the official SDK these three fields are spread over two different components:
+            // 공식 SDK에서 이 세 필드는 서로 다른 두 컴포넌트에 흩어져 있다:
             //   zepetoId          -> Zepeto.ZepetoCharacterCustomLoader
             //   AnimationClip     -> ZEPETO.Studio.PlaygroundController
             //   AnimatorController-> ZEPETO.Studio.PlaygroundController
-            // Whether both components sit on the LOADER object depends on how the template scene is built, so the
-            // search widens from the object, to its children, to the whole scene instead of giving up immediately.
+            // 두 컴포넌트가 모두 LOADER 오브젝트에 붙어 있는지는 템플릿 씬을 어떻게 짰느냐에 달렸으므로, 바로
+            // 포기하지 않고 오브젝트 자신 -> 자식들 -> 씬 전체 순으로 검색 범위를 넓힌다.
             BindLoaderFields(loader.GetComponents<Component>());
 
             if (!HasAllLoaderFields())
@@ -215,6 +205,16 @@ namespace Easy.ZepetoHelper.Editor
             return zepetoIdProperty != null && animationClipProperty != null && animatorControllerProperty != null;
         }
 
+        /// <summary>
+        /// 넘겨받은 컴포넌트들을 훑으며 아직 비어 있는 필드만 채운다.
+        ///
+        /// 컴포넌트마다 SerializedObject를 새로 만드는 것은 낭비가 아니다. 세 필드가 서로 다른 컴포넌트에서
+        /// 오는 것이 정상이므로(위 field_binding_scope 참고) 함께 캡처해 두는 SerializedObject도 필드마다
+        /// 달라야 한다.
+        ///
+        /// 필드별로 먼저 찾은 것이 이긴다. 그래서 호출자는 가장 좁은 범위(LOADER 자신)부터 시작해 점점
+        /// 넓히고, 세 개가 다 차면 그 자리에서 멈춘다.
+        /// </summary>
         private void BindLoaderFields(Component[] components)
         {
             if (components == null)
@@ -293,8 +293,8 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         // [QC][Invariant:loader_lookup]
-        // GameObject.Find only sees active objects in the active scene. A template LOADER can be inactive or live in
-        // an additively loaded scene, so every loaded scene's root hierarchy is searched instead.
+        // GameObject.Find는 활성 씬의 활성 오브젝트만 본다. 템플릿 LOADER는 비활성일 수도 있고 additive로 로드된
+        // 씬에 있을 수도 있으므로, 로드된 모든 씬의 루트 계층을 대신 검색한다.
         private static GameObject FindLoaderGameObject()
         {
             GameObject direct = GameObject.Find("LOADER");
@@ -383,11 +383,12 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         // [QC][Invariant:readonly_asset_roots]
-        // The helper must never write into the SDK's own package files - that is why EnsureLocalAnimatorController
-        // copies the controller to Assets/ZepetoHelper/Controllers first. But read-only-ness is a property of a
-        // path SEGMENT, not of a substring: matching "PackageCache" anywhere also condemned a perfectly writable
-        // user folder like "Assets/MyPackageCache/Controllers", and Play then dead-ended on a "make a local
-        // controller" requirement that was already satisfied and could never be satisfied again.
+        // 헬퍼는 SDK 자신의 package 파일에 절대 쓰면 안 된다 — EnsureLocalAnimatorController가 controller를 먼저
+        // Assets/ZepetoHelper/Controllers로 복사하는 이유가 그것이다. 다만 읽기 전용인지는 경로 SEGMENT의
+        // 성질이지 부분 문자열의 성질이 아니다: "PackageCache"를 아무 자리에서나 매칭했더니
+        // "Assets/MyPackageCache/Controllers" 같은 멀쩡히 쓸 수 있는 사용자 폴더까지 유죄 판정을 받았고, 그러면
+        // Play가 "local controller를 만들라"는, 이미 충족됐고 다시는 충족될 수 없는 요구 앞에서 막다른 길에
+        // 부딪혔다.
         private static bool IsPackageOrPackageCachePath(string assetPath)
         {
             if (string.IsNullOrEmpty(assetPath))
@@ -395,14 +396,25 @@ namespace Easy.ZepetoHelper.Editor
                 return false;
             }
 
-            // AssetDatabase hands out forward slashes, but a path built by hand or read from a log can be
-            // backslashed.
+            // AssetDatabase는 경로를 슬래시(/)로 주지만, 손으로 만들었거나 로그에서 읽어 온 경로는 역슬래시일
+            // 수 있다.
             string normalized = assetPath.Replace('\\', '/');
             return normalized.StartsWith("Packages/", StringComparison.OrdinalIgnoreCase)
                 || normalized.StartsWith("Library/PackageCache/", StringComparison.OrdinalIgnoreCase)
                 || normalized.IndexOf("/Library/PackageCache/", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        /// <summary>
+        /// 재생 controller가 프로젝트 안에 쓰기 가능한 사본으로 존재하도록 보장한다. 이미 project-local이면
+        /// 아무것도 하지 않고 true를 돌려준다.
+        ///
+        /// 80줄에 종료 지점이 여덟 개라 미리 지도를 둔다. false로 끝나는 것: 필드를 못 찾음 / Play 중 /
+        /// SerializedObject가 끊어짐 / SDK 기본 controller까지 없음 / 에셋 경로를 못 구함 / 복사 실패 /
+        /// 만든 사본을 다시 읽지 못함. true로 끝나는 것: 이미 project-local / 사본을 만들어 연결함.
+        ///
+        /// 가장 뜻밖의 갈래는 참조가 비어 있을 때다 — 실패시키지 않고 SDK 기본 override controller를 조용히
+        /// 대신 집어넣는다. 아래 해당 위치의 주석 참고.
+        /// </summary>
         private bool EnsureLocalAnimatorController(out string message)
         {
             message = string.Empty;
@@ -427,8 +439,10 @@ namespace Easy.ZepetoHelper.Editor
             UnityEngine.Object currentController = animatorControllerProperty.objectReferenceValue;
             if (currentController == null)
             {
-                // A missing reference is recoverable: the SDK always ships the stock override controller, so fall
-                // back to it instead of dead-ending the user with "AnimatorController is empty".
+                // 참조가 비어 있는 것은 복구 가능한 상태다: SDK는 기본 override controller를 항상 함께
+                // 배포하므로, "AnimatorController가 비었다"로 사용자를 막다른 길에 세우는 대신 그것으로
+                // 되돌아간다. 대체가 조용히 일어난다는 점은 알고 있어야 한다 — 사용자가 일부러 비워 둔 필드도
+                // 여기서 SDK 기본값으로 채워진다.
                 currentController = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(SdkPlaygroundControllerPath);
                 if (currentController == null)
                 {
@@ -487,6 +501,14 @@ namespace Easy.ZepetoHelper.Editor
             return true;
         }
 
+        /// <summary>
+        /// controller를 Assets 아래의 사본으로 만든다. 타입에 따라 경로가 둘로 갈리는 이유가 있다.
+        ///
+        /// AnimatorOverrideController는 메모리에서 Instantiate 한 뒤 CreateAsset으로 쓴다. 그래야 override
+        /// 슬롯 매핑을 그대로 들고 오면서 이름만 PlaygroundAnimatorController_local로 바꿔 달 수 있다.
+        /// 그 밖의 controller 타입은 그렇게 손볼 상태가 없으므로 AssetDatabase.CopyAsset으로 파일을 통째로
+        /// 복사하는 쪽이 단순하고 안전하다.
+        /// </summary>
         private static bool CreateLocalAnimatorControllerCopy(UnityEngine.Object sourceController, string sourcePath, out string message)
         {
             message = string.Empty;
@@ -511,6 +533,18 @@ namespace Easy.ZepetoHelper.Editor
             return false;
         }
 
+        /// <summary>
+        /// LOADER의 직렬화된 AnimationClip 필드에 클립을 연결하고, 이어서 재생 슬롯(override 테이블)까지 다시
+        /// 쓴다. 두 번째가 없으면 아바타가 하는 동작은 바뀌지 않는다 — 아래 motion_playback 블록 참고.
+        /// </summary>
+        /// <param name="preserveClipStageComplete">
+        /// true면 3번 단계의 완료 표시를 유지한다. 임시 Play 프리뷰가 쓰는 값이다.
+        ///
+        /// 호출부에서 벌거벗은 true/false로만 보여 뜻이 드러나지 않지만 enum으로 바꿀 수 없다. 시그니처가
+        /// 고정돼 있다: ZepetoCustomMotionRun.cs가 이 메서드를 리플렉션으로 `new object[] { customClip, false }`
+        /// 처럼 부르므로 매개변수 타입을 바꾸면 하네스가 조용히 깨진다. 대신 호출부에서
+        /// `preserveClipStageComplete: true`처럼 이름 붙은 인자를 쓰면 시그니처를 그대로 두고도 읽힌다.
+        /// </param>
         private bool AssignAnimationClip(AnimationClip clip, bool preserveClipStageComplete = false)
         {
             if (clip == null || animationClipProperty == null)
@@ -532,8 +566,8 @@ namespace Easy.ZepetoHelper.Editor
             }
 
             // [AUDIT][Risk:Major][Scope:loader_binding]
-            // Temporary Play previews pass preserveClipStageComplete=true so preview assignment does not unlock
-            // completed workflow stages. Real clip changes intentionally reset step 3 below.
+            // 임시 Play 프리뷰는 preserveClipStageComplete=true로 부르므로, 프리뷰 때문에 이미 완료된 워크플로
+            // 단계가 풀리지 않는다. 진짜 클립 변경은 아래에서 일부러 3번 단계를 초기화한다.
             if (!TryUpdateSerializedObject(animationClipObject))
             {
                 statusMessage = "LOADER AnimationClip 참조가 끊어졌습니다. 작업 scene을 다시 열고 시도하세요.";
@@ -552,10 +586,12 @@ namespace Easy.ZepetoHelper.Editor
             }
 
             // [AUDIT][Risk:Critical][Scope:motion_playback]
-            // Setting PlaygroundController.AnimationClip does NOT change what the avatar performs. The SDK's
-            // ZepetoBaseModel controller plays a single slot named "dynamic", and PlaygroundAnimatorController
-            // ships with that slot mapped to A_pose - a 0.04s standing pose. Unless the override table is
-            // rewritten the avatar just stands still no matter which motion is selected.
+            // 이 프로젝트에서 가장 비싸게 배운 사실이다. PlaygroundController.AnimationClip에 값을 넣는 것만
+            // 으로는 아바타가 하는 동작이 바뀌지 않는다. SDK의 ZepetoBaseModel controller는 "dynamic"이라는
+            // 이름의 슬롯 하나만 재생하고, PlaygroundAnimatorController는 그 슬롯이 A_pose에 매핑된 채로
+            // 배포된다 — 0.04초(정확히는 0.0417초)짜리 제자리 서 있는 포즈다. override 테이블을 다시 쓰지
+            // 않는 한, 어떤 동작을 골라 넣어도 아바타는 그냥 서 있는다. 즉 위의 직렬화 필드 대입은 인스펙터
+            // 표시용이고, 재생을 실제로 바꾸는 것은 바로 아래 ApplyClipToOverrideController 호출이다.
             string overrideMessage;
             bool overrideApplied = ApplyClipToOverrideController(clip, out overrideMessage);
 
@@ -572,8 +608,20 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// Rewrites every slot of the project-local AnimatorOverrideController to the given clip. This is what
-        /// actually makes the avatar perform the motion; the serialized AnimationClip field alone does nothing.
+        /// project-local AnimatorOverrideController의 모든 슬롯을 주어진 클립으로 다시 쓴다. 아바타가 실제로
+        /// 그 동작을 하게 만드는 것은 이 메서드이며, 직렬화된 AnimationClip 필드만 바꾸는 것으로는 아무 일도
+        /// 일어나지 않는다. 이 규칙의 정본은 여기다 — 다른 파일의 같은 이야기는 각자의 국소적 결과만 적는다.
+        ///
+        /// "dynamic" 하나가 아니라 슬롯 전부를 덮어쓰는 이유: 재생되는 슬롯이 그 하나인 것은 SDK 쪽 사정이고,
+        /// 이름으로 찾아 들어가면 이름이 어긋나는 순간 조용히 빗나간다. 그때 아바타는 A_pose로 서 있고 화면에는
+        /// 아무 흔적도 남지 않는다. 이 controller는 헬퍼가 만든 로컬 사본이라 다른 슬롯을 덮어써서 잃을 것도
+        /// 없으므로, 이름에 걸지 않고 전부 같은 클립으로 맞춘다.
+        ///
+        /// 반환값 주의: 모든 슬롯이 이미 이 클립이면 아무것도 쓰지 않고 true를 돌려준다. "할 일이 없었다"도
+        /// 성공이다. 호출자가 true를 "방금 파일을 썼다"로 읽으면 안 된다.
+        ///
+        /// Play 중에는 부르지 말 것. ApplyOverrides + SaveAssets + ImportAsset이 곧 재바인딩이고, 그것이
+        /// ZEPETO context를 깨뜨린다 (LivePreview.cs의 클래스 주석 참고).
         /// </summary>
         private bool ApplyClipToOverrideController(AnimationClip clip, out string message)
         {
@@ -602,7 +650,7 @@ namespace Easy.ZepetoHelper.Editor
             string controllerPath = AssetDatabase.GetAssetPath(overrideController);
             if (IsPackageOrPackageCachePath(controllerPath))
             {
-                // Writing into Library/PackageCache would corrupt the SDK asset, so refuse rather than damage it.
+                // Library/PackageCache에 쓰면 SDK 에셋이 망가진다. 망가뜨리는 대신 거절한다.
                 message = "AnimatorController가 아직 package 원본입니다. 먼저 Local Controller Fix를 실행하세요.";
                 return false;
             }
@@ -645,7 +693,8 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// The clip the avatar will actually perform, read from the override table rather than the inspector field.
+        /// 아바타가 실제로 재생하게 될 클립. 인스펙터의 AnimationClip 필드가 아니라 override 테이블에서 읽는다
+        /// — 재생을 결정하는 쪽이 그것이기 때문이다.
         /// </summary>
         private AnimationClip GetPlaybackClip()
         {
@@ -713,6 +762,14 @@ namespace Easy.ZepetoHelper.Editor
             sceneView.Repaint();
         }
 
+        /// <summary>
+        /// Scene 뷰가 LOADER를 잡을 때 쓸 경계 상자. 렌더러가 하나도 없어도 반드시 쓸 만한 값을 돌려준다.
+        ///
+        /// Play 전의 LOADER는 사실상 빈 GameObject다 — 진짜 아바타는 런타임에 내려받으므로 감쌀 mesh가 없다.
+        /// 그때 Bounds가 0이면 Scene 뷰가 엉뚱하게 튀거나 극단적으로 확대돼서 "초점 맞추기"가 고장 난 것처럼
+        /// 보인다. 그래서 렌더러가 없거나 다 합쳐도 크기가 0에 가까우면 LOADER 위치 기준의 사람 크기 상자로
+        /// 되돌아간다.
+        /// </summary>
         private Bounds GetLoaderPreviewBounds()
         {
             if (loader == null)

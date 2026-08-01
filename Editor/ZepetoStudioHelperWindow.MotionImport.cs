@@ -7,14 +7,23 @@ using UnityEngine;
 namespace Easy.ZepetoHelper.Editor
 {
     /// <summary>
-    /// Turning an external animation FBX (Mixamo download, Blender export) into a clip the ZEPETO avatar can play.
+    /// 외부 애니메이션 FBX(Mixamo 다운로드, Blender export)를 ZEPETO 아바타가 재생할 수 있는 clip으로 바꾸는 부분.
     /// </summary>
     public sealed partial class ZepetoStudioHelperWindow
     {
         /// <summary>
-        /// Applies the import settings the official ZEPETO custom-animation guide requires:
-        /// Animation Type = Humanoid, and a root transform setup that keeps the avatar in frame.
-        /// Getting these wrong is the single most common reason an imported motion does nothing.
+        /// 공식 ZEPETO 커스텀 애니메이션 가이드가 요구하는 import 설정을 적용한다:
+        /// Animation Type = Humanoid, 그리고 아바타를 화면 안에 붙잡아 두는 root transform 설정.
+        /// 이걸 틀리는 것이 임포트한 모션이 아무것도 하지 않는 가장 흔한 원인이다.
+        ///
+        /// 다섯 단계로 흐른다:
+        ///   ① Humanoid + importAnimation
+        ///   ② Avatar 복사 판정, 또는 오염된 .meta 복구
+        ///   ③ Root Transform 고정
+        ///   ④ 결과 검증 - VerifyMotionFbxImportResult로 나가 있다
+        ///   ⑤ 보고
+        /// ①②③이 각각 SaveAndReimport로 끝나고 그때마다 importer를 다시 읽는 것은 아래 [AUDIT] 블록이 적어 둔
+        /// 이유 때문이며, 세 번으로 나뉜 구조와 그 순서는 의도된 것이다.
         /// </summary>
         private bool TryConfigureMotionFbx(string assetPath, out string message)
         {
@@ -42,10 +51,11 @@ namespace Easy.ZepetoHelper.Editor
 
             List<string> changes = new List<string>();
 
+            // ① Humanoid + importAnimation
             // [AUDIT][Risk:Major][Scope:humanoid_setup]
-            // Unity will not accept animationType and sourceAvatar in one pass: the avatar copy is validated
-            // against the already-imported rig, so a combined write silently reverts to CreateFromThisModel.
-            // Each stage therefore reimports before the next one reads the importer back.
+            // Unity는 animationType과 sourceAvatar를 한 번에 받아들이지 않는다: avatar 복사는 이미 임포트된 리그를
+            // 기준으로 검증되므로, 둘을 한 번에 쓰면 조용히 CreateFromThisModel로 되돌아간다.
+            // 그래서 각 단계는 다음 단계가 importer를 다시 읽기 전에 반드시 재임포트한다.
             if (importer.animationType != ModelImporterAnimationType.Human || !importer.importAnimation)
             {
                 importer.animationType = ModelImporterAnimationType.Human;
@@ -63,53 +73,55 @@ namespace Easy.ZepetoHelper.Editor
             }
 
             // [AUDIT][Scope:retarget_source]
-            // Copying the exported rig's Avatar is attempted, but Unity roots every imported model at the FILE
-            // name, so the target skeleton always differs from the source avatar by that root entry and Unity
-            // silently reverts to CreateFromThisModel. Re-measured from the fbx node tables themselves, because
-            // the numbers this comment used to carry (106 vs 103 matching) are not what the files contain:
-            // ZepetoBaseModel.fbx has 106 Model nodes topped by 'ZepetoBaseModel'; ZepetoRig_Wave.fbx has two
-            // root-level Model nodes - 'body' (Mesh) and 'hips' (Null) - and Unity adds the file-named
-            // 'ZepetoRig_Wave' root, so both skeletons are 106 entries and 105 of the 106 names match, the root
-            // being the only one that differs. Blender DOES re-export the armature object; that 'hips' Null is
-            // the node carrying Lcl Scaling (0.01, 0.01, 0.01), which is the source of every per-bone
-            // "position error" warning in ZepetoRig_Wave.fbx.meta (a single global 174752x factor, identical
-            // across all 64 warned bones - not a skeletal corruption). Every .fbx.meta under
-            // Assets/CustomMotions confirms the revert: avatarSetup: 1 is CreateFromThisModel, never 2.
+            // 내보낸 리그의 Avatar를 복사하는 것을 시도하기는 하지만, Unity는 임포트한 모든 모델의 루트를 FILE
+            // 이름으로 만들기 때문에 대상 skeleton은 원본 avatar와 언제나 그 루트 항목 하나만큼 다르고, Unity는
+            // 조용히 CreateFromThisModel로 되돌린다. 이 설명은 fbx의 노드 표에서 직접 다시 측정한 것이다.
+            // 이 주석이 예전에 달고 있던 숫자(106 대 103 일치)는 파일에 들어 있는 값이 아니었다:
+            // ZepetoBaseModel.fbx에는 'ZepetoBaseModel'을 머리로 하는 Model 노드가 106개 있고,
+            // ZepetoRig_Wave.fbx에는 루트 레벨 Model 노드가 둘 - 'body'(Mesh)와 'hips'(Null) - 있는데 Unity가
+            // 파일 이름을 딴 'ZepetoRig_Wave' 루트를 덧붙이므로, 두 skeleton 모두 106개 항목이고 106개 중 105개
+            // 이름이 일치하며 다른 것은 루트뿐이다. Blender는 armature 오브젝트를 실제로 다시 내보낸다. 그
+            // 'hips' Null이 Lcl Scaling (0.01, 0.01, 0.01)을 지고 있는 노드이고, ZepetoRig_Wave.fbx.meta의
+            // 모든 뼈별 "position error" 경고가 여기서 나온다 (전역 174752x 배율 하나이며 경고가 붙은 64개 뼈
+            // 전부에서 동일하다 - skeleton이 망가진 것이 아니다). Assets/CustomMotions 아래의 모든 .fbx.meta가
+            // 되돌림을 확인해 준다: avatarSetup: 1이 CreateFromThisModel이고, 2였던 적이 없다.
             //
-            // The fallback is acceptable, but not for the reason an earlier version of this comment claimed.
-            // A Humanoid clip stores normalised muscle ANGLES, one world-space body transform and hand/foot IK
-            // goals - it cannot carry bone lengths at all (hasTranslationDoF is 0 and the rotation/position/scale
-            // curve lists come out empty). So the source avatar does not make proportions "correct"; it only
-            // decides how the authored angles are read back. Whichever avatar is used, proportion mismatch shows
-            // up at PLAYBACK as foot slide and twist collapse, never as an import error. See DrawPublishGuide.
+            // 폴백은 받아들일 만하지만, 이 주석의 이전 판이 주장하던 이유 때문은 아니다.
+            // Humanoid clip은 정규화된 근육 ANGLE과 월드 공간 body transform 하나, 그리고 손/발 IK 목표를 저장한다 -
+            // 뼈 길이는 애초에 담을 수 없다 (hasTranslationDoF는 0이고 rotation/position/scale 커브 목록은 비어서
+            // 나온다). 그러므로 원본 avatar가 비율을 "맞게" 만들어 주지 않는다. 그것이 정하는 것은 작성된 각도를
+            // 어떤 매핑으로 되읽느냐뿐이다. 어느 avatar를 쓰든 비율 불일치는 임포트 오류가 아니라 재생 시점에
+            // 발 미끄러짐과 twist 붕괴로 나타난다. DrawPublishGuide 참조.
+            //
+            // ② Avatar 복사 판정, 또는 오염된 .meta 복구
             // [AUDIT][Risk:Critical][Scope:avatar_poisoning]
-            // The copy must be GATED, not just attempted. Assigning sourceAvatar writes the ZEPETO
-            // humanDescription into the target's .meta, and if the target's skeleton does not carry those bone
-            // names the asset is poisoned: every later reimport fails with
+            // 복사는 시도만 할 것이 아니라 GATE를 통과해야 한다. sourceAvatar를 대입하면 ZEPETO의
+            // humanDescription이 대상의 .meta에 쓰이는데, 대상 skeleton이 그 뼈 이름들을 갖고 있지 않으면 그
+            // asset은 오염된다: 이후의 모든 재임포트가
             //   "Avatar creation failed: Transform 'hips' for human bone 'Hips' not found"
-            // because the bad map is now part of the asset, not of this run. Two files in Assets/CustomMotions
-            // (Wave_Hello.fbx, AddonSmokeTest.fbx) were in exactly that state - they were importing fine until
-            // this line ran against their 21-bone generic skeletons - and hand-deleting their .meta files was
-            // the only way out. Pressing this button on any mismatched skeleton re-creates that state, so
-            // gating is only half the job: the leftover map is CLEARED below too, because this button is the
-            // only repair path a user has.
+            // 로 실패한다. 잘못된 매핑이 이제 이번 실행이 아니라 asset 자체의 일부이기 때문이다.
+            // Assets/CustomMotions의 두 파일(Wave_Hello.fbx, AddonSmokeTest.fbx)이 정확히 그 상태였다 -
+            // 21개 뼈짜리 generic skeleton에 이 줄이 돌기 전까지는 멀쩡히 임포트되고 있었다 - 그리고 .meta 파일을
+            // 손으로 지우는 것이 유일한 탈출구였다. 뼈대가 맞지 않는 어떤 skeleton에서든 이 버튼을 누르면 그
+            // 상태가 다시 만들어지므로, 막는 것만으로는 절반이다. 아래에서 남아 있는 매핑을 CLEAR까지 하는 이유는
+            // 이 버튼이 사용자가 가진 유일한 복구 경로이기 때문이다.
             //
-            // Skipping the copy is NOT a downgrade. A Humanoid clip carries normalised muscle angles and no bone
-            // names at all, so a clip extracted on the FBX's own avatar retargets onto the ZEPETO avatar
-            // regardless - Wave_Hello.anim is the proof: 0 of 55 ZEPETO bone names, and still a valid 130-curve
-            // Humanoid clip. Generic/Mixamo-style names (Hips, Spine, LeftArm) are exactly Unity's auto-mapper
-            // vocabulary, so those FBX files get a working avatar on their own. It is the ZEPETO names that
-            // Unity cannot auto-map, which is why the hand-authored humanDescription exists for the rig.
+            // 복사를 건너뛰는 것은 성능이나 품질의 하향이 아니다. Humanoid clip은 정규화된 근육 각도를 담을 뿐
+            // 뼈 이름을 전혀 담지 않으므로, FBX 자신의 avatar로 추출한 clip도 ZEPETO 아바타 위로 그대로
+            // 리타게팅된다 - Wave_Hello.anim이 그 증거다: ZEPETO 뼈 이름 55개 중 0개인데도 130개 커브를 가진
+            // 유효한 Humanoid clip이다. Generic/Mixamo 계열 이름(Hips, Spine, LeftArm)은 바로 Unity 자동
+            // 매퍼의 어휘라서 그런 FBX는 스스로 avatar를 만들어 낸다. Unity가 자동 매핑하지 못하는 쪽은 ZEPETO
+            // 이름이고, 그래서 리그에는 손으로 작성한 humanDescription이 존재한다.
             Avatar rigAvatar = FindExportedRigAvatar();
 
-            // Held outside the block below: when the post-import gate fails, the reason the copy was refused IS
-            // the diagnosis, and the gate cannot recompute it.
+            // 아래 블록 밖에 둔다: 임포트 후 검증이 실패했을 때 복사를 거절한 이유가 곧 진단이 되는데,
+            // 그 검증은 이유를 다시 계산할 수 없다.
             string copySkipReason = string.Empty;
 
-            // Deliberately not "&& importer.sourceAvatar != rigAvatar". Unity reverts a rejected copy to
-            // CreateFromThisModel and leaves the copied map behind in the .meta, so sourceAvatar reads back null
-            // on exactly the assets that need repairing - that condition skipped the block for them and made the
-            // damage permanent.
+            // "&& importer.sourceAvatar != rigAvatar"를 일부러 넣지 않았다. Unity는 거절된 복사를
+            // CreateFromThisModel로 되돌리면서 복사된 매핑은 .meta에 남겨 두므로, 정작 복구가 필요한 asset에서
+            // sourceAvatar가 null로 읽힌다 - 그 조건은 바로 그 asset들에 대해 이 블록을 건너뛰게 만들었고
+            // 피해를 영구적으로 만들었다.
             if (rigAvatar != null)
             {
                 if (!CanCopyRigAvatarTo(assetPath, rigAvatar, out copySkipReason))
@@ -154,8 +166,8 @@ namespace Easy.ZepetoHelper.Editor
                 return false;
             }
 
-            // Bake root motion into the pose so the preview avatar stays where the booth camera is pointing
-            // instead of walking out of frame.
+            // ③ Root Transform 고정
+            // root motion을 pose에 구워 넣어, 미리보기 아바타가 부스 카메라가 향한 자리를 벗어나 걸어 나가지 않게 한다.
             ModelImporterClipAnimation[] clips = importer.defaultClipAnimations;
             if (clips != null && clips.Length > 0)
             {
@@ -179,70 +191,13 @@ namespace Easy.ZepetoHelper.Editor
                 changes.Add("경고: 이 FBX에 애니메이션 클립이 없습니다");
             }
 
-            // [AUDIT][Risk:Major][Scope:humanoid_setup]
-            // A Humanoid import that cannot build an Avatar is not an exception and not a false return anywhere -
-            // Unity records the reason on the importer and hands back a model with no Avatar at all. Reporting
-            // the settings we wrote as success therefore produced motion entries that can never play. Two of the
-            // three fbx files in Assets/CustomMotions used to sit in exactly that state: their bones are
-            // Mixamo-named (HumanoidRig/Hips/Spine/LeftArm, 22 nodes) while the humanDescription this pipeline
-            // put on them named ZEPETO bones, and the .meta recorded
-            // rigImportErrors: "Avatar creation failed:\n\tTransform 'hips' for human bone 'Hips' not found".
-            // The clear above now repairs that, but the gate stays: plenty of other skeletons build no Avatar and
-            // no amount of clearing helps them. Remapping bone names is deliberately out of scope; this check
-            // only has to stop lying about the result. Both halves are needed - the recorded text names the
-            // cause, the Avatar says whether the clip can actually be retargeted.
-            //
-            // The importer is read back one more time first: the clip pass above ends in SaveAndReimport, which
-            // invalidates the C# wrapper exactly the way the two earlier stages already guard against. A null
-            // here only costs the error text, not the check - the Avatar test is what decides.
-            importer = AssetImporter.GetAtPath(assetPath) as ModelImporter;
-            string rigImportError = GetRigImportErrorText(importer);
-            Avatar producedAvatar = FindImportedModelAvatar(assetPath);
-            bool avatarUsable = producedAvatar != null && producedAvatar.isValid && producedAvatar.isHuman;
-            if (!string.IsNullOrEmpty(rigImportError) || !avatarUsable)
+            // ④ 결과 검증
+            if (!VerifyMotionFbxImportResult(assetPath, rigAvatar, copySkipReason, changes, out message))
             {
-                string detail = string.IsNullOrEmpty(rigImportError)
-                    ? (producedAvatar == null
-                        ? "Avatar가 만들어지지 않았습니다"
-                        : "Avatar 상태: isValid=" + producedAvatar.isValid + ", isHuman=" + producedAvatar.isHuman)
-                    : "Unity가 기록한 원인: " + (rigImportError.Length > 300
-                        ? rigImportError.Substring(0, 300) + " …"
-                        : rigImportError);
-
-                // [AUDIT][Risk:Major][Scope:humanoid_setup]
-                // The cause is read off the state, never assumed. Asserting "뼈 이름이 ZEPETO와 다릅니다" was
-                // wrong for the most likely way to get here: with no exported rig there is no source Avatar, so
-                // nothing was copied and the FBX was left to build its own - and a ZEPETO-named skeleton cannot,
-                // because those names are not in Unity's auto-mapper vocabulary. When a rig DOES exist, the
-                // reason the copy was refused plus the settings that were actually written are the diagnosis, and
-                // both used to be discarded.
-                if (rigAvatar == null)
-                {
-                    message = Path.GetFileName(assetPath)
-                        + ": Humanoid Avatar를 만들지 못했습니다. 3번(ZEPETO 리그 내보내기)을 아직 하지 않아서 "
-                        + "리타게팅 원본 Avatar가 없습니다. 이 FBX가 ZEPETO 리그 위에서 만든 동작이라면 "
-                        + "뼈 이름(hips/spine/upperArm_L)을 Unity가 스스로 매핑하지 못하므로, 내보낸 리그의 "
-                        + "Avatar를 복사하는 것 말고는 Avatar를 만들 방법이 없습니다. "
-                        + "3번을 먼저 누른 뒤 이 버튼을 다시 누르세요. " + detail;
-                }
-                else
-                {
-                    message = Path.GetFileName(assetPath)
-                        + ": Humanoid Avatar를 만들지 못했습니다. 이 FBX는 ZEPETO 아바타로 재생할 수 없습니다. "
-                        + "뼈 이름을 자동으로 바꿔주는 기능은 없습니다. 4번의 Blender 애드온으로 ZEPETO 리그 위에 "
-                        + "동작을 만들어 내보내는 방법만 지원합니다."
-                        + (string.IsNullOrEmpty(copySkipReason)
-                            ? string.Empty
-                            : " Avatar 복사 판정: " + copySkipReason + ".")
-                        + (changes.Count == 0
-                            ? string.Empty
-                            : " 적용한 설정: " + string.Join(", ", changes.ToArray()) + ".")
-                        + " " + detail;
-                }
-
                 return false;
             }
 
+            // ⑤ 보고
             if (changes.Count == 0)
             {
                 message = "이미 ZEPETO용 설정입니다: " + Path.GetFileName(assetPath);
@@ -254,17 +209,98 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// The rig import error Unity recorded on a model importer, flattened onto one line so it fits a HelpBox.
-        /// Empty string when the import reported none.
+        /// 임포트가 실제로 쓸 수 있는 Humanoid Avatar를 만들어냈는지 확인하고, 만들지 못했다면 사용자에게 보여줄
+        /// 설명을 조립한다. 성공하면 message는 비어 있고 호출자가 자기 문장을 채운다.
         ///
-        /// ModelImporter does not expose this on its public surface. m_RigImportErrors is the serialized name
-        /// Unity's own Rig inspector binds to and is what the .meta writes out as rigImportErrors; the name scan
-        /// after it is there so a renamed field degrades to "nothing reported" instead of throwing. Next(true) is
-        /// used rather than NextVisible because this property is hidden from the default inspector.
+        /// 위쪽 설정 단계와는 assetPath / rigAvatar / copySkipReason / changes 네 값으로만 이어져 있다.
         ///
-        /// The propertyType tests are load-bearing: stringValue throws on a property of any other type, and both
-        /// lookups are by name. The `using` matters because ConfigureMotionFolderForLivePreview runs this once per
-        /// fbx in the folder, and each SerializedObject holds a native handle until it is disposed.
+        /// [AUDIT][Risk:Major][Scope:humanoid_setup]
+        /// Avatar를 만들지 못한 Humanoid 임포트는 어디에서도 예외가 아니고 false 반환도 아니다 - Unity는 그
+        /// 이유를 importer에 기록하고 Avatar가 아예 없는 모델을 돌려준다. 그래서 우리가 쓴 설정을 성공으로
+        /// 보고하면 절대 재생될 수 없는 모션 항목이 만들어졌다. Assets/CustomMotions의 fbx 세 개 중 둘이 정확히
+        /// 그 상태로 있었다: 뼈 이름은 Mixamo 계열(HumanoidRig/Hips/Spine/LeftArm, 22개 노드)인데 이 파이프라인이
+        /// 얹어 놓은 humanDescription은 ZEPETO 뼈를 가리켰고, .meta에는
+        /// rigImportErrors: "Avatar creation failed:\n\tTransform 'hips' for human bone 'Hips' not found"
+        /// 가 기록돼 있었다. 위쪽의 clear가 그것을 이제 복구하지만 이 검사는 남는다: Avatar를 만들지 못하는 다른
+        /// skeleton은 얼마든지 있고 아무리 지워도 그들에게는 도움이 되지 않는다. 뼈 이름을 다시 매핑하는 것은
+        /// 의도적으로 범위 밖이며, 이 검사가 할 일은 결과에 대해 거짓말하지 않는 것뿐이다. 양쪽이 다 필요하다 -
+        /// 기록된 텍스트는 원인을 말하고, Avatar는 그 clip이 실제로 리타게팅될 수 있는지를 말한다.
+        ///
+        /// importer를 한 번 더 읽어 오는 것부터 시작하는 이유: 위 clip 단계가 SaveAndReimport로 끝나는데 그것이
+        /// 앞의 두 단계가 이미 막고 있는 것과 똑같은 방식으로 C# 래퍼를 무효화한다. 여기서 null이면 오류 텍스트를
+        /// 잃을 뿐 검사 자체는 잃지 않는다 - 판정하는 것은 Avatar 쪽이다.
+        /// </summary>
+        private static bool VerifyMotionFbxImportResult(
+            string assetPath,
+            Avatar rigAvatar,
+            string copySkipReason,
+            List<string> changes,
+            out string message)
+        {
+            message = string.Empty;
+
+            ModelImporter importer = AssetImporter.GetAtPath(assetPath) as ModelImporter;
+            string rigImportError = GetRigImportErrorText(importer);
+            Avatar producedAvatar = FindImportedModelAvatar(assetPath);
+            bool avatarUsable = producedAvatar != null && producedAvatar.isValid && producedAvatar.isHuman;
+            if (string.IsNullOrEmpty(rigImportError) && avatarUsable)
+            {
+                return true;
+            }
+
+            string detail = string.IsNullOrEmpty(rigImportError)
+                ? (producedAvatar == null
+                    ? "Avatar가 만들어지지 않았습니다"
+                    : "Avatar 상태: isValid=" + producedAvatar.isValid + ", isHuman=" + producedAvatar.isHuman)
+                : "Unity가 기록한 원인: " + (rigImportError.Length > 300
+                    ? rigImportError.Substring(0, 300) + " …"
+                    : rigImportError);
+
+            // [AUDIT][Risk:Major][Scope:humanoid_setup]
+            // 원인은 상태에서 읽어 내지, 추측하지 않는다. "뼈 이름이 ZEPETO와 다릅니다"라고 단정하는 것은 여기에
+            // 도달하는 가장 흔한 경로에 대해 틀린 말이었다: 내보낸 리그가 없으면 원본 Avatar도 없으니 복사된 것이
+            // 없고 FBX는 스스로 Avatar를 만들도록 남겨진 것인데 - ZEPETO 이름을 쓰는 skeleton은 그 이름들이
+            // Unity 자동 매퍼의 어휘에 없어서 스스로 만들지 못한다. 리그가 실제로 있는 경우에는 복사를 거절한
+            // 이유와 실제로 쓰인 설정이 곧 진단인데, 예전에는 그 둘을 모두 버리고 있었다.
+            if (rigAvatar == null)
+            {
+                message = Path.GetFileName(assetPath)
+                    + ": Humanoid Avatar를 만들지 못했습니다. 3번(ZEPETO 리그 내보내기)을 아직 하지 않아서 "
+                    + "리타게팅 원본 Avatar가 없습니다. 이 FBX가 ZEPETO 리그 위에서 만든 동작이라면 "
+                    + "뼈 이름(hips/spine/upperArm_L)을 Unity가 스스로 매핑하지 못하므로, 내보낸 리그의 "
+                    + "Avatar를 복사하는 것 말고는 Avatar를 만들 방법이 없습니다. "
+                    + "3번을 먼저 누른 뒤 이 버튼을 다시 누르세요. " + detail;
+            }
+            else
+            {
+                message = Path.GetFileName(assetPath)
+                    + ": Humanoid Avatar를 만들지 못했습니다. 이 FBX는 ZEPETO 아바타로 재생할 수 없습니다. "
+                    + "뼈 이름을 자동으로 바꿔주는 기능은 없습니다. 4번의 Blender 애드온으로 ZEPETO 리그 위에 "
+                    + "동작을 만들어 내보내는 방법만 지원합니다."
+                    + (string.IsNullOrEmpty(copySkipReason)
+                        ? string.Empty
+                        : " Avatar 복사 판정: " + copySkipReason + ".")
+                    + (changes.Count == 0
+                        ? string.Empty
+                        : " 적용한 설정: " + string.Join(", ", changes.ToArray()) + ".")
+                    + " " + detail;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Unity가 model importer에 기록해 둔 rig import 오류를 HelpBox에 들어가도록 한 줄로 펴서 돌려준다.
+        /// 임포트가 아무것도 보고하지 않았으면 빈 문자열.
+        ///
+        /// ModelImporter는 이 값을 공개 API로 노출하지 않는다. m_RigImportErrors는 Unity 자신의 Rig 인스펙터가
+        /// 바인딩하는 직렬화 이름이고 .meta에 rigImportErrors로 쓰여 나오는 것이다. 그 뒤의 이름 훑기는 필드
+        /// 이름이 바뀌었을 때 예외 대신 "보고된 것 없음"으로 떨어지게 하려고 있다. NextVisible이 아니라
+        /// Next(true)를 쓰는 것은 이 프로퍼티가 기본 인스펙터에서 숨겨져 있기 때문이다.
+        ///
+        /// propertyType 검사는 장식이 아니다: stringValue는 다른 타입의 프로퍼티에서 예외를 던지고, 두 조회 모두
+        /// 이름으로 찾기 때문이다. `using`이 필요한 것은 ConfigureMotionFolderForLivePreview가 폴더 안의 fbx마다
+        /// 이 함수를 한 번씩 부르는데, SerializedObject는 dispose될 때까지 네이티브 핸들을 붙잡고 있기 때문이다.
         /// </summary>
         private static string GetRigImportErrorText(ModelImporter importer)
         {
@@ -306,10 +342,10 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// The Avatar Unity actually produced for a model asset, or null when avatar creation failed.
+        /// Unity가 이 model asset에 대해 실제로 만들어 낸 Avatar, avatar 생성이 실패했으면 null.
         ///
-        /// Unlike FindExportedRigAvatar this does not filter on isHuman: the caller has to tell "no Avatar at
-        /// all" apart from "an Avatar that is not Humanoid", because those two need different words on screen.
+        /// FindExportedRigAvatar와 달리 isHuman으로 거르지 않는다: 호출자는 "Avatar가 아예 없다"와
+        /// "Avatar는 있는데 Humanoid가 아니다"를 구분해야 하고, 그 둘은 화면에 다른 문장을 필요로 한다.
         /// </summary>
         private static Avatar FindImportedModelAvatar(string assetPath)
         {
@@ -327,16 +363,16 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// Whether the rig Avatar's humanDescription can be copied onto this model without breaking it.
+        /// 리그 Avatar의 humanDescription을 이 모델에 복사해도 모델이 망가지지 않는지.
         ///
-        /// Unity does not validate this for us: assigning sourceAvatar writes the source humanDescription into
-        /// the target's .meta whatever the target's skeleton looks like, and a map naming bones the target does
-        /// not have makes avatar creation fail on that asset from then on. So the bone names have to be checked
-        /// BEFORE the assignment - afterwards is too late to PREVENT it. Repairing a .meta that already holds a
-        /// foreign map is the other half of the job and lives in NeedsForeignAvatarMapCleared.
+        /// Unity는 이것을 대신 검증해 주지 않는다: sourceAvatar를 대입하면 대상 skeleton이 어떻게 생겼든 원본
+        /// humanDescription이 대상의 .meta에 쓰이고, 대상에 없는 뼈를 가리키는 매핑은 그때부터 그 asset의 avatar
+        /// 생성을 계속 실패시킨다. 그래서 뼈 이름은 대입 전에 확인해야 한다 - 뒤에 확인하는 것은 막기에 이미
+        /// 늦다. 이미 다른 리그의 매핑을 들고 있는 .meta를 복구하는 것이 나머지 절반이고, 그쪽은
+        /// NeedsForeignAvatarMapCleared에 있다.
         ///
-        /// Only bone presence is checked, not the hierarchy: Unity roots every imported model at the file name,
-        /// so the two skeletons always differ by that one root entry and an exact match is never achievable.
+        /// 뼈의 존재만 보고 계층은 보지 않는다: Unity는 임포트한 모든 모델의 루트를 파일 이름으로 만들기 때문에
+        /// 두 skeleton은 언제나 그 루트 항목 하나만큼 다르고, 정확한 일치는 애초에 도달할 수 없다.
         /// </summary>
         private static bool CanCopyRigAvatarTo(string assetPath, Avatar sourceAvatar, out string reason)
         {
@@ -373,8 +409,8 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// Every transform name in an imported model, or null when the model itself could not be read. Shared by
-        /// the copy gate and the un-poison check so "which bones does this FBX actually have" has one definition.
+        /// 임포트된 모델의 모든 transform 이름, 모델 자체를 읽지 못했으면 null. 복사 게이트와 오염 해제 검사가
+        /// 함께 쓴다. "이 FBX가 실제로 가진 뼈가 무엇인가"의 정의를 하나로 두기 위해서다.
         /// </summary>
         private static HashSet<string> CollectModelBoneNames(string assetPath)
         {
@@ -395,8 +431,8 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// How many of a human map's bone names the model does not have, plus the first one for the message.
-        /// An empty boneName is an unmapped optional bone, not a missing one.
+        /// 사람 뼈 매핑이 가리키는 이름 중 모델에 없는 것이 몇 개인지와, 메시지에 쓸 첫 번째 이름.
+        /// boneName이 비어 있는 항목은 없는 뼈가 아니라 매핑되지 않은 선택적 뼈다.
         /// </summary>
         private static void CountMissingHumanBones(
             HumanBone[] humanBones,
@@ -424,29 +460,29 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// Whether this asset is carrying an Avatar setup that has to be wiped before it can import again.
+        /// 이 asset이 다시 임포트되려면 먼저 지워야 하는 Avatar 설정을 지고 있는지.
         ///
         /// [AUDIT][Risk:Critical][Scope:avatar_poisoning]
-        /// Refusing the copy only protects an FBX that is not poisoned yet. An asset whose .meta ALREADY holds a
-        /// foreign humanDescription has to be repaired, and this button is the only repair path a user has -
-        /// otherwise the fix is "delete the .meta by hand", which nobody will find.
+        /// 복사를 거절하는 것은 아직 오염되지 않은 FBX만 보호한다. 이미 .meta에 다른 리그의 humanDescription을
+        /// 들고 있는 asset은 복구되어야 하고, 이 버튼이 사용자가 가진 유일한 복구 경로다 - 그렇지 않으면 해결책은
+        /// ".meta를 손으로 지운다"인데 그걸 찾아낼 사람은 없다.
         ///
-        /// Resetting avatarSetup/sourceAvatar is NOT enough on its own, which is why the stored map is inspected
-        /// as well. Unity reverts a rejected copy to avatarSetup: 1 (CreateFromThisModel) with
-        /// lastHumanDescriptionAvatarSource: {instanceID: 0} and KEEPS the copied humanDescription - measured in
-        /// Assets/CustomMotions/ZepetoRig_Wave.fbx.meta: avatarSetup 1, source instanceID 0, and a 55-entry human
-        /// list starting 'boneName: hips'. So on a poisoned asset both of those fields already read clean while
-        /// the map that breaks avatar creation is still there. The map is what has to go.
+        /// avatarSetup/sourceAvatar를 되돌리는 것만으로는 충분하지 않고, 그래서 저장된 매핑까지 들여다본다.
+        /// Unity는 거절된 복사를 avatarSetup: 1(CreateFromThisModel)과
+        /// lastHumanDescriptionAvatarSource: {instanceID: 0}으로 되돌리면서 복사된 humanDescription은 그대로 둔다 -
+        /// Assets/CustomMotions/ZepetoRig_Wave.fbx.meta에서 측정한 값이 그렇다: avatarSetup 1, source instanceID 0,
+        /// 그리고 'boneName: hips'로 시작하는 55개 항목짜리 human 목록. 즉 오염된 asset에서는 그 두 필드가 이미
+        /// 깨끗하게 읽히는데 avatar 생성을 망가뜨리는 매핑은 그대로 남아 있다. 없애야 하는 것은 그 매핑이다.
         ///
-        /// Nothing is rewritten while the asset still produces a usable Humanoid Avatar, and that one
-        /// precondition is what keeps the repair from becoming a new bug. A hand-configured mapping is never
-        /// wiped, and neither is a model whose bone hierarchy optimizeGameObjects has stripped - its transform
-        /// names are gone, so ANY map would look foreign, but its Avatar is fine and it is therefore left alone.
+        /// asset이 아직 쓸 만한 Humanoid Avatar를 만들어 내는 동안에는 아무것도 다시 쓰지 않으며, 그 전제 하나가
+        /// 이 복구를 새로운 버그로 만들지 않는 장치다. 손으로 설정한 매핑은 절대 지워지지 않고,
+        /// optimizeGameObjects가 뼈 계층을 걷어낸 모델도 마찬가지다 - 그런 모델은 transform 이름이 사라져서 어떤
+        /// 매핑이든 남의 것처럼 보이지만 Avatar는 멀쩡하므로 건드리지 않는다.
         ///
-        /// It also cannot loop. After the clear Unity auto-maps this model's own bones
-        /// (autoGenerateAvatarMappingIfUnspecified: 1), so the stored map can only name bones that exist and the
-        /// setup is already CreateFromThisModel/null. Both tests then report nothing to do on the next press,
-        /// whether the Avatar came out usable or not.
+        /// 반복에 빠질 수도 없다. clear 후에는 Unity가 이 모델 자신의 뼈를 자동 매핑하므로
+        /// (autoGenerateAvatarMappingIfUnspecified: 1), 저장된 매핑은 존재하는 뼈만 가리킬 수 있고 설정은 이미
+        /// CreateFromThisModel/null이다. 그러면 다음에 눌렀을 때 두 검사 모두 할 일 없음을 보고한다 -
+        /// Avatar가 쓸 만하게 나왔든 아니든 마찬가지다.
         /// </summary>
         private static bool NeedsForeignAvatarMapCleared(ModelImporter importer, string assetPath, out string reason)
         {
@@ -493,12 +529,11 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// Puts the importer back to what a never-configured Humanoid import looks like, then reimports.
+        /// importer를 한 번도 설정한 적 없는 Humanoid 임포트의 모습으로 되돌리고 재임포트한다.
         ///
-        /// Empty human/skeleton lists are the "unspecified" state Unity's
-        /// autoGenerateAvatarMappingIfUnspecified flag reacts to, so the reimport maps this model's own bones
-        /// instead of reusing the foreign map. Only ever called behind NeedsForeignAvatarMapCleared, which is
-        /// where the reasoning about what is safe to wipe lives.
+        /// human/skeleton 목록을 비우는 것이 Unity의 autoGenerateAvatarMappingIfUnspecified 플래그가 반응하는
+        /// "지정되지 않음" 상태이므로, 재임포트는 남의 매핑을 다시 쓰는 대신 이 모델 자신의 뼈를 매핑한다.
+        /// 언제나 NeedsForeignAvatarMapCleared 뒤에서만 불리며, 무엇을 지워도 안전한지에 대한 판단은 그쪽에 있다.
         /// </summary>
         private static void ClearForeignAvatarMap(ModelImporter importer)
         {
@@ -515,8 +550,8 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// Copies the clip that lives inside an imported FBX into a standalone .anim under the custom motion
-        /// folder. A clip embedded in a model asset is read-only, so speed / trim / loop editing needs a copy.
+        /// 임포트된 FBX 안에 들어 있는 clip을 커스텀 모션 폴더 아래의 독립 .anim으로 복사한다.
+        /// model asset 안에 박혀 있는 clip은 읽기 전용이라, 배속 / 자르기 / 반복 편집에는 사본이 필요하다.
         /// </summary>
         private bool TryExtractMotionFromFbx(string assetPath, out string message)
         {
@@ -533,7 +568,7 @@ namespace Easy.ZepetoHelper.Editor
             for (int i = 0; i < assets.Length; i++)
             {
                 AnimationClip candidate = assets[i] as AnimationClip;
-                // Model importers add a hidden __preview__ clip; ignore it.
+                // model importer는 숨겨진 __preview__ clip을 하나 더 붙인다. 그것은 건너뛴다.
                 if (candidate != null && (candidate.hideFlags & HideFlags.HideInHierarchy) == 0)
                 {
                     source = candidate;
@@ -601,8 +636,11 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// Registering an fbx that did not come through the live loop - a Mixamo download, or a Blender export
-        /// made before live preview was set up. The live path in step 5 does both of these automatically.
+        /// 라이브 루프를 거치지 않고 들어온 fbx를 등록하는 자리 - Mixamo 다운로드이거나, 라이브 미리보기를
+        /// 설정하기 전에 만든 Blender export. 5번의 라이브 경로는 이 둘을 자동으로 해 준다.
+        ///
+        /// 여기 버튼의 1·2는 이 상자 안에서만 쓰는 순서다. Unity 카드 번호(1~7)도, Blender 애드온 패널의
+        /// 단계 번호도 아니다 - 세 체계의 관계는 GoToBlender.cs의 DrawGoToBlenderBody 머리 주석 참조.
         /// </summary>
         private void DrawManualMotionImportBody()
         {

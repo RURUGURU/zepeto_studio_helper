@@ -4,17 +4,18 @@ using UnityEngine;
 namespace Easy.ZepetoHelper.Editor
 {
     /// <summary>
-    /// Where an authored motion can actually go.
+    /// 만든 모션이 실제로 갈 수 있는 곳.
     ///
-    /// This panel exists because the rest of the tool ends in the Studio ITEM Playground, which ships nothing:
-    /// the item SDK exposes a single overridable animation slot named "dynamic", and its contents are a Unity
-    /// preview only. Verified against the official sources - ZEPETO Studio's publishable category list is
-    /// wearables only (no motion / gesture / pose / dance / emote), and setGesture() is bound to ZEPETO's
-    /// server-hosted official gesture library via requestOfficialContentList() + downloadAnimation(), so it
-    /// will not take a locally authored AnimationClip. The one documented destination for a self-authored
-    /// motion is a ZEPETO World.
+    /// 이 패널이 있는 이유는, 이 도구의 나머지 전부가 Studio ITEM Playground에서 끝나는데 그곳은 아무것도
+    /// 내보내지 않기 때문이다. 아이템 SDK가 노출하는 애니메이션 슬롯은 "dynamic" 하나뿐이고, 거기에 넣은
+    /// 내용물은 Unity 안에서의 미리보기로만 존재한다. 공식 자료로 확인한 사실은 둘이다. 첫째, ZEPETO
+    /// Studio의 업로드 가능 카테고리 목록은 착용 아이템뿐이다(motion / gesture / pose / dance / emote 항목
+    /// 자체가 없다). 둘째, setGesture()는 requestOfficialContentList() + downloadAnimation()을 통해 ZEPETO
+    /// 서버가 호스팅하는 공식 제스처 라이브러리에 묶여 있어서, 로컬에서 만든 AnimationClip을 받지 않는다.
+    /// 그래서 직접 만든 모션의 유일한 문서화된 목적지는 ZEPETO World다.
     ///
-    /// Without this text a user finishes the whole pipeline and has nowhere to put the result.
+    /// 이 설명이 없으면 사용자는 파이프라인을 끝까지 완주하고 나서 결과물을 놓을 데가 없다는 것을 알게 된다.
+    /// 그래서 이 패널은 장식이 아니라 이 제품이 성립하는 근거이고, "단순화"의 후보가 아니다.
     /// </summary>
     public sealed partial class ZepetoStudioHelperWindow
     {
@@ -26,14 +27,22 @@ namespace Easy.ZepetoHelper.Editor
             "Packages/zepeto.character.controller/runtime/resources/animatorcontroller/ZepetoAnimatorV2.controller";
 
         /// <summary>
-        /// The World SDK controller ships with zepeto.character.controller, which this item-creation template
-        /// does not include. Checking rather than asserting keeps the panel honest if the user later adds it.
+        /// World SDK 컨트롤러는 zepeto.character.controller 패키지에 들어 있고, 이 아이템 제작 템플릿에는 그
+        /// 패키지가 없다. 단정하지 않고 매번 확인하는 이유는, 사용자가 나중에 그 패키지를 추가했을 때도
+        /// 패널이 사실을 말하게 하기 위해서다.
         /// </summary>
         private static bool HasWorldSdkAnimatorController()
         {
             return AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(ZepetoAnimatorControllerPath) != null;
         }
 
+        // 이 패널은 성격이 다른 네 덩어리로 되어 있다.
+        //   1. 경고 상자    - 사실만 적는다. 모션 아이템은 없고, 앱 안 제스처는 서버 라이브러리 전용이며,
+        //                     목적지는 World뿐이라는 것. 넷 중 이것이 이 패널의 존재 이유다(위 class 주석).
+        //   2. 4단계 레시피 - 접히는 부분. World 프로젝트에서 무엇을 하는지의 순서.
+        //   3. 프로젝트 상태 - 그 컨트롤러가 지금 이 프로젝트에 있는지. 여기서는 "없음"이 정상이다.
+        //   4. 문서 링크 둘  - 주장의 출처. 사용자가 직접 확인할 수 있어야 한다.
+        // 2~4는 1을 읽은 사람에게 다음 걸음을 알려 줄 뿐이므로, 접히거나 비어도 사용자는 길을 잃지 않는다.
         private void DrawPublishGuide()
         {
             EditorGUILayout.Space(6f);
@@ -57,8 +66,8 @@ namespace Easy.ZepetoHelper.Editor
                 EditorGUILayout.LabelField("4. ZepetoAnimatorV2.controller를 복제해 클립을 스테이트로 추가 → animator.Play()");
                 EditorGUI.indentLevel--;
 
-                // A plain LabelField clips this path at the panel edge, and the path is the actionable part.
-                // A wrapped, selectable field keeps it readable and copyable at any window width.
+                // 평범한 LabelField는 이 경로를 패널 가장자리에서 잘라 버리는데, 정작 사용자가 써야 하는 것이
+                // 그 경로다. 줄바꿈되고 선택 가능한 칸이면 창 너비와 상관없이 읽고 복사할 수 있다.
                 EditorGUILayout.LabelField("복제할 컨트롤러 (월드 프로젝트 안에서):", EditorStyles.miniBoldLabel);
                 EditorGUILayout.SelectableLabel(
                     ZepetoAnimatorControllerPath,

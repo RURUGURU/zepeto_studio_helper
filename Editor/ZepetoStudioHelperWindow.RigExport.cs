@@ -8,26 +8,26 @@ using UnityEngine;
 namespace Easy.ZepetoHelper.Editor
 {
     /// <summary>
-    /// Exporting ZEPETO's shared base body to FBX so motions can be authored on the real bone names and
-    /// hierarchy, and importing animations back with that model's Avatar as the retarget source.
+    /// ZEPETO가 공유하는 기본 몸을 FBX로 내보내서 진짜 뼈 이름과 계층 위에서 모션을 만들 수 있게 하고,
+    /// 그 모델의 Avatar를 리타게팅 원본으로 삼아 애니메이션을 되받아오는 부분.
     ///
-    /// What this does NOT give you is your own avatar. ZepetoBaseModel is the body everyone starts from; a
-    /// specific user's face, outfit and body-shape scales only exist after a runtime download during Play.
-    /// It also does not make retargeting exact - a Humanoid clip has no room to store bone lengths, so
-    /// proportion error surfaces at playback (foot slide, twist collapse), not here. Authoring on the real
-    /// hierarchy still matters: it gets the bone names, the rest pose and the twist-bone layout right.
+    /// 이걸로 얻지 못하는 것은 "내 아바타"다. ZepetoBaseModel은 모두가 출발점으로 쓰는 몸이고, 특정 사용자의
+    /// 얼굴·의상·체형 스케일은 Play 중 런타임 다운로드 이후에만 존재한다.
+    /// 리타게팅이 정확해지는 것도 아니다 - Humanoid 클립에는 뼈 길이를 담을 자리가 없어서, 비율 오차는 여기가
+    /// 아니라 재생 시점에 드러난다(발 미끄러짐, twist 붕괴). 그래도 진짜 계층 위에서 만드는 것은 여전히 중요하다.
+    /// 뼈 이름과 rest pose와 twist 뼈 배치를 맞게 가져가기 때문이다.
     /// </summary>
     public sealed partial class ZepetoStudioHelperWindow
     {
         private const string ZepetoBaseModelPath = "Packages/zepeto.character/resources/zepeto/ZepetoBaseModel.prefab";
         private const string RigExportRoot = "Assets/ZepetoHelper/Rig";
         private const string ExportedRigPath = RigExportRoot + "/ZepetoBaseModel.fbx";
-        private const string FbxExporterTypeName = "UnityEditor.Formats.Fbx.Exporter.ModelExporter, Unity.Formats.Fbx.Editor";
 
-        /// <summary>
-        /// The Unity FBX Exporter is an optional package, so it is reached by reflection. That keeps this helper
-        /// compiling in a project that never installs it.
-        /// </summary>
+        // 아래 네 개의 타입 이름과 이 파일의 모든 reflection은 한 가지 이유에서 나온다: Unity FBX Exporter는
+        // 선택 설치 패키지다. 직접 참조하면 그것을 설치하지 않은 프로젝트에서 이 헬퍼가 컴파일되지 않는다.
+        // 그래서 이 안에서 무엇이든 null이면 그것은 "고장"이 아니라 "설치되어 있지 않음"으로 읽어야 한다 -
+        // 타입, 메서드, 프로퍼티 어느 단계에서 null이 나오든 마찬가지다.
+        private const string FbxExporterTypeName = "UnityEditor.Formats.Fbx.Exporter.ModelExporter, Unity.Formats.Fbx.Editor";
         private const string ExportOptionsTypeName = "UnityEditor.Formats.Fbx.Exporter.ExportModelOptions, Unity.Formats.Fbx.Editor";
         private const string ExportFormatTypeName = "UnityEditor.Formats.Fbx.Exporter.ExportFormat, Unity.Formats.Fbx.Editor";
 
@@ -49,19 +49,18 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// Builds export options that force a BINARY fbx.
+        /// BINARY fbx를 강제하는 export 옵션을 만든다.
         ///
         /// [AUDIT][Risk:Major][Scope:blender_roundtrip]
-        /// ExportModelOptions defaults to ExportFormat.ASCII, and Blender refuses ASCII fbx outright
-        /// ("ASCII FBX files are not supported"). Unity reports a successful export either way, so this only
-        /// shows up when the file is actually opened in Blender.
+        /// ExportModelOptions의 기본값은 ExportFormat.ASCII인데, Blender는 ASCII fbx를 아예 거부한다
+        /// ("ASCII FBX files are not supported"). Unity는 어느 쪽이든 export 성공으로 보고하므로, 이 문제는
+        /// 파일을 실제로 Blender에서 열어봐야 드러난다.
         ///
-        /// Returns null when the options type is unavailable. The caller then has to use the 2-argument
-        /// ExportObject overload, which passes exportOptions: null - and that does NOT fall back to the
-        /// project's Fbx Export settings, it builds a fresh ExportModelSettingsSerialize whose exportFormat
-        /// field is ASCII (verified in com.unity.formats.fbx 5.1.6, ExportOptionsSettingsSerializeBase:251).
-        /// So the fallback can only ever write ASCII, which is why TryExportZepetoRigToFbx deletes what it
-        /// produced instead of keeping it.
+        /// 옵션 타입을 못 구하면 null을 돌려준다. 그러면 호출자는 인자 2개짜리 ExportObject 오버로드를 쓰게 되는데,
+        /// 그것은 exportOptions: null을 넘기는 것이고 - 그 경우 프로젝트의 Fbx Export 설정으로 폴백하지 않는다.
+        /// exportFormat 필드가 ASCII인 ExportModelSettingsSerialize를 새로 만든다
+        /// (com.unity.formats.fbx 5.1.6, ExportOptionsSettingsSerializeBase:251에서 확인).
+        /// 즉 폴백 경로는 ASCII밖에 쓸 수 없고, 그래서 TryExportZepetoRigToFbx는 그 결과물을 남겨두지 않고 지운다.
         /// </summary>
         private static object BuildBinaryExportOptions()
         {
@@ -111,6 +110,18 @@ namespace Easy.ZepetoHelper.Editor
             return FindFbxExportMethod() != null;
         }
 
+        /// <summary>
+        /// 기본 몸을 ExportedRigPath로 내보낸다. 흐름은 다섯 토막이다:
+        ///   ① 전제조건 - Play 아님, FBX Exporter 있음, 기본 모델 있음, 출력 폴더 있음
+        ///   ② 임시 인스턴스 - prefab asset을 직접 내보내면 exporter가 훑는 pose/계층이 사라진다
+        ///   ③ reflection export - 옵션을 만들 수 있으면 3-arg, 아니면 2-arg 오버로드
+        ///   ④ finally 정리 - 인스턴스는 어느 경로로 나가든 반드시 파괴된다
+        ///   ⑤ 단일 실패 출구 - 아래 [AUDIT] 블록이 이유를 적어 둔, 여기서 유일하게 return false 하는 자리
+        /// exportOk가 message와 별개의 플래그로 존재하는 이유가 여기 있다. try 안에서 곧바로 return하면 ④를
+        /// 건너뛰거나 ⑤를 건너뛰게 되므로, 성공 여부는 플래그로 들고 나오고 message는 실패 사유를 담아 나온다.
+        /// ⑤ 이후의 "검증하고 받아들이는" 절반은 TryAdoptExportedRig에 있으며, 이 절반과는 exportOk /
+        /// requestedBinary 두 값으로만 연결된다.
+        /// </summary>
         private bool TryExportZepetoRigToFbx(out string message)
         {
             message = string.Empty;
@@ -139,8 +150,8 @@ namespace Easy.ZepetoHelper.Editor
             EnsureFolder("Assets", "ZepetoHelper");
             EnsureFolder("Assets/ZepetoHelper", "Rig");
 
-            // Export a temporary instance: exporting the prefab asset directly loses the pose/hierarchy the
-            // exporter walks, and we must not touch the package asset.
+            // 임시 인스턴스를 내보낸다: prefab asset을 그대로 내보내면 exporter가 훑는 pose/계층을 잃고,
+            // 패키지 asset 자체를 건드려서도 안 된다.
             GameObject instance = UnityEngine.Object.Instantiate(baseModel);
             instance.name = "ZepetoBaseModel";
 
@@ -188,13 +199,22 @@ namespace Easy.ZepetoHelper.Editor
                 UnityEngine.Object.DestroyImmediate(instance);
             }
 
+            return TryAdoptExportedRig(exportOk, requestedBinary, ref message);
+        }
+
+        /// <summary>
+        /// 방금 쓰인 파일을 검증하고, 통과하면 프로젝트가 쓸 수 있게 받아들인다(임포트, Humanoid, Avatar 보고).
+        /// 실패한 export의 message는 이미 채워져 있으므로 덮어쓰지 않는다.
+        /// </summary>
+        private bool TryAdoptExportedRig(bool exportOk, bool requestedBinary, ref string message)
+        {
             // [AUDIT][Risk:Major][Scope:rig_export_done_means_openable]
-            // Every failure leaves through this one exit instead of returning from inside the try, because a
-            // reported failure and a thrown exception can both leave a partial fbx at ExportedRigPath just as
-            // easily as an ASCII one - the exporter writes as it walks the hierarchy. Step 3's done test is a
-            // bare File.Exists on that path (Flow.cs:172), so any file left behind turns the card green on a
-            // broken export and takes step 4's "3번을 먼저 하세요" warning away. DeleteRejectedRigExport is a
-            // no-op when nothing was written, so calling it on every failure costs nothing.
+            // 모든 실패는 try 안에서 return하지 않고 이 하나의 출구로 빠져나온다. 실패 보고든 던져진 예외든
+            // ASCII 파일만큼이나 쉽게 ExportedRigPath에 반쪽짜리 fbx를 남길 수 있기 때문이다 - exporter는 계층을
+            // 훑어가며 쓴다. 3번 카드의 완료 판정은 그 경로에 대한 맨 File.Exists 하나뿐이므로
+            // (Flow.cs의 DrawStep3ExportBody), 남겨진 파일은 망가진 export에서도 카드를 초록으로 만들고 4번의
+            // "3번을 먼저 하세요" 경고까지 없애버린다. DeleteRejectedRigExport는 쓰인 것이 없으면 아무 일도 하지
+            // 않으므로, 모든 실패 경로에서 불러도 비용이 없다.
             if (!exportOk)
             {
                 DeleteRejectedRigExport();
@@ -202,13 +222,12 @@ namespace Easy.ZepetoHelper.Editor
             }
 
             // [AUDIT][Risk:Major][Scope:blender_roundtrip]
-            // The magic-byte check decides, not the exporter's return value: ExportObject hands back a path for
-            // an ASCII file exactly as happily as for a binary one. It runs BEFORE the importer work for two
-            // reasons. Configuring animationType on a file that is about to be thrown away is a full
-            // SaveAndReimport of a 1.4MB model for nothing, and it dirties the AssetDatabase on the way. And the
-            // only thing that says "step 3 is done" is a bare File.Exists on ExportedRigPath (Flow.cs:172), so a
-            // rejected file left on disk turns the card green and takes step 4's warning away - pointing the
-            // user at a file Blender refuses to open.
+            // 판정하는 것은 exporter의 반환값이 아니라 매직 바이트 검사다: ExportObject는 ASCII 파일에 대해서도
+            // binary와 똑같이 기꺼이 경로를 돌려준다. 이 검사가 importer 작업보다 먼저 오는 데는 두 가지 이유가
+            // 있다. 곧 버릴 파일에 animationType을 설정하는 것은 1.4MB 모델을 통째로 SaveAndReimport 하는 헛일이고,
+            // 그 과정에서 AssetDatabase까지 더럽힌다. 그리고 "3번이 끝났다"고 말하는 것은 ExportedRigPath에 대한
+            // 맨 File.Exists 하나뿐이라(Flow.cs의 DrawStep3ExportBody), 거부된 파일을 디스크에 남기면 카드가
+            // 초록이 되고 4번의 경고가 사라져서 - Blender가 열지 못하는 파일을 사용자에게 가리키게 된다.
             if (!IsBinaryFbx(ToAbsoluteProjectPath(ExportedRigPath)))
             {
                 DeleteRejectedRigExport();
@@ -225,7 +244,7 @@ namespace Easy.ZepetoHelper.Editor
 
             AssetDatabase.ImportAsset(ExportedRigPath, ImportAssetOptions.ForceUpdate);
 
-            // Make the exported rig Humanoid so it produces the Avatar every animation will retarget through.
+            // 내보낸 리그를 Humanoid로 만들어, 모든 애니메이션이 리타게팅해 갈 Avatar를 생성하게 한다.
             ModelImporter importer = AssetImporter.GetAtPath(ExportedRigPath) as ModelImporter;
             if (importer != null && importer.animationType != ModelImporterAnimationType.Human)
             {
@@ -244,8 +263,8 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// A binary fbx starts with the literal "Kaydara FBX Binary". Anything else is ASCII, which Blender
-        /// rejects on import even though Unity exported it happily.
+        /// binary fbx는 "Kaydara FBX Binary"라는 문자열로 시작한다(18바이트). 그 밖은 전부 ASCII이고,
+        /// Unity는 기꺼이 내보냈지만 Blender는 임포트에서 거부한다.
         /// </summary>
         private static bool IsBinaryFbx(string absolutePath)
         {
@@ -275,24 +294,24 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// Removes an export that must not be left behind, .meta included. Called from every failing exit of
-        /// TryExportZepetoRigToFbx - the binary check, the exporter reporting failure, and the exception path -
-        /// because all three can leave a partial or unopenable file at ExportedRigPath.
+        /// 남겨두면 안 되는 export 결과물을 .meta까지 함께 지운다. TryAdoptExportedRig의 실패 출구 전부에서
+        /// 불린다 - binary 검사, exporter의 실패 보고, 예외 경로 - 셋 다 ExportedRigPath에 반쪽짜리거나 열 수
+        /// 없는 파일을 남길 수 있기 때문이다.
         ///
         /// [QC][Invariant:rig_export_done_means_openable]
-        /// Nothing tracks "was the export usable" - step 3's done test and step 4's gate are both a bare
-        /// File.Exists on ExportedRigPath (Flow.cs:172, GoToBlender.cs:174). So a rejected file may not be left
-        /// behind: it would turn the card green, hide step 4's "3번을 먼저 하세요" warning, and name a file
-        /// Blender cannot open. The .meta goes with it, otherwise the next attempt inherits the dead file's
-        /// importer settings and Unity logs an orphaned-meta warning.
+        /// "그 export가 쓸 만했는가"를 기록하는 것은 아무것도 없다. 3번의 완료 판정도 4번의 게이트도 둘 다
+        /// ExportedRigPath에 대한 맨 File.Exists다(Flow.cs의 DrawStep3ExportBody, GoToBlender.cs의
+        /// DrawGoToBlenderBody). 그래서 거부된 파일을 남겨서는 안 된다: 카드를 초록으로 만들고, 4번의
+        /// "3번을 먼저 하세요" 경고를 감추고, Blender가 열지 못하는 파일을 가리키게 된다. .meta도 같이 지운다.
+        /// 안 그러면 다음 시도가 죽은 파일의 importer 설정을 물려받고 Unity가 고아 meta 경고를 남긴다.
         ///
-        /// Nothing on disk means nothing to do, and that exit comes first so a failure that never produced a
-        /// file does not pay for an AssetDatabase.Refresh.
+        /// 디스크에 아무것도 없으면 할 일도 없고, 그 출구를 맨 앞에 두어 파일을 아예 만들지 못한 실패가
+        /// AssetDatabase.Refresh 비용을 내지 않게 한다.
         ///
-        /// DeleteAsset is tried before the filesystem because it handles the .meta and the AssetDatabase entry
-        /// together, but it returns false for a path the AssetDatabase has never imported - which is the usual
-        /// case here, since the verification runs before ImportAsset. The filesystem delete covers that, with a
-        /// Refresh in case an earlier export had been imported at this path.
+        /// DeleteAsset을 파일시스템보다 먼저 시도하는 것은 .meta와 AssetDatabase 항목을 한 번에 처리해 주기
+        /// 때문이다. 다만 AssetDatabase가 한 번도 임포트한 적 없는 경로에는 false를 돌려주는데 - 여기서는 그게
+        /// 보통이다. 검증이 ImportAsset보다 먼저 돌기 때문이다. 파일시스템 삭제가 그 경우를 받아내고,
+        /// 이전 export가 이 경로에 임포트되어 있었을 경우를 위해 Refresh를 붙인다.
         /// </summary>
         private static void DeleteRejectedRigExport()
         {
@@ -331,8 +350,8 @@ namespace Easy.ZepetoHelper.Editor
         }
 
         /// <summary>
-        /// The Avatar generated from the exported ZEPETO rig. Animation FBXs try to copy from this so the
-        /// authored angles are read back through ZEPETO's own bone mapping rather than a guessed one.
+        /// 내보낸 ZEPETO 리그에서 생성된 Avatar. 애니메이션 FBX들은 이것을 복사하려 시도하는데, 그래야 작성된
+        /// 각도가 추측된 매핑이 아니라 ZEPETO 자신의 뼈 매핑을 통해 읽히기 때문이다.
         /// </summary>
         private static Avatar FindExportedRigAvatar()
         {

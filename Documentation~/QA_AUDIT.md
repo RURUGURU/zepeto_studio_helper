@@ -2,7 +2,7 @@
 
 ## 범위
 
-패키지: `com.easy.zepeto-helper@0.9.1`
+패키지: `com.easy.zepeto-helper@0.10.0`
 
 핵심 파일: `Editor/ZepetoStudioHelperWindow.cs`
 
@@ -10,7 +10,7 @@
 
 ## 캡처 이미지 — 해결됨
 
-> **0.9.1에서 캡처를 전부 새로 만들었다. 배포를 막는 항목은 남아 있지 않다.**
+> **0.9.1에서 캡처 8장 중 7장을 새로 만들었다. 배포를 막는 항목은 남아 있지 않다.**
 
 0.9.0에서 한 것은 코드와 markdown 텍스트의 개인 아이디 제거뿐이었고 캡처는 손대지 않았다. 0.9.1에서
 실제 Unity 2020.3.9f1을 띄워, 씬 `LOADER`의 `zepetoId`를 `my_zepeto_id` placeholder로 바꾼 상태로 다시
@@ -19,23 +19,22 @@
 `.npmignore`는 문서 폴더 중 `Documentation~/`만 빼고 **`docs/`는 일부러 포함**하므로(README가 그 이미지를
 직접 불러오기 때문), 이 이미지들은 `npm pack` 산출물과 GitHub 렌더링 양쪽에 실려 나간다.
 
-| 파일 | 상태 |
-| --- | --- |
-| `docs/images/helper-window.png` | ✅ 재촬영 (창 전체) |
-| `docs/images/step-1-avatar-outfit.png` | ✅ 재촬영 (1번 카드) |
-| `docs/images/step-2-motion-select.png` | ✅ 재촬영 (2·3번 카드) |
-| `docs/images/step-4-5-blender-live.png` | ✅ 신규 (4·5번 카드 — 이전에 캡처가 없던 구간) |
-| `docs/images/step-3-clip-adjust.png` | ✅ 재촬영 (실제 6번 화면) |
-| `docs/images/step-4-save-export.png` | ✅ 재촬영 (실제 7번 화면) |
-| `docs/images/workflow-overview.png` | ✅ 재작성 — 옛 도해는 `1 -> 2 -> 3 -> 4` 흐름을 전제로 설계됐고 제거된 단계 잠금을 설명하고 있었다. 위 캡처 4장과 Play 화면으로 7단계 도해를 새로 합성했다. 실측 수치(클립 1.96s→3.96s, 반영 1.5초, 팔 0.272m / 다리 0.195m)를 함께 적었다 |
-| `docs/images/play-preview.png` | ✅ 유지 — 제작자 본인 아바타가 보인다. **공개해도 된다는 판단을 받았으므로 그대로 둔다.** placeholder 아이디로는 아바타가 로드되지 않아 자동 재촬영이 불가능한 유일한 이미지이기도 하다 |
+**어느 파일이 무엇을 담고 있는지는 `README.md`의 `캡처 이미지에 대하여` 표 하나가 관리한다.**
+같은 표를 세 문서가 따로 들고 있다가 서로 어긋난 것이 이 항목의 원래 결함이므로, 여기서는 다시 적지
+않는다. 캡처를 새로 찍거나 교체하면 갱신할 곳은 그 표다.
+
+특기 사항 둘만 이 문서에 남긴다.
+
+- `workflow-overview.png`는 **재작성**이다(재촬영이 아니다). 옛 도해는 `1 -> 2 -> 3 -> 4` 흐름을 전제로
+  설계됐고 이미 제거된 단계 잠금을 설명하고 있어서, 크롭으로 고칠 수 있는 종류가 아니었다. 재촬영본
+  4장과 Play 화면으로 7단계 도해를 새로 합성하고 실측 수치(클립 1.96s→3.96s, 반영 1.5초,
+  팔 0.272m / 다리 0.195m)를 함께 적었다.
+- `play-preview.png`는 **유지**다. 제작자 본인 아바타가 보이고, 공개해도 된다는 판단을 받았다.
+  placeholder 아이디로는 아바타가 로드되지 않으므로 자동 재촬영이 불가능한 유일한 이미지이기도 하다.
 
 > 도해는 자동 생성물이 아니다. UI가 다시 바뀌면 캡처를 새로 찍고 다시 합성해야 한다. 이번 캡처는
 > 헬퍼 창을 플로팅으로 띄우는 임시 Editor 스크립트로 창 좌표를 얻고, 스크롤 위치를 바꿔가며
 > OS 레벨에서 창 핸들을 캡처하는 방식으로 만들었다.
-
-`play-preview.png`에 아바타가 보이는 것은 **의도된 상태다.** 다른 계정으로 배포하거나 아바타를 드러내고
-싶지 않다면 그 파일만 교체하거나 삭제하면 된다.
 
 ### 자체 테스트가 이것을 잡을 수 없는 이유 (구조적)
 
@@ -44,8 +43,8 @@
 수집 대상이 아니며, 검사 자체가 `File.ReadAllLines`로 텍스트 줄을 훑는 방식이라 이미지에 적용될 수도 없다.
 
 따라서 **이 검사가 초록이어도 이미지에 대해서는 아무것도 보장하지 않는다.** 캡처가 정리된 지금도 그
-사실은 변하지 않으므로, 이미지에 대한 근거는 이 검사가 아니라 **위 표**다. 캡처를 새로 찍거나 교체할
-때마다 표를 같이 갱신해야 한다.
+사실은 변하지 않으므로, 이미지에 대한 근거는 이 검사가 아니라 README의 표다. 이 한계를 설명하는 곳은
+이 절 하나이고, 다른 문서는 결론만 인용한다.
 
 ## 검증한 환경
 
@@ -97,16 +96,14 @@ reflection으로 실제 SDK 어셈블리를 조사한 결과다. 코드가 의�
   - 0.3.0에서 아이디 적용, clip 연결, controller 교체, 검증 경로의 guard 누락을 보완했다.
 - Major: 패키지에 개인 ZEPETO 아이디가 기본값으로 들어 있었음.
   - 0.3.0에서 코드의 기본값을 제거했다.
-  - 재유입 검사 `no-personal-id-in-source`의 **현재 범위**: `CollectShippedPackageFiles`가 모으는
-    `Editor/` 아래 `.cs` 20개 전부와, 패키지 root · `docs/` · `Documentation~/`의 모든 `.md`를 읽고,
-    `PersonalTokens`의 토큰이 한 줄이라도 있으면 실패한다. 실패 메시지에 `파일:줄:토큰`이 찍힌다.
-    수집 결과가 0개면 vacuous pass가 되지 않도록 `Fail`을 낸다.
+  - 재유입 검사 `no-personal-id-in-source`의 범위와 그 구조적 한계(`.png`를 볼 수 없다)는 위
+    `자체 테스트가 이것을 잡을 수 없는 이유` 절이 유일한 설명 자리다. 요약하면 `Editor/` 아래 `.cs`
+    20개 전부와 패키지 root · `docs/` · `Documentation~/`의 모든 `.md`를 읽고, 수집 0개면 vacuous pass
+    대신 실패한다.
     (범위를 넓히기 전에는 `Editor/ZepetoStudioHelperWindow.cs` **한 파일**만 읽었다. 그래서 아이디가 이
     문서의 `### 계정별 아바타 로딩` 표와 README 예시 문장에 남아 tarball에 실려 나가는데도 통과했다.)
-  - **범위를 넓힌 뒤에도 `.cs`와 `.md`만 본다.** `.png`는 수집되지 않고, 텍스트 스캔이라 적용될 수도 없다.
   - 0.9.0에서 한 일은 **문서 텍스트의 아이디 2개를 placeholder로 교체한 것까지**였고, 캡처 이미지 안의
-    아이디는 그대로 남아 있었다. 0.9.1에서 캡처를 전부 새로 만들어 해결했다 — 위 `캡처 이미지` 참고.
-    검사 자체는 여전히 PNG를 볼 수 없으므로, 그 표가 검사를 대신하는 기록이다.
+    아이디는 그대로 남아 있었다. 0.9.1에서 캡처를 전부 새로 만들어 해결했다.
 - Major: 배포 패키지에 개발용 Unity MCP bridge 코드가 남아 에디터 로드마다 실행되고 있었음.
   - 0.3.0에서 전부 제거했다.
 - Major: `Assets/Contents`나 SDK animation 폴더가 없을 때 `AssetDatabase.FindAssets`가 매 repaint마다
@@ -122,10 +119,15 @@ reflection으로 실제 SDK 어셈블리를 조사한 결과다. 코드가 의�
 다음 script reload 때 실행되며, 결과는 `zepeto-helper-selftest.result.txt`에 남는다.
 `Window > Easy > Run ZEPETO Helper Self Test` 메뉴로도 실행할 수 있다.
 
-### 최근 결과: 60 pass / 0 fail (공식 템플릿 프로젝트에서 실행)
+### 최근 결과: 67 pass / 0 fail (공식 템플릿 프로젝트에서 실행)
 
-`zepeto-helper-selftest.result.txt`의 `pass=60 fail=0`. 이 표는 그 파일의 검사 이름을 그룹으로 묶은 것이다.
+`zepeto-helper-selftest.result.txt`의 `pass=67 fail=0`. 이 표는 그 파일의 검사 이름을 그룹으로 묶은 것이다.
 `NOTE` 줄은 pass/fail이 아니라 실측값 기록이라 개수에 들어가지 않는다.
+
+> **이 개수를 문장으로 적어 두는 문서는 여기 하나다.** README 최상단의 QA 배지가 같은 숫자를 보여주고
+> 이 절을 링크하며, `STATUS.md`는 결과 파일과 이 절을 가리키기만 한다. 검사를 추가하면 갱신할 곳은
+> 결과 파일(재실행 산출물)과 이 절, 그리고 배지 세 곳이다. 예전에는 세 문서가 각자 숫자를 들고 있다가
+> 서로 어긋났다.
 
 | 그룹 | 검사 내용 |
 | --- | --- |
@@ -144,6 +146,9 @@ reflection으로 실제 SDK 어셈블리를 조사한 결과다. 코드가 의�
 | 재생 슬롯 | local override controller 생성, 슬롯이 선택한 동작으로 갱신, 정지 포즈가 남지 않음 |
 | 동작 카탈로그 | 목록이 채워짐(13개), SDK 클립이 Humanoid, 정지 포즈 감지, 기본 선택이 포즈가 아님, 포즈 적용 차단 (`catalog:*`) |
 | 라이브 확인 | 클립 내용을 덮어써도 GUID·instanceID 유지, 내용 교체, 이름 복구, 반복 설정 적용 (`live:*`) |
+| **`.fbx.part` 건너뛰기** | 감시 폴더에 방금 쓴 `__selftest_part_probe.fbx.part`를 두고 `TryFindNewestMotionFile`이 그것을 고르지 않는지 실제로 불러서 확인, 그리고 건너뛰기가 열거 지점 **두 곳** 모두에 남아 있는지 확인 (`live-part:*`). 애드온의 write-then-rename 계약에 대한 회귀 검사다. 두 번째 지점(`ConfigureMotionFolderForLivePreview`)은 폴더의 모든 fbx 임포터를 다시 쓰는 함수라 자체 테스트가 부를 수 없어서 **소스에서 센다** — 동작 검사가 아니다 |
+| Avatar 복사 가드 | 사람 뼈 매핑을 증명하지 못하면 `CanCopyRigAvatarTo`가 사유와 함께 거부, `CountMissingHumanBones`의 셈(빈 `boneName`은 미매핑 선택 뼈라 없는 뼈로 세지 않음), 이미 오염된 `.meta`의 수리 경로가 남아 있는지 (`avatar-guard:*`). 실제 fbx의 `.meta`를 다시 쓰지는 않는다 |
+| Play 게이트 | HardBlock 스냅샷에서 `CanEnterPlayMode`가 거부, 에디터가 조용할 때 Ok 스냅샷에서 허용 (`play-gate:*`). 뒤쪽은 게이트가 영영 거부하게 되는 반대 방향 고장을 잡는다 |
 
 ## 코드 구조
 
@@ -180,7 +185,9 @@ Play 중 `Animator`를 직접 읽어 확인한 사실이다.
 
 - 베이스 컨트롤러 `ZepetoBaseModel`에 교체 가능한 클립 슬롯은 **`dynamic` 하나뿐**이다.
 - `PlaygroundAnimatorController`(AnimatorOverrideController)가 그 슬롯을 교체하며, SDK 기본 매핑은
-  **`dynamic -> A_pose`** (길이 0.04초 정지 포즈)다.
+  **`dynamic -> A_pose`** (길이 **0.0417초** 정지 포즈. 아래 계측 표에는 출력 그대로 `0.04s`로 찍혀 있다)다.
+- 헬퍼는 패키지 원본 컨트롤러에 절대 쓰지 않는다. `EnsureLocalAnimatorController`가
+  `Assets/ZepetoHelper/Controllers` 아래로 먼저 복사하고, 그 사본의 슬롯만 고쳐 쓴다.
 - `PlaygroundController.AnimationClip` 필드는 이 매핑을 바꾸지 않는다.
 - `ZepetoStudioLoader`가 노출하는 API는 `Awake() / InitializeRoom3DSpace() / OnGUI()` 뿐이다.
 
@@ -193,6 +200,10 @@ Play 중 `Animator`를 직접 읽어 확인한 사실이다.
 
 따라서 동작을 바꾸려면 반드시 override 슬롯을 다시 써야 한다. 0.3.1의 `AssignAnimationClip`이 이를 수행한다.
 
+**이 절이 재생 경로 계측의 원본 기록이다.** 규칙 자체를 코드 쪽에서 찾을 때는
+`Loader.cs`의 `ApplyClipToOverrideController` 주석이 기준이고, `STATUS.md`는 함정 목록에서 한 줄로만
+가리킨다. 같은 설명을 세 곳에서 따로 유지하다가 어긋난 전례가 있어 자리를 하나로 정해 둔다.
+
 ### 계정별 아바타 로딩
 
 같은 씬·같은 동작 설정에서 아이디만 바꿔 Play한 대조 결과다.
@@ -203,6 +214,22 @@ Play 중 `Animator`를 직접 읽어 확인한 사실이다.
 | `내_아이디_2` (아바타 없음) | 없음 | 0 | 없음 |
 
 아바타가 로드되지 않으면 동작 설정과 무관하게 아무것도 보이지 않는다. 이 경우는 아이디 자체를 확인해야 한다.
+
+Play mode에서 아바타가 실제로 내려와 동작을 재생하는 것까지 두 러너가 실측했다. 유효한 계정이 필요한
+검사여서 오래 미확인으로 남아 있던 항목이고, 지금은 결과 파일이 근거다.
+
+```
+zepeto-custom-motion.report.txt
+  right hand height relative to hips: min=0.260 max=0.633 travel=0.373m
+  RESULT: the avatar IS performing the custom motion
+
+zepeto-livereload.result.txt
+  phase A (fixture A, arm motion): arm=0.272m leg=0.000m
+  phase B (fixture B, leg motion): arm=0.000m leg=0.195m
+```
+
+라이브 쪽 두 줄이 2×2 진리표다 — A에서는 팔만, B에서는 다리만 움직였으므로 "핫리로드가 일어나지
+않았다"와 "아무것도 안 움직인다"가 서로 구별된다.
 
 ### 실제 템플릿에서 확인된 LOADER 구성
 
@@ -222,4 +249,3 @@ Play 중 `Animator`를 직접 읽어 확인한 사실이다.
 - 실제 `.zepeto` export 실행과 ZEPETO Studio 업로드. export 자체는 의상 prefab이 준비되어 있어
   실행 가능하지만, 업로드 결과 확인은 ZEPETO 계정 로그인이 필요하다.
 - `MoveOfficialExportToFriendlyName`은 SDK의 출력 파일명 규칙에 의존한다. 규칙이 바뀌면 수정이 필요하다.
-- Play mode에서의 아바타 실제 로딩. 네트워크로 ZEPETO 계정 아바타를 받아오므로 유효한 계정이 필요하다.
