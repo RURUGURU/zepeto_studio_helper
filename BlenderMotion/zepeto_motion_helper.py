@@ -1065,6 +1065,47 @@ def _restore_selection(context, snapshot):
     context.view_layer.objects.active = snapshot["active"]
 
 
+def _scrub_blend_path(temp_path):
+    """
+    내보낸 fbx 안에 적힌 '원본 .blend 절대 경로'를 파일 이름만 남기고 지운다. 지운 개수를 돌려준다.
+
+    Blender의 FBX exporter는 문서 메타데이터에 bpy.data.filepath를 절대 경로로 적는다. path_mode를
+    어떻게 줘도 이 값은 빠지지 않는다 - 그건 참조 파일 경로 옵션이지 문서 자신의 출처가 아니다.
+    그래서 내보낸 모든 모션 fbx에
+        C:\\Users\\<계정>\\...\\zepeto_motion.blend
+    가 남고, 이 fbx는 저장소에 커밋되는 파일이라 계정 이름이 그대로 배포된다.
+
+    FBX 바이너리의 문자열은 [uint32 길이][바이트]다. 그래서 **같은 바이트 수로** 덮어쓰면 길이
+    필드를 건드리지 않아도 되고 파일 구조가 그대로 유지된다. 뒤를 공백으로 채워 길이를 맞춘다.
+    (FBX 바이너리 푸터에는 내용 해시가 없다. 그래서 이 교체가 파일을 깨뜨리지 않는다 -
+    beginner_check.py가 교체 후의 fbx를 Unity가 읽는 것까지 확인한다.)
+    """
+    source = bpy.data.filepath
+    if not source:
+        return 0
+    absolute = os.path.abspath(source)
+    replaced = 0
+    try:
+        with open(temp_path, "rb") as handle:
+            data = handle.read()
+        for variant in {absolute, absolute.replace("\\", "/")}:
+            needle = variant.encode("utf-8", "ignore")
+            if needle not in data:
+                continue
+            keep = os.path.basename(variant).encode("utf-8", "ignore")
+            # 길이를 반드시 맞춘다. 짧으면 공백으로 채우고, 혹시 더 길면 잘라 낸다.
+            padded = (keep + b" " * len(needle))[:len(needle)]
+            replaced += data.count(needle)
+            data = data.replace(needle, padded)
+        if replaced:
+            with open(temp_path, "wb") as handle:
+                handle.write(data)
+    except OSError:
+        # 지우지 못했다고 내보내기를 실패로 만들지는 않는다. 파일은 멀쩡하고, 남는 것은 경로 문자열뿐이다.
+        return 0
+    return replaced
+
+
 def _atomic_swap(temp_path, path):
     """
     .part를 제자리로 바꿔 넣는다. 성공하면 None, 끝까지 실패하면 마지막 PermissionError를 돌려준다.
@@ -1182,6 +1223,19 @@ class ZEPETO_OT_export(bpy.types.Operator):
                 axis_forward="-Z",
                 axis_up="Y",
                 global_scale=1.0,
+                # 경로를 하나도 써 넣지 않는다.
+                #
+                # 기본값(path_mode="AUTO")은 재질이 참조하는 파일의 경로를 fbx 안에 절대 경로로 적는다.
+                # 이 리그의 재질은 Unity에서 내보낼 때 딸려 온 것이고, 그 텍스처는 prefab 안에 끼워
+                # 넣어진 서브애셋이라 경로가 .prefab 파일 자신을 가리킨다. 그래서 내보낸 모션 fbx마다
+                #   C:\Users\<계정>\...\zepeto.character@3.1.32\resources\zepeto\ZepetoBaseModel.prefab
+                # 이 여덟 군데씩 박혔다. 계정 이름이 들어간 문자열이고, 이 fbx는 저장소에 커밋된다.
+                # STRIP은 파일 이름만 남기고 경로를 버린다.
+                #
+                # 텍스처를 잃는 것은 문제가 되지 않는다. Unity가 이 fbx에서 가져가는 것은 Humanoid
+                # 애니메이션 커브뿐이고, 재질은 아바타 쪽에서 온다.
+                path_mode="STRIP",
+                embed_textures=False,
             )
         except Exception as exc:
             export_error = exc
@@ -1200,6 +1254,11 @@ class ZEPETO_OT_export(bpy.types.Operator):
             else:
                 self.report({"ERROR"}, "FBX를 만들지 못했습니다: %s" % export_error)
             return {"CANCELLED"}
+
+        # (4b) 문서 메타데이터에 남은 원본 .blend 절대 경로를 지운다 (_scrub_blend_path 참고).
+        #      교체 '전에' 해야 한다 - Unity는 제자리에 나타난 파일을 즉시 임포트하므로,
+        #      뒤에 하면 이미 읽힌 뒤에 고치는 것이 되고 Unity가 파일을 잡고 있을 수도 있다.
+        scrubbed = _scrub_blend_path(temp_path)
 
         # (5) 원자적 교체.
         last_error = _atomic_swap(temp_path, path)

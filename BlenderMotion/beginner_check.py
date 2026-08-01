@@ -140,6 +140,22 @@ def main():
             check("beginner:5-binary-fbx", head.startswith(b"Kaydara FBX Binary"),
                   "%r, %d bytes" % (head, os.path.getsize(out)))
             check("beginner:5-no-part-left", not os.path.exists(out + ".part"), "")
+
+            # [QC] 내보낸 fbx에 절대 경로가 들어가지 않는가.
+            #
+            # 예전에는 모션 fbx마다 C:\Users\<계정>\...\ZepetoBaseModel.prefab 이 여덟 군데씩
+            # 박혀 나갔다. 리그 재질의 텍스처가 prefab 안 서브애셋이라 그 '경로'가 .prefab 자신이었고,
+            # FBX exporter의 기본값(path_mode="AUTO")이 그것을 절대 경로로 적었기 때문이다.
+            # 커밋되는 파일에 계정 이름이 들어가는데 눈으로는 절대 보이지 않는다.
+            # 애드온이 path_mode="STRIP"으로 내보내므로 이제 경로가 남지 않아야 한다.
+            with open(out, "rb") as handle:
+                raw = handle.read()
+            user_paths = raw.lower().count(rb":\users" + b"\\")
+            prefabs = raw.lower().count(b".prefab")
+            check("beginner:5-no-absolute-path-in-fbx", user_paths == 0,
+                  "fbx 안의 사용자 경로 %d건" % user_paths)
+            check("beginner:5-no-prefab-texture-in-fbx", prefabs == 0,
+                  "fbx 안의 .prefab 참조 %d건" % prefabs)
     finally:
         # Assets/CustomMotions는 Unity 헬퍼가 0.4초마다 폴링한다. 남기면 사용자의 목록이 오염된다.
         for leftover in (out, out + ".part", out + ".meta"):

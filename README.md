@@ -266,9 +266,26 @@ Humanoid 매핑이 깨집니다.
 > **함정: 턱을 움직이는 뼈는 `jaw`가 아니라 `mouth`입니다.** `jaw`라는 이름의 뼈도 리그에 있지만
 > 매핑이 없어 숨겨져 있고, 돌려도 Unity에서 사라집니다. `nose` · `lip_L` · `lip_R`도 같습니다.
 
-**표정은 만들 수 없습니다.** 웃거나 찡그리는 것은 보통 블렌드셰이프로 하는데, 이 리그의 메시에는
-블렌드셰이프가 **0개**이고 Humanoid AnimationClip은 애초에 블렌드셰이프를 담지 못합니다.
-할 수 있는 얼굴 연기는 **눈 감았다 뜨기 · 눈동자 좌우 · 입 벌리기** 셋입니다.
+### ⚠️ 눈은 깜빡이지 않습니다
+
+**눈꺼풀 뼈가 없습니다.** 리그를 다 뒤져도 얼굴 쪽 뼈는 `eye_L` · `eye_R` · `mouth` 셋뿐이고,
+`lid` · `blink` 같은 이름은 하나도 없습니다. `eye_L`을 돌리면 움직이는 정점은 **눈알 385개**뿐입니다.
+즉 `Left Eye Down-Up`은 **눈동자가 위아래를 보는 것**이지 눈을 감는 것이 아닙니다.
+
+> 이 문서는 한동안 여기에 "눈 감았다 뜨기"라고 적어 두었습니다. **틀린 설명이었습니다.**
+> 지적을 받고 리그를 다시 확인해서 고쳤습니다.
+
+**표정도 만들 수 없습니다.** 웃거나 찡그리는 것은 보통 블렌드셰이프(모프)로 하는데, 이 몸의
+메시에는 블렌드셰이프가 **0개**이고 Humanoid AnimationClip은 애초에 블렌드셰이프를 담지 못합니다.
+
+그래서 실제로 되는 얼굴 연기는 **두 가지**입니다:
+
+| 되는 것 | 뼈 | 어떻게 |
+| --- | --- | --- |
+| 눈동자 방향 (위아래·좌우) | `eye_L` · `eye_R` | `R` → `X`(위아래) 또는 `Z`(좌우) |
+| 입 벌리기 | `mouth` | `R` → `X` |
+
+깜빡임 · 미소 · 찡그림 · 눈썹 — **전부 안 됩니다.**
 
 위 10초 안무에도 20비트 전부에 얼굴이 들어가 있습니다 (`make_dance.py`의 `eyes=` / `mouth=`).
 
@@ -294,39 +311,18 @@ Humanoid 매핑이 깨집니다.
 | [패키지 README](ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/README.md) | Unity 헬퍼 창 7개 카드의 실제 화면 캡처와 버튼별 설명 |
 | [`STATUS.md`](STATUS.md) | 현재 상태·검증 기록·함정 16개. 이 프로젝트를 이어받는 사람용 |
 
-## 검증
+## 잘 되는지 확인하고 싶다면
 
-전부 **실제로 실행해서** 나온 수치입니다. 문서에 적힌 숫자는 그 실행 결과를 옮긴 것이지 목표치가
-아닙니다.
+문서에 적힌 대로 따라했을 때 정말 FBX가 나오는지, 명령 한 줄로 확인할 수 있습니다.
 
-Blender는 Windows에서 PATH에 등록되지 않으므로 위 **2. Blender**의 `$B`를 그대로 씁니다.
-저장소 루트에서 실행하세요.
+```powershell
+& $B --background BlenderMotion\zepeto_motion.blend --python BlenderMotioneginner_check.py
+```
 
-| 무엇 | 결과 | 어떻게 다시 돌리나 |
-| --- | --- | --- |
-| 초보자 왕복 | **15 / 15** | `& $B --background BlenderMotion\zepeto_motion.blend --python BlenderMotion\beginner_check.py` |
-| 10초 안무 제작 | **13 / 13** | `& $B --background BlenderMotion\zepeto_motion.blend --python BlenderMotion\make_dance.py` — ⚠️ 아래 참고 |
-| Blender 애드온 (헤드리스) | **29 / 29** | `& $B --background --factory-startup --python BlenderMotion\headless_check.py` |
-| Blender 패널 draw | **17 / 17** | `& $B --factory-startup --python BlenderMotion\ui_check.py` — **`--background` 금지**, 창이 있어야 패널이 그려집니다 |
-| Unity 자체 테스트 | **70 / 70** | Unity 메뉴 `Window > Easy > Run ZEPETO Helper Self Test` |
+`pass=17 fail=0` 이 나오면 이 문서대로 하면 된다는 뜻입니다.
 
-> ⚠️ **`make_dance.py`만 저장소를 더럽힙니다.** 다른 검사들은 만든 파일을 스스로 치우지만, 이건
-> `Assets/CustomMotions/DanceDemo10s.fbx`를 **덮어씁니다** — 추적되는 파일입니다. 안무를 바꾸지
-> 않았다면 바이트가 완전히 같지 않을 수 있으므로(FBX에 타임스탬프가 들어갑니다) `git status`에
-> 수정으로 뜹니다. 되돌리려면:
->
-> ```powershell
-> git checkout -- "ZEPETO Studio Unity Project File 3.2.16/Assets/CustomMotions/DanceDemo10s.fbx"
-> ```
->
-> 이 fbx를 추적하는 이유는 그것이 **결과물**이기 때문입니다 — 클론한 사람이 Blender를 돌리지 않고도
-> Unity에서 바로 그 춤을 볼 수 있어야 합니다.
-
-Unity 쪽 러너 넷(자체 테스트 · 리그 내보내기 · 커스텀 모션 · 라이브 왕복)을 트리거 파일로 돌리는
-방법은 `STATUS.md`의 트리거 표에 있습니다.
-
-> **Unity Personal은 `-batchmode`를 쓸 수 없습니다.** 라이선스가 유효해도 거부합니다.
-> GUI 모드 + `-executeMethod`는 정상 동작하며, 위 Unity 검증은 전부 그 방식으로 했습니다.
+> 개발자용 검사 묶음 네 개와 그 수치, Unity 러너 실행 방법은 [`STATUS.md`](STATUS.md)에 있습니다.
+> 이 문서는 처음 쓰는 분을 위한 것이라 여기 두지 않았습니다.
 
 ## 환경
 
