@@ -1,26 +1,25 @@
-"""Headless validation of the ZEPETO Blender add-on.
+"""ZEPETO Blender 애드온의 헤드리스 검증.
 
-Run:
+실행:
   "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe" ^
       --background --factory-startup --python BlenderMotion/headless_check.py
 
-Needs no Unity licence - it drives Blender only, and reads the rig FBX that step 3
-already exported. Writes its FBX to the OS temp dir, never into Assets/ (that folder
-is polled every 0.4s by the Unity helper).
+Unity 라이선스가 전혀 필요 없다 - Blender만 돌리고, 3단계가 이미 내보낸 리그 FBX를 읽을 뿐이다.
+자기 FBX는 OS 임시 폴더에 쓰고 Assets/ 안에는 절대 쓰지 않는다 (그 폴더는 Unity 헬퍼가 0.4초마다 폴링한다).
 
-Covers the things that are otherwise unverifiable without opening Blender by hand:
-  - the module imports and registers under real Blender 5.2 (bl_info targets 4.2)
-  - runtime Unity-project resolution, including the unsaved-.blend case that used to
-    die on a hardcoded path, and the env-var override
-  - the ambiguity refusal actually refuses instead of picking alphabetically
-  - iter_fcurves works on a real 5.2 action (its 4.4+ branch was suspected dead)
-  - import_rig -> key_pose -> make_loop -> export produces a BINARY fbx
-  - the bone arithmetic on the real rig: 54 mapped + 49 hidden = 103
-  - clear_pose only touches the bones the panel flags
-  - the .part handoff leaves no scratch file
+Blender를 손으로 열지 않으면 확인할 방법이 없는 것들을 덮는다:
+  - 진짜 Blender 5.2에서 모듈이 import되고 register된다 (bl_info의 blender 값은 최소 버전 4.2다)
+  - 실행 시점 Unity 프로젝트 해석. 예전에 하드코딩된 경로로 죽던 '저장 안 한 .blend' 경우와 환경 변수 우선까지
+  - 모호할 때 이름순으로 찍는 대신 실제로 거부한다
+  - iter_fcurves가 진짜 5.2 액션에서 동작한다 (실측 162개. 4.4+ 분기는 '비었을 때만' 타는 쪽으로 바뀌었고,
+    5.2는 계속 Action.fcurves 경로를 탄다)
+  - import_rig → key_pose → make_loop → export가 BINARY fbx를 만든다
+  - 패널을 거치지 않는 호출도 게이트에 걸린다 (1.4.0까지 fps·키프레임·이상한 뼈 검사가 패널에만 있었다)
+  - 진짜 리그의 뼈 셈: 매핑 54 + 숨김 49 = 103
+  - clear_pose가 패널이 지적한 뼈만 건드린다
+  - .part 핸드오프가 임시 파일을 남기지 않는다
 
-Prints PASS/FAIL lines and a final count, and writes the same to
-<temp>/zepeto_headless_check/result.txt.
+PASS/FAIL 줄과 마지막 집계를 찍고, 같은 내용을 <temp>/zepeto_headless_check/result.txt에도 쓴다.
 """
 import glob
 import os
@@ -35,15 +34,33 @@ ADDON_SRC = os.path.join(_HERE, "zepeto_motion_helper.py")
 
 
 def _find_unity_project():
-    """Same search the add-on does: a sibling or parent folder holding Assets/."""
+    """
+    비교 기준(oracle)이 될 Unity 프로젝트 경로. (project, tied)를 돌려준다.
+
+    검사 대상의 알고리즘을 여기서 다시 구현하면 안 된다. 예전에는 glob 결과를 정렬해 첫 번째를 집었는데,
+    그건 애드온의 _pick_project가 없애려고 존재하는 바로 그 알고리즘이고 이 파일의 10번 검사가 틀렸다고
+    증명하는 알고리즘이다. "... 3.2.12"와 "... 3.2.16"이 나란히 있으면 기준값이 3.2.12가 되고,
+    resolve_unity_project()는 정확하게 ('', ('3.2.12','3.2.16'))을 돌려주는데, paths:resolve-from-addon-file이
+    FAIL로 뜨면서 옳게 행동한 애드온을 탓하게 된다.
+
+    그래서 기준값은 찍지 않는다: 환경 변수 ZEPETO_UNITY_PROJECT가 먼저고, 없으면 glob 결과가 '정확히 하나'일
+    때만 그것을 쓴다. 둘 이상이면 ("", 후보들)을 돌려주고, 사람이 환경 변수로 고르게 한다.
+    """
+    forced = (os.environ.get("ZEPETO_UNITY_PROJECT") or "").strip().strip('"')
+    if forced and os.path.isdir(os.path.join(forced, "Assets")):
+        return os.path.normpath(forced), ()
+
     for base in (os.path.dirname(_HERE), _HERE):
-        for cand in sorted(glob.glob(os.path.join(base, "ZEPETO Studio Unity Project File*"))):
-            if os.path.isdir(os.path.join(cand, "Assets")):
-                return cand
-    return ""
+        found = [cand for cand in sorted(glob.glob(os.path.join(base, "ZEPETO Studio Unity Project File*")))
+                 if os.path.isdir(os.path.join(cand, "Assets"))]
+        if len(found) == 1:
+            return os.path.normpath(found[0]), ()
+        if len(found) > 1:
+            return "", tuple(os.path.normpath(c) for c in found)
+    return "", ()
 
 
-UNITY_PROJECT = _find_unity_project()
+UNITY_PROJECT, PROJECT_TIE = _find_unity_project()
 RIG_FBX = os.path.join(UNITY_PROJECT, "Assets", "ZepetoHelper", "Rig", "ZepetoBaseModel.fbx")
 OUT_DIR = os.path.join(tempfile.gettempdir(), "zepeto_headless_check")
 
@@ -60,7 +77,7 @@ def note(name, detail):
 
 
 def load_addon():
-    """Load the add-on from its source path without installing it."""
+    """설치하지 않고 소스 경로에서 애드온을 그대로 불러온다."""
     import importlib.util
     spec = importlib.util.spec_from_file_location("zepeto_motion_helper", ADDON_SRC)
     mod = importlib.util.module_from_spec(spec)
@@ -72,9 +89,14 @@ def load_addon():
 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
-    check("env:unity-project-found", bool(UNITY_PROJECT), UNITY_PROJECT or "(not found)")
+    if PROJECT_TIE:
+        detail = ("후보가 %d개라 기준값을 정하지 못했습니다 (%s). 환경 변수 ZEPETO_UNITY_PROJECT로 "
+                  "하나를 지정하고 다시 실행하세요" % (len(PROJECT_TIE), " / ".join(PROJECT_TIE)))
+    else:
+        detail = UNITY_PROJECT or "(not found)"
+    check("env:unity-project-found", bool(UNITY_PROJECT), detail)
 
-    # ---- 1. import + register under real Blender ---------------------------
+    # ---- 1. 진짜 Blender에서 import + register -----------------------------
     try:
         mod = load_addon()
         check("addon:register", True, "bl_info version %s, blender target %s"
@@ -85,7 +107,9 @@ def main():
 
     note("addon:blender-running", bpy.app.version_string)
 
-    # ---- 2. no hardcoded foreign path anywhere -----------------------------
+    # ---- 2. 남의 컴퓨터 경로가 하드코딩돼 있지 않다 -------------------------
+    # 소스 텍스트를 직접 본다. 이 두 문자열이 다시 들어오는 것이 곧 하드코딩 경로의 재발이라,
+    # 동작 검사로는 잡을 수 없고 텍스트로만 잡을 수 있다.
     src = open(ADDON_SRC, encoding="utf-8").read()
     check("addon:no-foreign-user-path", "Jun-WN" not in src,
           "found Jun-WN" if "Jun-WN" in src else "clean")
@@ -93,20 +117,26 @@ def main():
           "module-level constant still present" if "UNITY_PROJECT = r" in src
           else "no frozen module-level constant")
 
-    # ---- 3. runtime resolution, unsaved .blend (the fresh-scene case) ------
+    # ---- 3. 실행 시점 해석, 저장 안 한 .blend (새 씬의 경우) ---------------
     try:
         resolved = mod.resolve_unity_project()
         project = resolved[0] if isinstance(resolved, tuple) else resolved
         ambiguous = resolved[1] if isinstance(resolved, tuple) else ()
         same = os.path.normcase(os.path.abspath(project or "")) == os.path.normcase(
             os.path.abspath(UNITY_PROJECT))
-        check("paths:resolve-from-addon-file", same, project or "(empty)")
+        if UNITY_PROJECT:
+            check("paths:resolve-from-addon-file", same, project or "(empty)")
+        else:
+            # 기준값이 없는 것은 이 컴퓨터의 문제지 애드온의 문제가 아니다. 여기서 FAIL을 찍으면
+            # 옳게 거부한 애드온을 탓하게 된다.
+            note("paths:resolve-from-addon-file",
+                 "기준값이 없어 비교를 건너뜁니다 (애드온 결과: %r)" % (project or "",))
         check("paths:not-ambiguous-here", not ambiguous, str(ambiguous))
     except Exception:
         check("paths:resolve-from-addon-file", False,
               traceback.format_exc().strip().splitlines()[-1])
 
-    # ---- 4. env var override wins ------------------------------------------
+    # ---- 4. 환경 변수가 우선한다 -------------------------------------------
     try:
         os.environ[mod.UNITY_PROJECT_ENV] = UNITY_PROJECT
         r2 = mod.resolve_unity_project()
@@ -114,9 +144,11 @@ def main():
         check("paths:env-override", os.path.normcase(os.path.abspath(p2 or "")) ==
               os.path.normcase(os.path.abspath(UNITY_PROJECT)), p2 or "(empty)")
     finally:
+        # 반드시 지운다. 남겨 두면 이 프로세스의 이후 resolve_unity_project() 호출에 전부 새어 들어가고,
+        # 특히 10번의 모호성 검사가 동점을 아예 못 보게 된다.
         os.environ.pop(mod.UNITY_PROJECT_ENV, None)
 
-    # ---- 5. refresh_paths writes into the scene ----------------------------
+    # ---- 5. refresh_paths가 씬에 값을 써 넣는다 ----------------------------
     scene = bpy.context.scene
     try:
         fix = mod.refresh_paths(scene, force=True)
@@ -130,11 +162,13 @@ def main():
         check("paths:refresh-writes-export-dir", False,
               traceback.format_exc().strip().splitlines()[-1])
 
-    # ---- 6. import the real rig -------------------------------------------
+    # ---- 6. 진짜 리그를 불러온다 -------------------------------------------
     check("rig:source-exists", os.path.isfile(RIG_FBX), RIG_FBX)
     rig = None
     try:
         res = bpy.ops.zepeto.import_rig()
+        # 리그 오브젝트는 "hips"라는 이름으로 들어온다. FBX의 최상위 뼈를 Blender가 아마추어 오브젝트로
+        # 만들기 때문이고, 애드온의 RIG_NAME도 같은 이름을 본다.
         rig = bpy.context.scene.objects.get("hips") or next(
             (o for o in bpy.data.objects if o.type == "ARMATURE"), None)
         check("rig:import", "FINISHED" in res and rig is not None, str(res))
@@ -142,8 +176,8 @@ def main():
             bones = len(rig.pose.bones)
             hidden = sum(1 for b in rig.data.bones if b.hide)
             mapped = sum(1 for b in rig.pose.bones if b.name in mod.MAPPED_BONES)
-            # The reconciliation STATUS.md documents: 54 mapped + 49 hidden = 103.
-            # (The 55th Humanoid mapping, hips, is the armature OBJECT, not a bone.)
+            # STATUS.md가 기록한 셈 맞추기: 매핑 54 + 숨김 49 = 103.
+            # (55번째 Humanoid 매핑인 hips는 뼈가 아니라 아마추어 오브젝트다.)
             check("rig:bone-count-103", bones == 103, "%d pose bones" % bones)
             check("rig:hidden-49", hidden == 49, "%d hidden" % hidden)
             check("rig:mapped-54", mapped == 54, "%d mapped of %d" % (mapped, bones))
@@ -153,7 +187,7 @@ def main():
     except Exception:
         check("rig:import", False, traceback.format_exc().strip().splitlines()[-1])
 
-    # ---- 7. author a motion: rotate one mapped bone, key two frames --------
+    # ---- 7. 모션 만들기: 매핑된 뼈 하나를 돌려 두 프레임에 키 --------------
     if rig is not None:
         try:
             bpy.context.view_layer.objects.active = rig
@@ -180,15 +214,17 @@ def main():
         except Exception:
             check("pose:key-two-frames", False, traceback.format_exc().strip().splitlines()[-1])
 
-    # ---- 8. clear_pose must only touch flagged bones -----------------------
+    # ---- 8. clear_pose는 지적된 뼈만 건드려야 한다 -------------------------
     if rig is not None:
         try:
             probe = rig.pose.bones.get("spine")
-            probe.location = (0.0, 0.05, 0.0)          # user-moved -> flagged
+            probe.location = (0.0, 0.05, 0.0)          # 사용자가 옮긴 것 -> 지적 대상
+            # 기준선 파싱을 애드온의 baseline_odd()를 부르지 않고 여기서 직접 편 것은 의도적이다.
+            # 검사 대상과 같은 함수로 기대값을 만들면 그 함수가 틀려도 검사는 통과한다.
             baseline = set(
                 scene.zepeto_baseline_odd.split(",") if scene.zepeto_baseline_odd else [])
             flagged = set(mod.odd_bones(rig)) - baseline
-            # A bone the panel does NOT flag but which ships with a non-unit scale.
+            # 패널이 지적하지 '않는', 그런데 단위가 아닌 스케일을 갖고 출고된 뼈 하나.
             untouched = next((b for b in rig.pose.bones
                               if b.name not in flagged and tuple(b.scale) != (1.0, 1.0, 1.0)),
                              None)
@@ -210,10 +246,10 @@ def main():
             check("clear:flagged-bone-reset", False,
                   traceback.format_exc().strip().splitlines()[-1])
 
-    # ---- 9. export -> BINARY fbx, no .part left ---------------------------
+    # ---- 9. 내보내기 -> BINARY fbx, .part 잔여물 없음 ---------------------
     if rig is not None:
         try:
-            # Re-author: clear_pose wiped the rotation keyed above.
+            # 다시 만든다: clear_pose가 위에서 찍어 둔 회전을 되돌렸다.
             bpy.context.view_layer.objects.active = rig
             if bpy.context.mode != "POSE":
                 bpy.ops.object.mode_set(mode="POSE")
@@ -236,8 +272,8 @@ def main():
             if os.path.isfile(out):
                 with open(out, "rb") as f:
                     head = f.read(18)
-                # Blender cannot read ASCII FBX and Unity reports success either way,
-                # so the magic bytes are the only real check.
+                # Blender는 ASCII FBX를 읽지 못하는데 Unity는 어느 쪽이든 성공했다고 보고한다.
+                # 그래서 매직 바이트만이 진짜 검사다.
                 check("export:is-binary-fbx", head == b"Kaydara FBX Binary", repr(head))
             leftovers = [f for f in os.listdir(OUT_DIR) if f.endswith(".part")]
             check("export:no-part-left", not leftovers, str(leftovers))
@@ -245,7 +281,31 @@ def main():
             check("export:operator-finished", False,
                   traceback.format_exc().strip().splitlines()[-1])
 
-    # ---- 10. ambiguity must be refused, not resolved by sort order ---------
+    # ---- 9b. 내보내기 게이트가 패널이 아니라 오퍼레이터에 있다 ------------
+    #
+    # 이 파일 자체가 그 문제의 호출 경로다: 패널을 한 번도 그리지 않고 bpy.ops.zepeto.export()를 직접 부른다.
+    # 1.4.0까지 fps 게이트는 패널 draw 코드에만 있었으므로, 여기서 fps를 30으로 바꿔도 내보내기가 그대로
+    # 성공했다. 애드온 1.5.0에서 export_problems()가 오퍼레이터 안으로 들어갔고, 이 검사가 그것을 증명한다.
+    if rig is not None:
+        try:
+            scene.render.fps = 30
+            try:
+                res = bpy.ops.zepeto.export()
+                refused = "CANCELLED" in res
+                detail = str(res)
+            except RuntimeError as exc:
+                # Blender는 오퍼레이터의 ERROR 리포트를 Python 호출부에서 RuntimeError로 바꿔 던진다.
+                # 거절한 것이 맞으므로 이것도 통과다.
+                refused = True
+                detail = str(exc).strip().splitlines()[0]
+            check("export:gate-refuses-off-panel", refused, detail)
+        except Exception:
+            check("export:gate-refuses-off-panel", False,
+                  traceback.format_exc().strip().splitlines()[-1])
+        finally:
+            scene.render.fps = mod.FPS
+
+    # ---- 10. 모호하면 정렬 순서로 풀지 말고 거부해야 한다 ------------------
     try:
         tmp = tempfile.mkdtemp(prefix="zpamb_")
         for name in ("ZEPETO Studio Unity Project File 3.2.12",
@@ -260,7 +320,7 @@ def main():
     except Exception:
         check("paths:ambiguity-refused", False, traceback.format_exc().strip().splitlines()[-1])
 
-    # ---- summary ----------------------------------------------------------
+    # ---- 집계 --------------------------------------------------------------
     npass = sum(1 for _, ok, _ in results if ok)
     nfail = len(results) - npass
     print("")

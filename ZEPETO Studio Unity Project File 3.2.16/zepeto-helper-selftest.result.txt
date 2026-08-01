@@ -1,5 +1,5 @@
 ZEPETO Helper self test
-pass=60 fail=0
+pass=67 fail=0
 ----
 PASS no-builtin-id-const
 PASS no-personal-id-in-source
@@ -16,6 +16,7 @@ PASS version-compare:suffix
 PASS sdk-detect:installed
 NOTE sdk-detect:version :: detected zepeto.studio 3.2.16
 PASS sdk-detect:at-least-minimum
+NOTE sdk-detect:minimum :: MinimumPackageVersion = 3.2.12
 PASS sdk-detect:source
 NOTE sdk-detect:source-value :: source = embedded
 PASS id-sanitize:at
@@ -28,9 +29,9 @@ PASS id-invalid:empty
 PASS id-invalid:symbol
 PASS id-invalid:url
 NOTE sdk-loader-shape :: ZepetoStudioLoader fields = [_loader:ZepetoCharacterCustomLoader, Deformations:TextAsset[], Clips:AnimationClip[], playgroundController:PlaygroundController, _oldDeformer:String, _room3DSpace:ZepetoRoom3DSpace, _spaceGuideRenderer:SpaceGuideRenderer, _guiStyle:GUIStyle]
-NOTE field-owner:zepetoId :: Easy.ZepetoHelper.Tests/ZepetoHelperTestLoader (String), Easy.ZepetoHelper.Tests/ZepetoHelperTestIdOwner (String), ZEPETO/ZepetoCharacterCustomLoader (String)
-NOTE field-owner:AnimationClip :: Easy.ZepetoHelper.Tests/ZepetoHelperTestLoader (AnimationClip), Easy.ZepetoHelper.Tests/ZepetoHelperTestClipOwner (AnimationClip), ZEPETO.Studio/PlaygroundController (AnimationClip)
-NOTE field-owner:AnimatorController :: Easy.ZepetoHelper.Tests/ZepetoHelperTestLoader (Object), Easy.ZepetoHelper.Tests/ZepetoHelperTestClipOwner (Object), ZEPETO.Studio/PlaygroundController (AnimatorOverrideController)
+NOTE field-owner:zepetoId :: ZEPETO/ZepetoCharacterCustomLoader (String)
+NOTE field-owner:AnimationClip :: ZEPETO.Studio/PlaygroundController (AnimationClip)
+NOTE field-owner:AnimatorController :: ZEPETO.Studio/PlaygroundController (AnimatorOverrideController)
 NOTE sdk-customloader-shape :: Zepeto.ZepetoCharacterCustomLoader fields = [destroyWhenContextLoaded:Boolean, deformations:TextAsset, _oldDeformations:TextAsset, allProperties:CustomProperty[], metadataProvider:ZepetoCustomMetadataProvider, zepetoId:String, Hashcode:String, Inplace:Boolean, editMode:Boolean, baked:Boolean, OnInitialized:UnityEvent, ContextCreated:UnityEvent]
 NOTE sdk-playgroundcontroller-shape :: PlaygroundController fields = [TargetCamera:Camera, updateCamera:Boolean, AnimatorController:AnimatorOverrideController, AnimationClip:AnimationClip, loader:ZepetoCharacterLoaderBase, _loaders:LinkedList`1, thetaSpeed:Single, phiSpeed:Single, moveSpeed:Single, zoomSpeed:Single, phiBoundMin:Single, phiBoundMax:Single, rotateSmoothing:Single, moveSmoothing:Single, distance:Single, euler:Vector2, targetRot:Quaternion, targetLookAt:Vector3, targetDist:Single, distanceVec:Vector3, target:Transform, IsDragging:Boolean]
 PASS saved-ids:removed
@@ -48,6 +49,13 @@ PASS split-binding:AnimationClip
 PASS split-binding:AnimatorController
 PASS split-binding:apply-id
 PASS split-binding:sibling-object
+PASS live-part:newest-skips-part
+PASS live-part:both-enumeration-sites
+PASS avatar-guard:refuses-without-map
+PASS avatar-guard:counts-missing-bones
+PASS avatar-guard:repair-available
+PASS play-gate:blocked-refuses
+PASS play-gate:allows-when-quiet
 NOTE real-template:component :: UnityEngine.Transform -> [m_LocalRotation:Quaternion, m_LocalPosition:Vector3, m_LocalScale:Vector3]
 NOTE real-template:component :: Zepeto.ZepetoCharacterCustomLoader -> [m_Script:ObjectReference, Inplace:Boolean, editMode:Boolean, baked:Boolean, OnInitialized:Generic, ContextCreated:Generic, destroyWhenContextLoaded:Boolean, deformations:ObjectReference, metadataProvider:ObjectReference, zepetoId:String, Hashcode:String]
 NOTE real-template:component :: ZepetoStudioLoader -> [m_Script:ObjectReference, Deformations:Generic, Clips:Generic, playgroundController:ObjectReference]
@@ -84,4 +92,6 @@ PASS live:instanceid-preserved
 PASS live:content-replaced
 PASS live:name-restored
 PASS live:loop-applied
-NOTE live:probe :: len=23.13s guid=c0c574bbb95d36545a32c86f7a89fb50
+NOTE live:probe :: len=23.13s
+NOTE stage-flags-restored :: AvatarOutfitStageCompleteSessionKey=false, MotionSelectStageCompleteSessionKey=false, ClipStageCompleteSessionKey=false
+NOTE scene-dirt :: none - the open scene reads as saved

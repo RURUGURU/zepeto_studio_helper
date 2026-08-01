@@ -11,13 +11,13 @@ using UnityEngine.SceneManagement;
 namespace Easy.ZepetoHelper.SelfTestEditor
 {
     /// <summary>
-    /// Exports the real ZEPETO base model to FBX through the helper and asserts the result is a rig Blender can
-    /// actually open. This is the first half of the Unity -> Blender -> Unity round trip.
+    /// 진짜 ZEPETO 기본 모델을 헬퍼를 통해 FBX로 내보내고, 그 결과가 Blender가 실제로 열 수 있는
+    /// 리그인지 단언한다. Unity -> Blender -> Unity 왕복의 앞쪽 절반이다.
     ///
-    /// It used to only dump facts and say nothing pass/fail, which meant a broken export read the same as a
-    /// good one unless somebody eyeballed the numbers. The three assertions below are the ones that decide
-    /// whether the round trip is possible at all, and they are written to ResultPath in the same
-    /// PASS/FAIL/NOTE format as zepeto-helper-selftest.result.txt.
+    /// 예전에는 사실만 나열하고 pass/fail은 말하지 않았다. 그래서 망가진 내보내기와 정상 내보내기가
+    /// 누군가 숫자를 눈으로 확인하기 전까지 똑같이 읽혔다. 아래 세 단언은 왕복이 애초에 가능한지를
+    /// 가르는 것들이고, zepeto-helper-selftest.result.txt와 같은 PASS/FAIL/NOTE 형식으로
+    /// ResultPath에 쓰인다.
     /// </summary>
     public static class ZepetoRigExportRun
     {
@@ -30,10 +30,10 @@ namespace Easy.ZepetoHelper.SelfTestEditor
         private const int Serial = 2;
 
         /// <summary>
-        /// The 18 bytes every binary fbx starts with. Blender refuses ASCII fbx outright ("ASCII FBX files are
-        /// not supported") while Unity reports a successful export either way, so this literal is the only local
-        /// evidence that the exported rig can be opened in Blender at all - which is the entire point of the
-        /// export path.
+        /// 모든 바이너리 fbx가 시작하는 18바이트. Blender는 ASCII fbx를 아예 거부하는데("ASCII FBX files
+        /// are not supported") Unity는 어느 쪽이든 내보내기 성공이라고 보고한다. 그래서 이 리터럴이
+        /// "내보낸 리그를 Blender에서 열 수는 있는가"에 대해 로컬에서 얻을 수 있는 유일한 증거이고,
+        /// 그것이 내보내기 경로가 존재하는 이유 전부다.
         /// </summary>
         private const string BinaryFbxMagic = "Kaydara FBX Binary";
 
@@ -53,8 +53,15 @@ namespace Easy.ZepetoHelper.SelfTestEditor
         private static void Bootstrap()
         {
             if (!File.Exists(TriggerPath)) { return; }
-            // Exporting writes assets and is refused during Play; keep the trigger until edit mode returns.
-            if (EditorApplication.isPlayingOrWillChangePlaymode) { return; }
+            // 내보내기는 에셋을 쓰기 때문에 Play 중에는 거부된다. 트리거는 그대로 두고 편집 모드로
+            // 돌아올 때까지 기다린다. 조용히 return하면 사용자에게는 트리거 파일이 아무 일도 하지 않는
+            // 것처럼 보인다.
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                ZepetoSelfTestSceneGuard.WaitForEditMode(RunnerLabel, Bootstrap);
+                return;
+            }
+
             File.Delete(TriggerPath);
             Run();
         }
@@ -63,18 +70,17 @@ namespace Easy.ZepetoHelper.SelfTestEditor
         {
             File.WriteAllText(ReportPath, "ZEPETO rig export (serial " + Serial + ")\n----\n");
 
-            // Static state survives until the next domain reload, so a second trigger in the same session would
-            // otherwise append to - and double-count - the first run's results.
+            // 정적 상태는 다음 도메인 리로드까지 살아남는다. 안 지우면 같은 세션의 두 번째 트리거가
+            // 첫 실행의 결과에 이어 붙어 두 번 집계된다.
             results.Clear();
             passCount = 0;
             failCount = 0;
 
             // [QC][Invariant:never_touch_an_unsaved_open_scene]
-            // TryExportZepetoRigToFbx instantiates the ZEPETO base model into the ACTIVE scene and destroys it
-            // again, so this runner mutates the scene the user has open exactly like its two siblings do - and it
-            // was the only one without their refusal. Worse, the unsaved-changes flag that mutation sets is what
-            // then made the self test and the custom motion run refuse for the rest of the session: triggering the
-            // rig export poisoned the self-test trigger.
+            // TryExportZepetoRigToFbx는 ZEPETO 기본 모델을 활성 씬에 Instantiate했다가 다시 지운다.
+            // 즉 이 러너도 형제들과 똑같이 사용자가 열어 둔 씬을 건드리는데, 넷 중 유일하게 그 거부가
+            // 없었다. 더 나쁜 것은 그 변형이 세운 dirty 플래그 때문에 자기 테스트와 커스텀 모션 실행이
+            // 그 세션 내내 거부됐다는 점이다. 리그 내보내기를 트리거하면 자기 테스트 트리거가 죽었다.
             if (ZepetoSelfTestSceneGuard.RefuseIfAnyOpenSceneIsDirty(
                     RunnerLabel,
                     "이 실행은 내보내기 과정에서 열린 씬에 임시 오브젝트를 만들고 지우기 때문에 씬을 건드립니다.",
@@ -82,14 +88,14 @@ namespace Easy.ZepetoHelper.SelfTestEditor
                     Append) != null)
             {
                 Append("  Save or discard the scene yourself, then drop " + TriggerPath + " again.");
-                // Returns before WriteResults on purpose: ResultPath has to keep meaning "the last real run", and
-                // a pass=0 fail=0 tally there would read exactly like a clean sweep.
+                // 일부러 WriteResults 전에 return한다. ResultPath는 계속 "마지막 실제 실행"을 뜻해야
+                // 하는데 거기 적힌 pass=0 fail=0은 깨끗한 통과와 똑같이 읽힌다.
                 return;
             }
 
             ZepetoSelfTestSceneGuard.ClearSkipRecord(SkipPath);
 
-            // Baseline for the "nothing survived in the scene" test at the end of the run.
+            // 실행 끝의 "씬에 아무것도 남지 않았다" 검사를 위한 기준값.
             int[] rootCountsBefore = CaptureSceneRootCounts();
 
             Type helperType = typeof(ZepetoStudioHelperWindow);
@@ -139,10 +145,10 @@ namespace Easy.ZepetoHelper.SelfTestEditor
             Append("fbx exists: " + fbxExists
                 + (fbxExists ? "  size=" + (new FileInfo(absolute).Length / 1024) + "KB" : string.Empty));
 
-            // A missing file is a genuine FAILURE here, never "the export has not been run yet". The export path
-            // deletes its own output when the binary verification fails, precisely so an unusable ASCII fbx
-            // cannot sit in the project looking finished - so "no file" means the export ran and produced
-            // something Blender could not have opened.
+            // 파일이 없는 것은 여기서 진짜 실패다. "아직 내보내기를 안 돌렸다"가 아니다. 내보내기
+            // 경로는 바이너리 검증에 실패하면 자기 출력물을 스스로 지운다. 쓸 수 없는 ASCII fbx가
+            // 완성된 얼굴로 프로젝트에 남지 못하게 하려는 것이다. 그래서 "파일 없음"은 내보내기가
+            // 돌았고 Blender가 열 수 없는 무언가를 만들었다는 뜻이다.
             Check("rig-export:fbx-exists", fbxExists,
                 "no file at " + RigPath + ". Either the export never wrote one, or it wrote one and then deleted "
                 + "it because the binary verification failed.");
@@ -199,12 +205,12 @@ namespace Easy.ZepetoHelper.SelfTestEditor
         }
 
         /// <summary>
-        /// Root GameObject count of every loaded scene, in scene order.
+        /// 로드된 각 씬의 루트 GameObject 개수를 씬 순서대로.
         ///
-        /// The run's scene mutations are all temporary root objects - the base model the export instantiates and
-        /// destroys in a finally block, and the stand-in body a helper window instance adds and removes with
-        /// itself - so a count that comes back unchanged is the evidence that none of them survived. It is only
-        /// compared after the helper instance is destroyed, which is when the second of those is gone.
+        /// 이 실행이 씬에 하는 변형은 전부 임시 루트 오브젝트다 - 내보내기가 Instantiate했다가 finally
+        /// 블록에서 지우는 기본 모델, 그리고 헬퍼 창 인스턴스가 자기와 함께 넣고 빼는 대역 몸. 그래서
+        /// 개수가 그대로 돌아왔다는 것이 아무것도 살아남지 않았다는 증거다. 비교는 헬퍼 인스턴스를 파괴한
+        /// 뒤에만 한다. 그때가 둘 중 두 번째가 사라진 시점이다.
         /// </summary>
         private static int[] CaptureSceneRootCounts()
         {
@@ -219,16 +225,18 @@ namespace Easy.ZepetoHelper.SelfTestEditor
         }
 
         /// <summary>
-        /// Reports - and where possible undoes - what the export did to the open scene.
+        /// 내보내기가 열린 씬에 무엇을 했는지 보고하고, 가능하면 되돌린다.
         ///
-        /// The export leaves the scene marked as having unsaved changes even when it leaves no trace in it: both
-        /// Instantiate and DestroyImmediate set that flag and neither clears it. The flag is not cosmetic, because
-        /// every runner in this assembly refuses to start on a dirty scene, so a rig export would disable the self
-        /// test and the custom motion run until the user saved or reverted a scene they never edited.
+        /// 내보내기는 씬에 흔적을 남기지 않아도 "저장하지 않은 변경" 표시는 남긴다. Instantiate와
+        /// DestroyImmediate 둘 다 그 플래그를 세우고 어느 쪽도 내리지 않는다. 이 플래그는 겉모습 문제가
+        /// 아니다. 이 어셈블리의 모든 러너가 dirty한 씬에서는 시작을 거부하므로, 리그 내보내기 한 번이
+        /// 사용자가 편집한 적도 없는 씬을 저장하거나 되돌릴 때까지 자기 테스트와 커스텀 모션 실행을
+        /// 막아 버린다.
         ///
-        /// So: prove nothing survived, then drop the flag without writing to disk. Never a save - this runner must
-        /// not write the user's scene file - and never silence: whichever way it goes, it is a NOTE. A NOTE rather
-        /// than a Check because the check names of these runners are compared against recorded result files.
+        /// 그래서: 아무것도 남지 않았음을 먼저 증명하고 나서 디스크에 쓰지 않고 플래그만 내린다. 저장은
+        /// 절대 하지 않고(이 러너는 사용자의 씬 파일을 쓰면 안 된다) 침묵도 하지 않는다. 어느 쪽이든
+        /// NOTE로 남긴다. Check가 아니라 NOTE인 이유는 이 러너들의 검사 이름이 기록된 결과 파일과
+        /// 비교되기 때문이다.
         /// </summary>
         private static void ReportSceneDirtAfterExport(int[] rootCountsBefore)
         {
@@ -261,7 +269,7 @@ namespace Easy.ZepetoHelper.SelfTestEditor
         }
 
         /// <summary>
-        /// What the run left behind in the open scenes, or null when nothing did.
+        /// 실행이 열린 씬에 남긴 것, 없으면 null.
         /// </summary>
         private static string DescribeSurvivingSceneChange(int[] rootCountsBefore)
         {
@@ -276,7 +284,7 @@ namespace Easy.ZepetoHelper.SelfTestEditor
                 int now = scene.isLoaded ? scene.rootCount : -1;
                 if (now != rootCountsBefore[i])
                 {
-                    return (string.IsNullOrEmpty(scene.path) ? "untitled scene" : scene.path)
+                    return ZepetoSelfTestSceneGuard.DescribeScene(scene)
                         + " now has " + now + " root objects, had " + rootCountsBefore[i];
                 }
             }
@@ -285,8 +293,8 @@ namespace Easy.ZepetoHelper.SelfTestEditor
         }
 
         /// <summary>
-        /// The first bytes of the file decoded as ASCII, or a short description of why they could not be read.
-        /// Reads exactly BinaryFbxMagic.Length bytes so the value can be compared to it directly.
+        /// 파일 앞부분을 ASCII로 디코딩한 값, 읽지 못했으면 그 이유를 짧게. BinaryFbxMagic.Length 바이트만
+        /// 정확히 읽어서 그 상수와 바로 비교할 수 있게 한다.
         /// </summary>
         private static string ReadFbxHeader(string absolutePath)
         {
@@ -311,8 +319,8 @@ namespace Easy.ZepetoHelper.SelfTestEditor
         }
 
         /// <summary>
-        /// Writes the pass/fail summary in the same format as zepeto-helper-selftest.result.txt, beside it, and
-        /// mirrors the lines into the diagnostic report so the two files never disagree.
+        /// zepeto-helper-selftest.result.txt와 같은 형식의 pass/fail 요약을 그 옆에 쓰고, 같은 줄들을
+        /// 진단 리포트에도 복사한다. 두 파일이 서로 다른 말을 하는 일이 없게 하려는 것이다.
         /// </summary>
         private static void WriteResults()
         {

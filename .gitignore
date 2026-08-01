@@ -1,6 +1,9 @@
 # ── Unity 생성물 (재생성 가능, 292MB) ────────────────────────────────
 /ZEPETO Studio Unity Project File 3.2.16/Library/
 /ZEPETO Studio Unity Project File 3.2.16/Temp/
+# Obj/ 와 obj/ 는 중복처럼 보이지만 둘 다 필요합니다. git의 ignore 매칭은 core.ignorecase를
+# 따라가므로, 대소문자를 구분하는 파일 시스템(리눅스·macOS)에서 클론하면 서로 다른 두 폴더가 됩니다.
+# 이 저장소에는 macOS를 거친 흔적이 있었으니(Packages/.DS_Store) 한쪽만 남기지 마세요.
 /ZEPETO Studio Unity Project File 3.2.16/Obj/
 /ZEPETO Studio Unity Project File 3.2.16/obj/
 /ZEPETO Studio Unity Project File 3.2.16/Logs/
@@ -18,6 +21,12 @@
 *.unityproj
 .vs/
 .idea/
+# .vscode/ 규칙은 일부러 두지 않습니다. ZEPETO 템플릿이 넣어 준
+# "ZEPETO Studio Unity Project File 3.2.16/.vscode/settings.json"이 추적 중이고,
+# 템플릿을 다시 받았을 때의 diff 기준이기 때문입니다. 패키지 저장소 쪽 .gitignore가
+# .vscode/를 무시하는 것과 어긋나 보이지만, 그쪽은 배포용 별도 저장소라 정책이 다릅니다.
+# 다만 그 settings.json의 files.exclude는 **/*.meta, **/*.unity, **/*.prefab, **/*.asset,
+# **/*.fbx를 숨깁니다 — 이 프로젝트의 감사와 테스트가 읽는 파일이 정확히 그것들입니다.
 
 # ── 헬퍼 패키지는 자체 git 저장소를 가집니다 ──────────────────────────
 # Packages/com.easy.zepeto-helper/.git 이 존재하고 origin은
@@ -28,11 +37,27 @@
 /ZEPETO Studio Unity Project File 3.2.16/Packages/com.easy.zepeto-helper/
 
 # ── 테스트 트리거 (떠돌면 위험) ──────────────────────────────────────
-# 무장된 트리거는 아무 재컴파일에서 자동 발화하고, 자체 테스트는
-# dirty 체크 없이 NewScene(Single)을 호출해 미저장 씬 편집을 날립니다.
+# 무장된 트리거는 아무 재컴파일에서 자동 발화합니다. 규칙이 있는 이유는 그것 하나입니다.
+# 씬을 날리던 쪽은 이제 막혀 있습니다: 네 러너 모두 씬을 건드리는 첫 동작 앞에서
+# ZepetoSelfTestSceneGuard.RefuseIfAnyOpenSceneIsDirty를 부르고, 거부되면 그대로 돌아갑니다.
+# 무엇을 하기 직전에 묻는지는 러너마다 다릅니다: ZepetoHelperSelfTest는 NewScene(Single),
+# ZepetoCustomMotionRun은 Assets/Playground.unity를 열려 있는 것 위에 열고 저장하기,
+# ZepetoRigExportRun은 열린 씬에 임시 오브젝트를 만들었다 지우기, ZepetoLiveReloadRun은
+# Play 진입입니다 — 저장하지 않은 씬 편집이 있는 채로 Play에 들어가면 Unity는 묻지도 않고
+# 그것을 버립니다.
+# 그래도 ZepetoLiveReloadRun이 넷 중 가장 침습적입니다. 씬이 저장돼 있으면 거부가 걸리지 않고,
+# 그다음부터는 무인 상태로 Assets/CustomMotions에 FBX를 복사하고 그 폴더의 임포터를 다시 쓰고
+# Play를 켰다 껐다 하며 Assets/ZepetoHelper/Motions/LiveFromBlender.anim의 바이트를
+# CopySerialized로 덮어씁니다. 트리거가 떠돌면 그 왕복이 사람 없이 시작됩니다.
 *.trigger
 
-# 테스트 결과 기록(.result.txt)은 증거로 남기므로 추적합니다.
+# 테스트 결과 기록(.result.txt / .report.txt)은 증거로 남기므로 추적합니다.
+# .skipped.txt는 반대로 "실행되지 않았다"는 기록이라 추적하지 않습니다. 추적된 증거 파일 옆에
+# 프로젝트 루트로 떨어지면 실행 결과처럼 읽히기 때문입니다.
+# (SkipPath는 위 네 러너가 각각 선언합니다: zepeto-helper-selftest.skipped.txt,
+#  zepeto-custom-motion.skipped.txt, zepeto-rig-export.skipped.txt,
+#  zepeto-livereload.skipped.txt)
+*.skipped.txt
 
 # ── Blender ─────────────────────────────────────────────────────────
 *.blend1
@@ -47,6 +72,12 @@ __pycache__/
 *.apk
 *.aab
 *.app
+# 7번 카드의 export 결과. SDK가 정하는 자리는 고른 prefab 옆이라
+# (Export.cs: Path.GetFileNameWithoutExtension(prefabPath) + ".zepeto")
+# Assets/ 안에 떨어지고, Unity가 .meta까지 만들어 줍니다. 업로드용 산출물이지
+# 소스가 아니고 GUID로 참조되지도 않으므로 .meta와 함께 제외합니다.
+*.zepeto
+*.zepeto.meta
 
 # ── OS ──────────────────────────────────────────────────────────────
 .DS_Store
@@ -61,3 +92,33 @@ desktop.ini
 #   blender.exe --background --factory-startup --python BlenderMotion/make_live_fixtures.py
 zepeto-live-a.fbx
 zepeto-live-b.fbx
+
+# ── 커진 생성 클립: 규칙이 아니라 기록입니다 ─────────────────────────
+# Assets/ZepetoHelper/Animations/Videobooth_282_editable.anim 은 26,341,772 bytes로
+# 추적 용량 47.03MB의 절반이 넘습니다. 그리고 SDK 에셋의 그대로 복사본입니다:
+# Library/PackageCache/zepeto.studio@3.2.16/resources/Animation/Videobooth_282.anim
+# (26,341,763 bytes)과 991,025줄을 한 줄씩 비교하면 다른 줄은 9번 한 줄뿐이고
+#   m_Name: Videobooth_282_editable   vs   m_Name: Videobooth_282
+# 크기 차이 9바이트는 "_editable"의 길이와 정확히 같습니다. 2번 카드 버튼 한 번이 다시 만듭니다
+# (Motion.cs CopySelectedAnimation -> AssetDatabase.CopyAsset, 원본은 packages-lock.json에
+# 고정된 zepeto.studio@3.2.16이라 어느 클론에서든 PackageCache가 복원합니다).
+# 형제 파일 ClipEdits/Videobooth_282_editable_clipedit_001.anim 은 14,821,998 bytes이고,
+# STATUS.md가 적어 둔 대로 ClipEdits/는 편집할 때마다 쌓입니다.
+# 두 파일의 GUID(ff61c2070f117c2429fa196604066d73 / 54b4ed16cfd9b6f4ca21f7ec64442216)는
+# 지금 어떤 .unity/.prefab/.controller/.overrideController/.asset/.meta에서도 참조되지 않습니다.
+#
+# 그런데도 여기에 ignore 규칙을 넣지 않았습니다. Assets/ 안의 클립은 헬퍼가 LOADER에 연결하는
+# 순간 추적 중인 파일에 GUID로 박히기 때문입니다: CopySelectedAnimation은 복사 직후
+# AssignAnimationClip(copiedAnimationClip)을 부르고, ClipEdit.cs의 저장 경로도 새 클립을
+# 똑같이 LOADER에 연결합니다. 그 참조가 들어가는 Assets/Playground.unity와
+# Assets/ZepetoHelper/Controllers/PlaygroundAnimatorController_local.overrideController는
+# 둘 다 추적됩니다. 클립만 무시하면 용량 문제가 "클론하면 씬 참조가 끊긴다"는 더 나쁜 문제로
+# 바뀝니다. 지금 참조가 0인 것은 씬이 마지막으로 ZepetoRig_Wave.anim과 SDK의
+# Videobooth_282.anim을 가리킨 채 저장됐기 때문이지, 이 경로가 안전해서가 아닙니다.
+# 같은 이유로 Animations/Preview/clip_adjust_preview.anim(3번 미리보기용 임시 에셋,
+# RestoreTemporaryClipAdjustPreview가 지웁니다)도 무시하지 않습니다. 크래시로 남아 있거든
+# 무시하지 말고 지우세요.
+#
+# 용량을 줄이는 것은 규칙이 아니라 일회성 결정이고 소유자의 몫입니다. 뺄 때는 에셋과 .meta를
+# 반드시 같이 빼고(GUID가 새로 생기지만 참조가 없으니 무해합니다), 그 뒤로 씬에 그 클립이
+# 다시 연결되지 않는지 확인하세요. 파일 자체는 사용자의 작업본이라 디스크에서 지우지 않았습니다.

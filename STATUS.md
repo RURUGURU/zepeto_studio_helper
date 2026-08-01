@@ -1,14 +1,33 @@
 # ZEPETO 모션 파이프라인 — 진행 상황
 
-마지막 갱신: 2026-07-30
+마지막 갱신: 2026-07-31
+
+## 이 문서 읽는 순서
+
+| 알고 싶은 것 | 볼 곳 |
+| --- | --- |
+| 이게 무슨 프로젝트인가 | `한 줄 요약` → `헬퍼 창 구조 (7단계)` |
+| 지금 무엇이 돌아가는가 | `양쪽을 실제로 실행해서 검증했습니다` (실행 결과) → `지금 상태` (버전) |
+| **코드를 만지기 전에** | **`만질 때 반드시 알아야 할 함정` 16개 — 여기만은 건너뛰지 마세요** |
+| 왜 이렇게 되어 있는가 | `중요한 기술적 사실` (전부 실측 기록입니다) |
+| 무엇이 남았는가 | `남은 일` — 그 아래 `다시 하지 않아도 되는 것`도 같이 보세요 |
+| 테스트를 어떻게 돌리나 | `테스트 실행 방법` |
+
+이 문서는 **저장소 전체**(Blender 애드온 · 테스트 · 씬 · 리그 · 두 개의 git)를 다룹니다.
+헬퍼 패키지 자체의 사용법 · 설치 · 캡처는 `Packages/com.easy.zepeto-helper/README.md`,
+검증 기록은 같은 폴더의 `Documentation~/QA_AUDIT.md`가 원본이고 여기서 옮겨 적지 않습니다.
+헬퍼 코드가 왜 그렇게 되어 있는지는 각 파일 머리와 `[AUDIT]`/`[QC]` 주석이 원본입니다.
 
 ---
 
 ## 한 줄 요약
 
 **Blender에서 모션을 만들어 내 ZEPETO 아바타로 확인하는 파이프라인**입니다.
-이번 회차에 **전 항목을 코드 기준으로 재검증**하고, 이전 문서가 틀렸던 10곳과
-검증에서 새로 드러난 회귀 18건을 고쳤습니다.
+0.9.1 회차에 **전 항목을 코드 기준으로 재검증**하고, 이전 문서가 틀렸던 10곳과
+검증에서 새로 드러난 회귀 18건을 고쳤습니다. 이 문서에서 "이번 회차"는 그 0.9.1을 가리킵니다.
+그 뒤의 0.10.0 정리 회차(죽은 코드 제거 · 확정 결함 수정 · 주석 한국어화 · **애드온 1.5.0**)는
+`Packages/com.easy.zepeto-helper/CHANGELOG.md`가 기록합니다. 애드온 쪽은 정리만이 아니라 동작이
+바뀌었고, 게이트 셋이 1.4.0에서 나가던 내보내기를 거절합니다 — 목록은 그 CHANGELOG의 0.10.0 항목입니다.
 
 **커밋 지점이 생겼습니다.** 루트에도 git 저장소를 만들어, 이전에 어떤 저장소에도 없던
 애드온·`.blend`·테스트·씬·리그 meta가 이제 추적됩니다.
@@ -17,13 +36,13 @@
 
 | 무엇 | 결과 |
 | --- | --- |
-| Blender 애드온 (헤드리스 5.2.0 LTS) | **27 / 27 통과** — `BlenderMotion/headless_check.py` |
-| Unity 자체 테스트 | **60 / 60 통과** — 결과 파일 재기록 완료 |
+| Blender 애드온 (헤드리스 5.2.0 LTS) | **28 / 28 통과** — `BlenderMotion/headless_check.py` (`%TEMP%\zepeto_headless_check\result.txt`의 `pass=28 fail=0`) |
+| Unity 자체 테스트 | **전 항목 통과** — `zepeto-helper-selftest.result.txt`의 `pass=`/`fail=` 집계. 개수와 그룹별 명세는 `Documentation~/QA_AUDIT.md`의 `최근 결과`가 원본이고 여기서 옮겨 적지 않습니다 |
 | 리그 export 러너 | **4 / 4 통과** — 바이너리 검증 포함, 씬 오염 없음 |
 | **라이브 왕복 실측** | **통과** — 팔 0.272m / 다리 0.195m, 1.96s→3.96s, 1.5초 반영 |
 | 커스텀 모션 end-to-end | **통과** — 손 이동 0.373m, 씬 완전 복원 |
 | 컴파일 (`csc.exe` + Unity 양쪽) | 에러 0 · 경고 0 |
-| 헬퍼 창 7단계 육안 확인 | 완료 (캡처 6장으로 기록) |
+| 헬퍼 창 7단계 육안 확인 | 완료 (캡처 8장, 그중 7장이 신규·재촬영) |
 
 > ### Unity Personal은 `-batchmode`를 쓸 수 없습니다
 >
@@ -45,20 +64,17 @@
 ## 캡처 이미지 — 정리 완료
 
 이전 회차가 "개인 아이디를 placeholder로 교체했다"고 기록했지만 **그것은 텍스트 전용이었고**, 캡처 PNG에는
-픽셀로 남아 있었습니다. 이번에 **Unity를 띄워 전부 새로 만들었습니다** — 씬 `LOADER`의 `zepetoId`를
-`my_zepeto_id`로 바꾼 상태에서 촬영하고 원래 값으로 되돌렸습니다. 전부 현재 7단계 UI입니다.
+픽셀로 남아 있었습니다. 이번에 **Unity를 띄워 8장 중 7장을 새로 만들었습니다** — 씬 `LOADER`의 `zepetoId`를
+`my_zepeto_id`로 바꾼 상태에서 촬영하고 원래 값으로 되돌렸습니다. 전부 현재 7단계 UI이고,
+**배포를 막는 항목은 남아 있지 않습니다.**
 
-| 파일 | 상태 |
-| --- | --- |
-| `helper-window.png` · `step-1-avatar-outfit.png` · `step-2-motion-select.png` | ✅ 재촬영 |
-| `step-3-clip-adjust.png`(실제 6번) · `step-4-save-export.png`(실제 7번) | ✅ 재촬영 |
-| `step-4-5-blender-live.png` | ✅ **신규** — 캡처가 없던 4·5번 구간 |
-| `workflow-overview.png` | ✅ **재작성** — 옛 도해는 4단계 흐름 전제에 제거된 단계 잠금을 설명하고 있었습니다. 위 캡처 4장 + Play 화면으로 7단계 도해를 새로 합성하고 라이브 왕복 실측치를 넣었습니다 |
-| `play-preview.png` | ✅ 유지 — 본인 아바타가 보입니다. **공개 허용 판단을 받아 그대로 둡니다.** placeholder 아이디로는 아바타가 로드되지 않아 자동 재촬영이 불가능한 유일한 이미지입니다 |
+파일별 내역은 **패키지 README의 `캡처 이미지에 대하여` 표 한 곳에서만** 관리합니다. 예전에는 같은 표를
+README·QA_AUDIT·이 문서가 각자 들고 있다가 장수와 상태가 서로 어긋났습니다. 캡처를 바꿨다면 갱신할 곳은
+그 표입니다.
 
 > 자체 테스트의 `no-personal-id-in-source`는 `.cs`와 `.md`만 읽으므로 **PNG를 구조적으로 볼 수 없습니다.**
-> 이미지에 대한 근거는 그 검사가 아니라 위 표입니다 — 캡처를 바꿀 때마다 표도 같이 갱신하세요.
-> 다른 계정으로 배포하거나 아바타를 드러내고 싶지 않다면 `play-preview.png`만 교체하거나 삭제하면 됩니다.
+> 왜 그런지는 `Documentation~/QA_AUDIT.md`의 `자체 테스트가 이것을 잡을 수 없는 이유`에 적혀 있습니다.
+> `play-preview.png`에 제작자 아바타가 보이는 것은 공개 허용 판단을 받은 **의도된 상태**입니다.
 
 ---
 
@@ -85,14 +101,31 @@
 | --- | --- |
 | Unity | 2020.3.9f1 (`108be757e447`) |
 | ZEPETO SDK | `zepeto.studio@3.2.16`, `zepeto.character@3.1.32` |
-| 헬퍼 패키지 | **0.9.1** — `Packages/com.easy.zepeto-helper` (Editor 20파일 8,169줄) |
-| Blender 애드온 | **1.4.0** — `BlenderMotion/zepeto_motion_helper.py` (1,154줄) |
-| 테스트 | 6파일 3,198줄 (`Assets/ZepetoHelperTests`) |
+| 헬퍼 패키지 | **0.10.0** — `Packages/com.easy.zepeto-helper` (Editor 20파일) |
+| Blender 애드온 | **1.5.0** — `BlenderMotion/zepeto_motion_helper.py` (`bl_info`의 `version = (1, 5, 0)`) |
+| 테스트 | `Assets/ZepetoHelperTests` — `.cs` 6파일 + **어셈블리 정의 2개** (아래) |
 | Blender 설치본 | 5.2.0 LTS — 단 애드온의 `bl_info["blender"]`는 `(4, 2, 0)` (= 최소 4.2) |
 | 컴파일 검증 | `csc.exe` — 헬퍼 **에러 0 · 경고 0**, 테스트 **에러 0 · 경고 0** |
-| 자체 테스트 | 기록은 **60 / 60** 이지만 **재실행 필요** (아래) |
-| 마지막 커밋 | 패키지 `6b77404` · 루트 `3ede9b2` |
-| 미커밋 | 패키지 25파일 (+1,934/−276) · 루트 7파일 (+1,681/−2,312) + untracked 4 |
+| 자체 테스트 | 위 `양쪽을 실제로 실행해서 검증했습니다` 표 참고 (개수는 `Documentation~/QA_AUDIT.md`) |
+| git 상태 | 아래 참고 — 해시는 이 문서에 적지 않습니다 |
+
+> **커밋 해시 · 미커밋 통계 · 줄 수를 여기 적지 않는 이유:** 다음 커밋이 들어오는 순간 거짓이 되기
+> 때문입니다. 실제로 두 저장소의 해시가 각각 4개·여러 개 뒤처진 채로, 존재하지 않는 미커밋 diff까지
+> 적혀 있었습니다. 줄 수도 같은 방식으로 썩습니다 — 정리 회차 **하나**가 여기 있던 `8,169 / 3,198 / 1,154`을
+> 전부 수백 줄씩 틀리게 만들었고, 같은 표에서 헬퍼 버전 행만 갱신된 탓에 옆 행은 일부러 그대로 둔 것처럼 보였습니다.
+> 두 저장소에서 각각 `git log --oneline -3`과 `git status --porcelain`을, 줄 수가 필요하면 `wc -l`을 보세요.
+> **파일 개수(20 / 6 / 2)는 남깁니다** — 어셈블리 구성과 `QA_AUDIT.md`의 파일 구조 표가 그 값에 걸려 있습니다.
+
+### 테스트 폴더는 어셈블리 **2개**입니다 (한 개로 만들면 깨집니다)
+
+| 어셈블리 정의 | `includePlatforms` | 들어 있는 것 |
+| --- | --- | --- |
+| `ZepetoHelperTests/Easy.ZepetoHelper.Tests.asmdef` | `[]` (= 런타임 포함) | `ZepetoHelperTestLoader.cs` — 씬에 붙는 MonoBehaviour |
+| `ZepetoHelperTests/Editor/Easy.ZepetoHelper.Tests.Editor.asmdef` | `["Editor"]` | 러너 5개 (`ZepetoHelperSelfTest` · `ZepetoSelfTestSceneGuard` · `ZepetoRigExportRun` · `ZepetoLiveReloadRun` · `ZepetoCustomMotionRun`) |
+
+폴더 루트에 `["Editor"]` 하나만 두면 **런타임 MonoBehaviour까지 Editor 전용이 되어 `AddComponent`가
+null을 반환하고** 자체 테스트가 NRE로 중단됩니다. 실제로 그렇게 만들어 24번째 검사에서 멈춘 적이
+있습니다. 테스트에 파일을 추가할 때는 그 파일이 씬에 붙는지부터 보고 어느 폴더에 넣을지 정하세요.
 
 ### 두 개의 git 저장소
 
@@ -140,20 +173,13 @@ stage 1 = 카드 1     stage 2 = 카드 2 프리뷰 AND 카드 5 라이브
 stage 3 = 카드 6     stage 4 = 카드 7
 ```
 
-이번 회차에 bare literal을 `PreviewStageAvatarOutfit`/`Motion`/`ClipAdjust`/`Export` 상수로 바꿨습니다
-(`Workflow.cs`). **값은 그대로 유지**했습니다 — SessionState에 이미 int가 들어있을 수 있고 `Motion.cs`가 2를
-넘깁니다. 카드 번호만 고치면 클립 조정 프리뷰가 조용히 죽습니다. 이 프로젝트 최대의 함정입니다.
+**값은 절대 다시 매기지 마세요.** SessionState에 이미 int가 들어 있을 수 있고 `Motion.cs`가 2를 넘깁니다.
+카드 번호에 맞춰 값을 고치면 클립 조정 프리뷰가 조용히 죽습니다 — 이 프로젝트 최대의 함정입니다.
+상수(`PreviewStageAvatarOutfit`/`Motion`/`ClipAdjust`/`Export`)와 그 이유는 `Workflow.cs` 머리 주석에 있습니다.
 
 ---
 
 ## 중요한 기술적 사실
-
-### 재생을 결정하는 것은 오버라이드 슬롯입니다
-
-`PlaygroundController.AnimationClip`을 써도 **아바타는 움직이지 않습니다.** SDK 기본 컨트롤러의 교체
-가능 슬롯은 `dynamic` 하나뿐이고 배포 기본값이 `A_pose.anim`(0.0417초)입니다. 그래서
-`AssignAnimationClip`은 필드를 쓴 뒤 반드시 `ApplyClipToOverrideController`로 모든 슬롯을 덮어씁니다.
-패키지 원본은 절대 안 쓰고 `EnsureLocalAnimatorController`가 프로젝트 로컬로 먼저 복사합니다.
 
 ### 뼈 103개 중 49개는 죽어 있습니다 — 산수 정정
 
@@ -170,11 +196,21 @@ stage 3 = 카드 6     stage 4 = 카드 7
 숨김 대상 49개 = 모든 `*Twist*`(8) + 모든 `*_scale`(24) + `pelvis`(1) + `heel_L/R`(2) +
 `eye_L`·`eye_R`·`mouth`를 뺀 얼굴 전체(14). 매핑 밖 뼈는 **에러·경고·로그 없이 사라집니다.**
 
-### Hips는 Blender에서 못 돌립니다 (그리고 강제되지 않습니다)
+### Hips는 Blender에서 못 돌립니다 (오브젝트를 끌고 가면 1.5.0부터 막힙니다)
 
-FBX의 `hips`는 아마추어 **오브젝트**입니다(Blender가 최상위 뼈를 오브젝트로 변환). 몸통은 `spine`을 쓰세요.
-**이 제약은 코드로 강제되지 않습니다** — `odd_bones`는 pose bone만 검사하므로 오브젝트를 움직여도
-체크리스트가 발화하지 않고 `clear_pose`도 되돌리지 못합니다.
+FBX의 `hips`는 아마추어 **오브젝트**입니다(Blender가 최상위 뼈를 오브젝트로 변환). 뼈로는 포즈를 잡을
+방법이 아예 없으니 몸통은 `spine`을 쓰세요.
+
+**대신 오브젝트를 끌고 가는 쪽은 이제 강제됩니다.** `odd_bones`가 pose bone만 보는 것은 그대로지만,
+애드온 1.5.0의 `object_moved`가 리그 오브젝트의 위치·크기를 `zepeto_baseline_object` 스냅샷과 대조합니다
+(임계값 0.01 / 0.05로 `odd_bones`와 같습니다). `export_problems`가 패널과 `ZEPETO_OT_export` **양쪽에서**
+불리므로 체크리스트에 `리그 오브젝트가 움직였습니다`가 뜨고 내보내기가 거절되며, `포즈 전부 되돌리기`가
+그 스냅샷으로 되돌립니다(`clear_pose`).
+
+> **남은 구멍 하나는 정직하게 적어 둡니다.** 스냅샷은 `1단계 · 몸 불러오기`가 찍습니다. `object_baseline()`이
+> None이면 — 이 기능 이전에 저장된 `.blend`, append/link로 들여온 리그, 1단계를 건너뛴 씬 — 원래 자리를
+> 모르므로 **경고도 복구도 없습니다.** 모르면서 경고하면 아무 잘못도 안 한 사용자를 잡게 되므로 의도된
+> 선택입니다. 1단계를 한 번 누르면 스냅샷이 생깁니다.
 
 ### 리타게팅은 깔끔하지 않습니다
 
@@ -203,6 +239,28 @@ meta에 뼈별 위치 오차 경고가 2.3m~21.5m로 기록돼 있지만, 64개 
 > 이전 문서의 "프로텍터 게이트가 `!Application.isPlaying`이라 Edit 모드에선 무력"은 **문장 자체가
 > 자기모순**입니다(`!isPlaying`이면 Edit 모드에서 오히려 *활성*). DLL이 클로즈드 소스라 극성은 확인
 > 불가입니다. 어느 쪽이든 결론은 무관합니다 — Edit 모드에는 추출할 아바타 메시가 애초에 없습니다.
+
+### 라이브 왕복에는 실측치가 있습니다
+
+`BlenderMotion/make_live_fixtures.py`가 만드는 픽스처 2개로, Play를 켜둔 채 FBX를 갈아끼운 결과입니다.
+
+```
+clip length: 1.96s -> 3.96s                       PASS clip-swapped
+phase A (픽스처 A, 팔 모션):  arm=0.272m  leg=0.000m
+phase B (픽스처 B, 다리 모션): arm=0.000m  leg=0.195m   PASS avatar-animating
+reload fired after 1.5s, count = 2
+animator is playing: LiveFromBlender (3.96s)
+```
+
+**2×2 진리표라서 의미가 있습니다** — A에서는 팔만, B에서는 다리만 움직이므로 "핫리로드가 안 일어났다"와
+"아무것도 안 움직인다"가 서로 구별됩니다. 스왑 뒤 **재생 중인** Animator가 다리를 흔들었다는 것은
+리바인드 없이 반영됐다는 뜻입니다. 픽스처(3.4MB)는 언제든 다시 만들 수 있으므로 `.gitignore`로 빼고
+생성 스크립트만 추적합니다.
+
+> 이전 문서가 인용하던 `arm=0.308m / leg=0.249m / 1.4초`는 산문에만 있었습니다. 지금 값이 다른 것은
+> 회전 각도가 다르기 때문이고(현재 픽스처는 0.95 / 0.70 rad), **구조와 클립 길이(1.96s→3.96s), 반영
+> 지연(1.4초 vs 1.5초)은 일치**합니다. 즉 옛 수치도 실제 실행의 흔적이었을 가능성이 높고, 이제 그 자리에
+> 재현 가능한 측정이 있습니다.
 
 ---
 
@@ -257,6 +315,9 @@ Mixamo 경로 테스트용 픽스처로 쓸 만하지만 `Assets/CustomMotions`(
 
 ## 이번 회차에 고친 것
 
+패키지·애드온 쪽 변경의 원본 기록은 `Packages/com.easy.zepeto-helper/CHANGELOG.md`입니다.
+아래는 저장소 전체를 한 화면에서 보기 위한 요약이고, 새 사실을 여기서 만들지는 않습니다.
+
 ### 동작이 틀렸던 것
 
 | 항목 | 증상 |
@@ -282,10 +343,26 @@ Mixamo 경로 테스트용 픽스처로 쓸 만하지만 `Assets/CustomMotions`(
 
 ### 문서
 
-개인 아이디 텍스트 제거, 버전 동기화(0.3.0/0.3.2 → 0.9.1), 자체 테스트 수치 정정(51 → 60),
-파일 구조표 20파일 재작성, 단계 번호 1~4 → 1~7, 스니펫 SDK 버전 3.2.12 → 3.2.16(다운그레이드 유발),
+버전 동기화(0.3.0/0.3.2 → 0.9.1), 자체 테스트 수치 정정(51 → 60 — 그 회차의 값입니다. 지금 개수는
+`Documentation~/QA_AUDIT.md`), 파일 구조표 20파일 재작성,
+단계 번호 1~4 → 1~7, 스니펫 SDK 버전 3.2.12 → 3.2.16(그대로 붙여넣으면 SDK가 내려갔습니다),
 설치 확인 절차를 임베디드 패키지 실태에 맞게 수정(`manifest.json`에 항목이 **없는 것이 정상**),
-캡처 staleness 정직하게 공개(7장 전부 4단계 시대).
+캡처 8장 중 7장 재작성.
+
+#### 개인 아이디 제거는 **패키지 범위**입니다 — 루트 저장소는 아직 깨끗하지 않습니다
+
+자체 테스트의 `no-personal-id-in-source`가 훑는 것은 `Packages/com.easy.zepeto-helper` 아래 24파일
+(`Editor/`의 `.cs` 20개 + `.md` 4개)뿐이라, 루트 저장소는 **구조적으로 볼 수 없습니다.**
+실제로 아이디 문자열은 루트 쪽 3개 파일에 그대로 있습니다.
+
+| 파일 | 왜 남아 있나 |
+| --- | --- |
+| `Assets/Playground.unity` | 작업 씬 `LOADER`에 들어 있는 실제 값. 비우면 아바타가 로드되지 않습니다 |
+| `Assets/ZepetoHelperTests/Editor/ZepetoHelperSelfTest.cs` | 재유입 검사가 찾아야 하는 토큰 자체(`PersonalIdSample`). 문자열을 쪼개 선언한 것도 같은 이유입니다 |
+| `zepeto-helper-selftest.result.txt` | 그 검사가 남긴 결과 기록 |
+
+**루트 저장소에 원격이 없다는 것**(위 `두 개의 git 저장소`)이 지금 이게 유출이 아닌 유일한 이유입니다.
+루트를 어딘가에 push하기 전에 이 3개를 반드시 처리하세요. 배포되는 **패키지 쪽은 깨끗합니다.**
 
 ---
 
@@ -296,10 +373,11 @@ Mixamo 경로 테스트용 픽스처로 쓸 만하지만 `Assets/CustomMotions`(
 컴파일이 깨끗한 것은 정확한 것과 다릅니다. 이번 회차가 그걸 두 번 증명했습니다: diff 리뷰가 잡은 치명 2건이
 경고 없이 통과했고, **자체 테스트를 처음 실제로 돌렸을 때 24개째에서 중단**됐습니다(아래).
 
-- [x] **Blender 애드온 1.4.0 — 헤드리스 27/27.** 경로 런타임 유도(저장 안 된 `.blend` 기준), env
-      오버라이드, 모호성 거부, `clear_pose`가 표시된 뼈만 되돌리는지, export가 바이너리인지, `.part`
-      잔여 없음까지 실측. `54 + 49 = 103` 산수도 실제 리그에서 확인
-- [x] **자체 테스트 60/60**, 결과 파일 재기록. 예상했던 NOTE 5줄 등장 확인
+- [x] **Blender 애드온 1.5.0 — 헤드리스 전 항목 통과**(개수는 위 표). 경로 런타임 유도(저장 안 된
+      `.blend` 기준), env 오버라이드, 모호성 거부, `clear_pose`가 표시된 뼈만 되돌리는지, export가
+      바이너리인지, `.part` 잔여 없음, **패널을 거치지 않는 호출도 게이트에 걸리는지**까지 실측.
+      `54 + 49 = 103` 산수도 실제 리그에서 확인
+- [x] **자체 테스트 전 항목 통과**, 결과 파일 재기록. 예상했던 NOTE 5줄 등장 확인
       (`no-personal-id-in-source:scanned` 24파일, `real-template:id-restored`,
       `playback-slot:{overrides,clip,controller}-restored` — 러너가 씬을 되돌린다는 증거)
 - [x] **asmdef 회귀 발견·수정.** 신규 asmdef를 테스트 폴더 루트에 `includePlatforms: ["Editor"]`로 둬서
@@ -309,60 +387,44 @@ Mixamo 경로 테스트용 픽스처로 쓸 만하지만 `Assets/CustomMotions`(
       해소), 4번의 Blender 안내가 `1단계~5단계`, 7번이 `이 창의 1~7단계는…`, 단계 잠금 문구 없음,
       Stop·Emergency Stop이 비활성이어도 항상 렌더링되고 사유가 붙음
 - [x] **`.meta` 재생성 확인.** Unity가 `Wave_Hello.fbx` / `AddonSmokeTest.fbx`의 `.meta`를 다시 만들었고
-      `rigImportErrors`가 **비어 있고** `boneName` 0개 — 오염이 사라졌습니다(오염 시 55개)
+      `rigImportErrors`가 **비어 있고** `boneName`은 **20개(자기 뼈)** — 오염이 사라졌습니다.
+      오염된 상태는 `boneName` **55개**(복사돼 들어온 ZEPETO 이름)로 나타나므로, 세는 값이 0이 아니라
+      20이라는 점이 판정 기준입니다
 - [x] **리그 export 러너 4/4.** `Kaydara FBX Binary` 확인, `animationType: Human`, 106 transforms,
       스킨 메시 1, `NOTE scene-dirt :: none` (러너가 씬을 더럽히지 않음)
-- [x] **라운드트립 3 → 4 → 5 완주 — 실측.** 아래 별도 항목 참고
-- [x] **1번 버튼 재오염 없음 — 실측.** 아래 별도 항목 참고
+- [x] **라운드트립 3 → 4 → 5 완주 — 실측.** 수치는 위 `라이브 왕복에는 실측치가 있습니다`
+- [x] **1번 버튼 재오염 없음 — 실측.** 수치는 위 `실측으로 확인한 재오염 방지`
 
-### 2. ~~캡처~~ → 정리 완료
-
-[위](#캡처-이미지--정리-완료) 참고. 8장 전부 현재 UI 기준이고, 아바타 노출은 허용 판단을 받았습니다.
-**배포를 막는 항목은 남아 있지 않습니다.**
-
-### 3. ~~라이브 왕복 픽스처 복원~~ → 해결, 그리고 실측했습니다
-
-픽스처가 없어 재현 불가였던 항목입니다. 이제 **생성 스크립트**(`BlenderMotion/make_live_fixtures.py`)로
-만들고 실제로 측정했습니다.
-
-```
-clip length: 1.96s -> 3.96s                       PASS clip-swapped
-phase A (픽스처 A, 팔 모션):  arm=0.272m  leg=0.000m
-phase B (픽스처 B, 다리 모션): arm=0.000m  leg=0.195m   PASS avatar-animating
-reload fired after 1.5s, count = 2
-animator is playing: LiveFromBlender (3.96s)
-```
-
-2×2 진리표가 성립합니다 — A에서는 팔만, B에서는 다리만 움직였으므로 **"핫리로드가 안 일어났다"와
-"아무것도 안 움직인다"가 구별됩니다.** 스왑 후 재생 중인 Animator가 다리를 흔들었다는 것은
-**리바인드 없이 반영됐다**는 뜻입니다.
-
-픽스처(3.4MB)는 재생성 가능하므로 `.gitignore`로 제외하고 생성 스크립트만 추적합니다:
-
-```
-set ZEPETO_FIXTURE=a        (그리고 b 로 한 번 더)
-blender.exe --background --factory-startup --python BlenderMotion/make_live_fixtures.py
-```
-
-> 이전 문서가 인용한 `arm=0.308m / leg=0.249m / 1.4초`는 산문에만 있었습니다. 지금 값이 다른 것은
-> 회전 각도가 다르기 때문이고(제 픽스처는 0.95 / 0.70 rad), **구조와 클립 길이(1.96s→3.96s), 반영
-> 지연(1.4초 vs 1.5초)은 일치**합니다. 즉 옛 수치도 실제 실행의 흔적이었을 가능성이 높습니다.
-> 이제 그 자리에 재현 가능한 측정이 있습니다.
->
-> `F_CUBE_IN_FBX` / `F_BODY_IN_FBX`는 여전히 출처가 없습니다. 다만 헤드리스 스크립트가 생겼으니
-> (`BlenderMotion/headless_check.py`, 27개 검사) 큐브 제외 검사를 추가하면 그 주장도 재현 가능해집니다.
-
-### 4. 커밋
-
-미커밋: 패키지 25파일(+1,934/−276), 루트 7파일(+1,681/−2,312) + untracked 4.
-
-### 5. 그 외
+### 2. 그 외
 
 - `Videobooth_282_editable.anim` 26.3MB + 편집본 14.8MB — `ClipEdits/`가 쌓이면 편집마다 수십 MB
-- `zepeto-studio-unity-3.2.12/` 빈 디렉터리 (git이 빈 폴더를 추적하지 않아 커밋에서는 이미 사라짐)
-- 애드온 `iter_fcurves`의 Blender 4.4+ 슬롯 액션 분기는 아마 죽은 코드 — 실제 5.2에서 미검증
+- `zepeto-studio-unity-3.2.12/` 빈 디렉터리 — 디스크에 남아 있으면 지워도 됩니다(git은 빈 폴더를
+  추적하지 않으므로 커밋에는 이미 없습니다)
+- **`iter_fcurves`의 4.4+ 분기에 검사가 없습니다.** 1.5.0이 게이트를 `hasattr` → "비었는지"로 바꿨는데
+  (위 `다시 하지 않아도 되는 것` 참고), 헤드리스 검사는 전부 빠른 경로만 지나갑니다 —
+  `pose:iter-fcurves-works`가 `Action.fcurves`로 162개를 봅니다. 즉 **동작이 커버리지 없이 나갔습니다.**
+  커브가 첫 슬롯에 없는 액션(layers/strips/channelbags만 있는 스텁이면 충분)을 `iter_fcurves`에 먹이는
+  검사를 `headless_check.py`에 넣어야 그 분기가 처음으로 실행됩니다
+- `F_CUBE_IN_FBX` / `F_BODY_IN_FBX` 주장은 여전히 출처가 없습니다. 헤드리스 스크립트가 생겼으니
+  (`BlenderMotion/headless_check.py`) 큐브 제외 검사를 추가하면 그 주장도 재현 가능해집니다
 - `.zepeto` export 실제 실행 + Studio 업로드 확인 (계정 로그인 필요)
 - Humanoid muscle 클램핑이 재생 시점에 일어나는지 (클램프 경고 감지기는 제거된 상태)
+
+### 다시 하지 않아도 되는 것 (조사했고, 답이 나왔습니다)
+
+- **중복 애셋 없음.** 트리의 `.fbx`/`.anim`/`.blend`/`.prefab`/`.unity` 18개를 이름이 아니라 내용으로
+  비교했고 MD5 18개가 전부 다릅니다. 4KB 롤링 블록 비교에서 겹치는 곳은 Blender가 내보낸 리그 3개
+  (`ZepetoRig_Wave.fbx` / `zepeto-live-a.fbx` / `zepeto-live-b.fbx`)뿐이고 약 137블록(≈560KB,
+  각 파일의 30~34%) — **중복이 아니라 세 파일이 같은 ZEPETO 몸 메시를 싣고 있는 것**입니다.
+  그 메시를 빼면 Unity가 `isHuman=false` Avatar를 만들어 Humanoid 클립이 0개가 됩니다.
+  `ZepetoBaseModel.fbx`는 어느 파일과도 0블록(FBX SDK 2020.3.4 출력, 나머지는 Blender 5.2)
+- **애드온 `iter_fcurves`의 Blender 4.4+ 분기는 "죽은 코드"가 아닙니다. 그리고 게이트는 이미 고쳤습니다.**
+  헤드리스 5.2.0에서 정상 경로가 `162 fcurves`를 돌려줍니다(`pose:iter-fcurves-works`). **지우지 마세요** —
+  4.4+에서 `Action.fcurves`는 단일 슬롯 호환 접근자라, 커브가 첫 슬롯에 없는 액션에서는 "동작하는" 쪽이
+  조용히 빈 목록을 주고 이 분기가 옳은 값을 갖습니다. 조사 당시의 게이트는 `hasattr(action, 'fcurves')`라
+  4.2~5.2에서 항상 참이었고, 애드온 1.5.0이 그것을 **존재가 아니라 비었는지 보도록** 바꿨습니다
+  (`curves = list(getattr(action, "fcurves", None) or [])` → 비었을 때만 layers를 걷습니다). 5.2는 실측된
+  빠른 경로에 그대로 있습니다. 검사가 아직 없다는 것은 조사 결과가 아니라 열린 일이라 `남은 일`에 있습니다
 
 ---
 
@@ -397,6 +459,9 @@ csc: C:\Program Files\Unity\Hub\Editor\2020.3.9f1\Editor\Data\Tools\Roslyn\csc.e
 ## 만질 때 반드시 알아야 할 함정
 
 1. **`AnimationClip` 필드만 써서는 아무 일도 안 일어납니다.** 오버라이드 슬롯 재작성만이 재생을 바꿉니다.
+   계측 기록은 `Documentation~/QA_AUDIT.md`의 `실제 재생 경로`, 구현 쪽 설명은 `Loader.cs`의
+   `ApplyClipToOverrideController` 주석입니다. 여기서 다시 설명하지 않는 이유는 같은 문장을 세 곳에
+   두었다가 서로 어긋난 전례가 있어서입니다.
 2. **카드 번호(1~7) ≠ preview stage(1~4).** stage 3 = 카드 6, stage 4 = 카드 7. 카드 번호만 고치면
    클립 조정 프리뷰가 조용히 죽습니다.
 3. **컨트롤을 조건부로 그리지 마세요.** 고정 순서로 무조건 그리고 `enabled`/라벨/`MessageType`만 바꿉니다.
@@ -436,10 +501,11 @@ csc: C:\Program Files\Unity\Hub\Editor\2020.3.9f1\Editor\Data\Tools\Roslyn\csc.e
 | --- | --- |
 | Unity 프로젝트 | `Desktop/zepeto/ZEPETO Studio Unity Project File 3.2.16` |
 | 헬퍼 패키지 (자체 git) | `.../Packages/com.easy.zepeto-helper` |
-| 테스트 러너 | `.../Assets/ZepetoHelperTests/Editor` (+ 공용 `ZepetoSelfTestSceneGuard.cs`) |
+| 테스트 러너 | `.../Assets/ZepetoHelperTests/Editor` (공용 `ZepetoSelfTestSceneGuard.cs` 포함 — 여기 5개 전부 Editor 전용) |
+| 테스트용 런타임 컴포넌트 | `.../Assets/ZepetoHelperTests/ZepetoHelperTestLoader.cs` — **`Editor/` 밖에 있어야 합니다** (위 어셈블리 2개 참고) |
 | Blender 작업 파일 | `Desktop/zepeto/BlenderMotion/zepeto_motion.blend` |
 | 애드온 원본 | `Desktop/zepeto/BlenderMotion/zepeto_motion_helper.py` |
-| 애드온 헤드리스 검사 | `Desktop/zepeto/BlenderMotion/headless_check.py` (27개, Unity 불필요) |
+| 애드온 헤드리스 검사 | `Desktop/zepeto/BlenderMotion/headless_check.py` (Unity 불필요) |
 | 라이브 픽스처 생성기 | `Desktop/zepeto/BlenderMotion/make_live_fixtures.py` (픽스처는 git 제외) |
 | Blender 리그 | `.../Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx` |
 | Blender→Unity 드롭존 | `.../Assets/CustomMotions` |
@@ -458,15 +524,22 @@ csc: C:\Program Files\Unity\Hub\Editor\2020.3.9f1\Editor\Data\Tools\Roslyn\csc.e
     --background --factory-startup --python BlenderMotion/headless_check.py
 ```
 
-검사 27개. 결과는 콘솔과 `%TEMP%\zepeto_headless_check\result.txt`. FBX는 temp에만 쓰므로
+결과는 콘솔과 `%TEMP%\zepeto_headless_check\result.txt`(`pass=N fail=N` 집계 포함). FBX는 temp에만 쓰므로
 `Assets/`를 오염시키지 않습니다(그 폴더는 0.4초마다 폴링됩니다).
+
+라이브 왕복 픽스처는 git에 없으므로 그 러너를 돌리기 전에 두 번 만들어야 합니다:
+
+```
+set ZEPETO_FIXTURE=a        (그리고 b 로 한 번 더)
+blender.exe --background --factory-startup --python BlenderMotion/make_live_fixtures.py
+```
 
 **Unity 쪽 — 라이선스 활성화 후.** 프로젝트 루트에 트리거 파일을 두고 Unity를 활성화하면 재컴파일 시
 실행됩니다.
 
 | 트리거 | 하는 일 |
 | --- | --- |
-| `zepeto-helper-selftest.trigger` | 자체 테스트 60개 → `.result.txt` (거절 시 `.skipped.txt`) |
+| `zepeto-helper-selftest.trigger` | 자체 테스트 전체 → `.result.txt` (거절 시 `.skipped.txt`) |
 | `zepeto-livereload.trigger` | Play 왕복 실측 (**픽스처 2개 필요** — 위 생성기로 먼저 만드세요) |
 | `zepeto-rig-export.trigger` | 리그 내보내기 + assertion 4개 |
 | `zepeto-custom-motion.trigger` | 커스텀 모션 end-to-end. **파일 내용에 FBX 경로를 적습니다** (예: `Assets/CustomMotions/Wave_Hello.fbx`) |
