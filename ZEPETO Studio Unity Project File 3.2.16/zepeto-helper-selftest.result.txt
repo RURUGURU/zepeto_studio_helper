@@ -1,9 +1,12 @@
 ZEPETO Helper self test
-pass=67 fail=0
+pass=70 fail=0
 ----
 PASS no-builtin-id-const
 PASS no-personal-id-in-source
 NOTE no-personal-id-in-source:scanned :: 24 files under Packages/com.easy.zepeto-helper
+PASS rig-artifact:present
+PASS rig-artifact:no-prefab-texture
+PASS rig-artifact:no-user-path
 PASS mcp-removed:GetUnityMcpBridgePort
 PASS mcp-removed:CanPingUnityMcpBridge
 PASS mcp-removed:TryRestartUnityMcpBridge
@@ -94,4 +97,4 @@ PASS live:name-restored
 PASS live:loop-applied
 NOTE live:probe :: len=23.13s
 NOTE stage-flags-restored :: AvatarOutfitStageCompleteSessionKey=false, MotionSelectStageCompleteSessionKey=false, ClipStageCompleteSessionKey=false
-NOTE scene-dirt :: none - the open scene reads as saved
+NOTE scene-dirt :: none - the open scene still reads as saved after the helper's stand-in body was synced, so there was nothing to clear

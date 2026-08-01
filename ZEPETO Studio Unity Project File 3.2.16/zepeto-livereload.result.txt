@@ -1,4 +1,5 @@
 ZEPETO live reload round trip
+stage flags: 3 stage flag(s) captured
 placed fixture A at Assets/CustomMotions/LiveRoundTrip.fbx
 configure fixture A -> True : LiveRoundTrip.fbx 설정 완료 — Animation Type = Humanoid, Avatar는 이 FBX에서 생성 (모션 자체의 뼈대를 기준으로 읽습니다), Root Transform 고정 (1개 클립)
 RequestLivePreviewPlay invoked
@@ -7,13 +8,19 @@ runInBackground = True
 armed = True
 before swap: live clip length = 1.96s, reload count = 1
 --- swapped fixture B in (96 frames) ---
-reload fired after 1.5s, count = 2
+reload fired after 1.3s, count = 2
 after swap: live clip length = 3.96s
 --- results ---
 clip length: 1.96s -> 3.96s
-PASS clip-swapped: the live clip really became the new motion
 phase A (fixture A, arm motion): arm=0.272m leg=0.000m
 phase B (fixture B, leg motion): arm=0.000m leg=0.195m
-PASS avatar-animating: after the swap the RUNNING avatar swung the LEG, which only fixture B does - the hot reload reached the Animator with no rebind
 animator is playing: LiveFromBlender (3.96s)
+---- results ----
+pass=3 fail=0
+PASS live-run:reload-fired
+PASS live-run:clip-swapped
+PASS live-run:avatar-animating
 --- finished: done ---
+removed this run's fixture copy at Assets/CustomMotions/LiveRoundTrip.fbx
+side effect not undone: every fbx under Assets/CustomMotions had its importer settings rewritten by the live preview preparation, exactly as a real live-preview run does.
+stage flags restored: AvatarOutfitStageCompleteSessionKey=false, MotionSelectStageCompleteSessionKey=false, ClipStageCompleteSessionKey=false

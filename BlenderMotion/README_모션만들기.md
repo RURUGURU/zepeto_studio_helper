@@ -32,34 +32,43 @@ Blender를 한 번도 안 써봤어도 됩니다. **버튼 다섯 개**만 순�
 | ZEPETO 리그 | 내보내기 완료 (뼈 103개) | `.../Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx` |
 | 작업 파일 | 몸까지 불러온 상태로 저장됨 | `BlenderMotion\zepeto_motion.blend` |
 | 프레임레이트 | 24 fps, 1~48프레임 (2초) | 애드온이 자동 설정 |
-| ZEPETO 애드온 | **처음 한 번은 직접 켜야 합니다** (바로 아래) | `BlenderMotion\zepeto_motion_helper.py` |
+| ZEPETO 애드온 | **설치 완료 · 켜짐** | `%APPDATA%\Blender Foundation\Blender\5.2\scripts\addons\zepeto_motion_helper.py` |
 
-### 애드온 켜기 — 처음 한 번만
+### 애드온 — 이미 설치돼 있습니다
 
-**설치본은 없습니다.** 이 컴퓨터 전체에 `zepeto_motion_helper.py`는 `BlenderMotion\` 폴더의 한 개뿐이고,
-`%APPDATA%\Blender Foundation\Blender\5.2` 아래에는 `config`만 있습니다. 그래서 Blender가 이 파일을
-알게 만들어 줘야 하고, 그 전에는 사이드바에 `ZEPETO 모션` 패널이 아예 나타나지 않습니다.
+Blender를 열고 3D 화면에서 **N** 키를 누르면 사이드바에 **`ZEPETO 모션`** 패널이 있습니다.
+`Item` 탭에도 `ZEPETO` 탭에도 같은 패널이 나옵니다. 할 일은 없습니다.
 
-두 가지 방법이 있습니다. 둘 다 결과는 같습니다.
+> **이 문단은 예전에 "설치본은 없습니다"였습니다.** 실제로 그랬습니다 —
+> `%APPDATA%\Blender Foundation\Blender\5.2\scripts\addons\`도 `config\`도 비어 있었고, Blender를 열어도
+> `ZEPETO` 탭이 없었습니다. 그런데 헤드리스 검사 28개는 계속 전부 통과하고 있었습니다. 그 검사들은
+> `sys.path`에 폴더를 끼워 넣고 모듈을 직접 import하기 때문입니다 —
+> **검사가 통과한다는 것과 이 컴퓨터에서 쓸 수 있다는 것은 다른 문장이었습니다.**
 
-**A. 애드온으로 등록 (Blender를 꺼도 남아 있음 — 이 쪽을 권합니다)**
+#### 다시 설치해야 할 때
+
+애드온 파일(`BlenderMotion\zepeto_motion_helper.py`)을 **고친 뒤**, 그리고 Blender를 새로 깔거나
+다른 컴퓨터로 옮겼을 때입니다. Blender의 설치는 링크가 아니라 **복사**라서, 원본을 고쳐도 Blender는
+예전 사본을 계속 돌립니다. 에러가 나지 않으므로 "고쳤는데 그대로예요"로만 나타납니다.
+
+```
+"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background --python BlenderMotion\install_addon.py
+```
+
+`PASS :: 설치 완료` 두 줄이 나오면 끝입니다. Blender가 열려 있었다면 껐다 켜세요.
+
+> 낡은 사본이 도는 상태는 `headless_check.py`의 `install:copy-matches-source`가 잡습니다. 두 파일을
+> 내용으로 비교해서 다르면 실패로 만듭니다.
+
+#### 손으로 하려면
 
 1. **Edit > Preferences > Add-ons**
 2. 오른쪽 위 **▼** 를 눌러 **Install from Disk...** (예전 Blender에서는 그냥 **Install** 버튼입니다)
 3. `BlenderMotion\zepeto_motion_helper.py` 를 고릅니다
 4. 목록에 뜬 **`ZEPETO 모션 헬퍼`** 의 체크박스를 켭니다
 
-**B. 그때그때 실행 (Blender를 끄면 사라짐)**
-
-1. 위쪽 탭에서 **Scripting** 워크스페이스로 갑니다
-2. **Open** 으로 `BlenderMotion\zepeto_motion_helper.py` 를 엽니다
-3. **Run Script** (또는 `Alt+P`)
-
-**켜졌는지 확인:** 3D 화면에 마우스를 올리고 **N** 키 → 사이드바에 **`ZEPETO 모션`** 패널이 보이면 끝입니다.
-`Item` 탭에도 `ZEPETO` 탭에도 같은 패널이 나옵니다.
-
-> 애드온 파일을 고친 뒤에는 A 방법이면 **Install from Disk** 를 다시 해서 덮어쓰고 Blender를 재시작,
-> B 방법이면 **Run Script** 를 다시 누르면 됩니다.
+설치하지 않고 이번 한 번만 써 보려면 **Scripting** 워크스페이스에서 그 파일을 **Open** 하고
+**Run Script**(`Alt+P`)를 눌러도 됩니다. Blender를 끄면 사라집니다.
 
 ---
 

@@ -5,7 +5,7 @@ base model found: True
   skinned meshes: 1  animator: True  avatar: ZEPETO_BASE isHuman=True
 export -> True
   message: ZEPETO 리그를 내보냈습니다: Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx / Avatar: ZepetoBaseModelAvatar (isHuman=True)
-fbx exists: True  size=1400KB
+fbx exists: True  size=1393KB
 animationType: Human
   avatar 'ZepetoBaseModelAvatar' isValid=True isHuman=True
   meshes in fbx: 1  avatars: 1

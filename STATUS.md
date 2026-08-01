@@ -36,7 +36,8 @@
 
 | 무엇 | 결과 |
 | --- | --- |
-| Blender 애드온 (헤드리스 5.2.0 LTS) | **28 / 28 통과** — `BlenderMotion/headless_check.py` (`%TEMP%\zepeto_headless_check\result.txt`의 `pass=28 fail=0`) |
+| Blender 애드온 (헤드리스 5.2.0 LTS) | **29 / 29 통과** — `BlenderMotion/headless_check.py` (`%TEMP%\zepeto_headless_check\result.txt`의 `pass=29 fail=0`) |
+| Blender 패널 draw (창 있는 5.2.0 LTS) | **17 / 17 통과** — `BlenderMotion/ui_check.py`. 헤드리스가 닿을 수 없는 유일한 구간입니다 (아래 상자) |
 | Unity 자체 테스트 | **전 항목 통과** — `zepeto-helper-selftest.result.txt`의 `pass=`/`fail=` 집계. 개수와 그룹별 명세는 `Documentation~/QA_AUDIT.md`의 `최근 결과`가 원본이고 여기서 옮겨 적지 않습니다 |
 | 리그 export 러너 | **4 / 4 통과** — 바이너리 검증 포함, 씬 오염 없음 |
 | **라이브 왕복 실측** | **통과** — 팔 0.272m / 다리 0.195m, 1.96s→3.96s, 1.5초 반영 |
@@ -44,6 +45,41 @@
 | 컴파일 (`csc.exe` + Unity 양쪽) | 에러 0 · 경고 0 |
 | 헬퍼 창 7단계 육안 확인 | 완료 (캡처 8장, 그중 7장이 신규·재촬영) |
 
+> ### 애드온은 이제 이 컴퓨터의 Blender에 실제로 설치돼 있습니다
+>
+> 이번 회차 전까지 애드온은 **한 번도 설치된 적이 없었습니다.**
+> `%APPDATA%\Blender Foundation\Blender\5.2\scripts\addons\`가 비어 있었고 설정 폴더도 비어 있었습니다
+> (= 저장된 환경설정 자체가 없었습니다). 그래서 Blender를 열어도 사이드바에 `ZEPETO` 탭이 없었고,
+> 헤드리스 검사 28개는 전부 `sys.path`에 폴더를 끼워 넣고 모듈을 직접 import해서 통과한 것이었습니다.
+> **검사가 통과한다는 것과 사용자가 쓸 수 있다는 것은 다른 문장이었습니다.**
+>
+> ```
+> "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background \
+>     --python BlenderMotion\install_addon.py
+> ```
+>
+> Blender의 설치는 링크가 아니라 **복사**입니다. `BlenderMotion\zepeto_motion_helper.py`를 고친 뒤
+> 다시 설치하지 않으면 Blender는 낡은 사본을 계속 돌립니다 — 에러가 나지 않으므로 스스로 드러나지
+> 않습니다. `headless_check.py`의 `install:copy-matches-source`가 두 파일을 비교해서 그 상태를 실패로
+> 만듭니다(설치돼 있지 않은 것 자체는 실패가 아니라 NOTE입니다).
+>
+> ### 패널 `draw()`는 창이 있어야만 실행됩니다
+>
+> `--background`에는 창도 영역도 없고, `UILayout`은 실제로 그려지는 영역 안에서만 만들어집니다.
+> 그래서 헤드리스 검사는 오퍼레이터와 순수 함수만 덮었고, **사용자가 실제로 보는 패널은 아무도 실행해
+> 본 적이 없었습니다.** `draw` 안에서 난 예외는 Blender를 죽이지 않고 콘솔에 traceback만 찍은 뒤 그
+> 패널을 반쯤 그리다 말기 때문에, 증상은 "버튼이 안 보여요"로만 나타납니다.
+>
+> ```
+> "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" \
+>     --factory-startup --python BlenderMotion\ui_check.py
+> ```
+>
+> `--background`를 붙이면 안 됩니다. 리그 없음 / 경로 깨짐 / 리그 있음 / 숨긴 뼈 보기 / 저장 폴더 깨짐 /
+> 이름 잘못됨 6가지 상태를 강제로 그려 보고, 각 상태에서 어떤 버튼이 실제로 layout에 들어갔는지까지
+> 셉니다. 검사가 스스로 죽어 0번 그리고 통과하는 것을 막으려고 `ui:draws-at-all`이 draw 호출 횟수를
+> 따로 단언합니다 — 실제로 첫 판이 그렇게 거짓 실패했습니다.
+>
 > ### Unity Personal은 `-batchmode`를 쓸 수 없습니다
 >
 > 라이선스는 유효합니다(Personal, `%LOCALAPPDATA%\Unity\licenses\UnityEntitlementLicense.xml`).

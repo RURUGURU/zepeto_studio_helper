@@ -46,7 +46,7 @@ namespace Easy.ZepetoHelper.SelfTestEditor
         /// 결과 파일이 절대 깨끗해 보이지 않게 한다. 검사를 추가하면 이 숫자도 함께 올려야 하고,
         /// 잊으면 실패가 나는 것이 의도다.
         /// </summary>
-        private const int ExpectedCheckCount = 67;
+        private const int ExpectedCheckCount = 70;
 
         private static readonly BindingFlags AnyInstance = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
         private static readonly BindingFlags AnyStatic = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
@@ -173,6 +173,7 @@ namespace Easy.ZepetoHelper.SelfTestEditor
             try
             {
                 TestNoHardcodedAccount();
+                TestExportedRigArtifact();
                 TestMcpCodeRemoved();
                 TestVersionComparison();
                 TestSdkDetection();
@@ -528,6 +529,54 @@ namespace Easy.ZepetoHelper.SelfTestEditor
         /// 그 제거의 영수증이고, QA_AUDIT.md의 해당 줄이 그 산문 쪽 절반이다. 한 번의 되돌리기로 다섯이
         /// 함께 실패하겠지만 각 이름이 기록된 결과 파일의 한 줄이므로 하나로 합치지 않는다.
         /// </summary>
+        /// <summary>
+        /// 저장소에 커밋되는 리그 fbx가 무엇을 품고 있는지 본다.
+        ///
+        /// [QC][Invariant:no_personal_account_data_shipped]
+        /// no-personal-id-in-source는 패키지의 "텍스트" 파일만 훑는다. 그런데 계정 이름이 새어 나간
+        /// 실제 경로는 텍스트가 아니라 이 바이너리였다. Unity FBX Exporter는 재질의 텍스처 경로를
+        /// FbxFileTexture에 절대 경로로 한 번, 상대 경로로 한 번 적는데, ZepetoBaseModel의 텍스처는
+        /// prefab 안에 끼워 넣어진 서브애셋이라 그 "경로"가 .prefab 파일 자신이었다. 결과는 두 가지다.
+        ///   ① Blender가 리그를 불러올 때마다 그 .prefab을 이미지로 열려다 실패해 콘솔에 ERROR를 찍는다
+        ///   ② 그 절대 경로에 내보낸 사람의 계정 이름이 들어간 채 커밋된다
+        /// 고친 곳은 RigExport.cs의 StripTexturesForExport다. 여기서는 그 수정이 실제 산출물에
+        /// 반영됐는지, 그리고 다시 새어 들어오지 않는지를 파일 자체를 읽어서 확인한다.
+        ///
+        /// 파일이 없으면 건너뛰지 않고 FAIL이다 - 이 fbx는 3번 카드의 산출물이자 저장소에 추적되는
+        /// 파일이고, 없다는 것은 검사가 아무것도 증명하지 못했다는 뜻이다.
+        /// </summary>
+        private static void TestExportedRigArtifact()
+        {
+            const string rigPath = "Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx";
+            string absolute = Path.GetFullPath(rigPath);
+
+            if (!File.Exists(absolute))
+            {
+                Fail("rig-artifact:present", rigPath + " is missing, so nothing about the shipped rig was verified");
+                Fail("rig-artifact:no-prefab-texture", "no file to read");
+                Fail("rig-artifact:no-user-path", "no file to read");
+                return;
+            }
+
+            Check("rig-artifact:present", true, string.Empty);
+
+            // fbx는 바이너리지만 경로 문자열은 압축되지 않은 채 그대로 들어간다. 그래서 바이트 단위로
+            // 찾으면 된다. Latin1로 읽는 이유는 어떤 바이트도 잃지 않고 1바이트=1문자로 대응시키기
+            // 위해서다 - UTF8로 읽으면 잘못된 시퀀스가 치환 문자로 뭉개져 검색이 빗나간다.
+            string bytes = File.ReadAllText(absolute, System.Text.Encoding.GetEncoding("ISO-8859-1"));
+
+            Check("rig-artifact:no-prefab-texture", bytes.IndexOf(".prefab", StringComparison.OrdinalIgnoreCase) < 0,
+                "the exported rig still references a .prefab as a texture, so Blender logs "
+                + "\"IMB_load_image_from_memory: unknown file-format\" on every import");
+
+            // 이 기계의 계정 이름을 찾는 것이 아니라 ":\Users\" 라는 모양 자체를 찾는다. 다른 사람이
+            // 내보낸 파일이 커밋됐을 때도 걸려야 하기 때문이다. 드라이브 문자는 C:일 필요가 없다.
+            int userPath = bytes.IndexOf(":\\Users\\", StringComparison.OrdinalIgnoreCase);
+            Check("rig-artifact:no-user-path", userPath < 0,
+                "the exported rig embeds a user profile path :: "
+                + (userPath < 0 ? string.Empty : bytes.Substring(Math.Max(0, userPath - 1), 40)));
+        }
+
         private static void TestMcpCodeRemoved()
         {
             Type type = typeof(ZepetoStudioHelperWindow);

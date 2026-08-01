@@ -87,6 +87,32 @@ def load_addon():
     return mod
 
 
+def _installed_addon_path():
+    """
+    이 컴퓨터의 Blender가 실제로 불러오는 애드온 파일의 경로. 설치돼 있지 않으면 "".
+
+    addon_utils.modules()를 쓰는 이유는 경로를 추측하지 않기 위해서다. Blender는 버전마다, 그리고
+    설치 방식(레거시 scripts/addons vs 4.2+ extensions)마다 다른 폴더에 넣는다. 그 폴더를 여기서
+    다시 계산하면 Blender가 어디에 넣었는지가 아니라 우리가 어디에 넣었다고 믿는지를 검사하게 된다.
+
+    --factory-startup으로 돌 때도 이 목록은 디스크의 애드온 폴더를 그대로 보여 준다. 켜져 있는지가
+    아니라 설치돼 있는지를 묻는 것이라 그게 맞다.
+    """
+    try:
+        import addon_utils
+    except ImportError:
+        return ""
+    for module in addon_utils.modules():
+        if module.__name__ == "zepeto_motion_helper":
+            path = getattr(module, "__file__", "") or ""
+            # 이 저장소의 파일을 그대로 가리키고 있으면(스크립트 폴더를 직접 등록한 경우) 사본이
+            # 아니므로 비교할 것이 없다.
+            if os.path.normcase(os.path.abspath(path)) == os.path.normcase(ADDON_SRC):
+                return ""
+            return path
+    return ""
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     if PROJECT_TIE:
@@ -116,6 +142,27 @@ def main():
     check("addon:project-resolved-at-runtime", "UNITY_PROJECT = r" not in src,
           "module-level constant still present" if "UNITY_PROJECT = r" in src
           else "no frozen module-level constant")
+
+    # ---- 2b. 설치된 사본이 이 저장소와 같은 코드인가 -----------------------
+    # Blender의 "Install from Disk"는 링크가 아니라 복사다. 그래서 여기 있는 파일을 고쳐도 사용자의
+    # Blender는 예전 사본을 계속 돌린다 - "고쳤는데 그대로예요"의 전형적인 원인이고, 아무 에러도 나지
+    # 않아서 스스로는 절대 드러나지 않는다. install_addon.py를 다시 돌리면 맞춰진다.
+    #
+    # 설치가 안 되어 있는 것 자체는 실패가 아니다. 이 검사 묶음은 --factory-startup으로도 돌고, CI처럼
+    # 애드온을 설치하지 않는 환경도 정상이다. 설치되어 '있는데' 내용이 다를 때만 실패다.
+    installed_copy = _installed_addon_path()
+    if not installed_copy:
+        note("install:not-installed",
+             "이 컴퓨터의 Blender에 설치돼 있지 않습니다 (install_addon.py로 설치할 수 있습니다)")
+    else:
+        try:
+            copy_src = open(installed_copy, encoding="utf-8").read()
+        except OSError as exc:
+            copy_src = ""
+            note("install:copy-unreadable", str(exc))
+        check("install:copy-matches-source", copy_src == src,
+              "설치된 사본이 낡았습니다 (%s). install_addon.py를 다시 실행하세요" % installed_copy
+              if copy_src != src else installed_copy)
 
     # ---- 3. 실행 시점 해석, 저장 안 한 .blend (새 씬의 경우) ---------------
     try:
