@@ -39,30 +39,34 @@ Humanoid 매핑이 깨지므로 그대로 쓴다.
 
 ## 얼굴에 대해
 
-**얼굴 모션은 된다. 다만 눈과 턱뿐이다.** 실제로 확인한 사실이다 - 얼굴 뼈만 움직이는 클립을
-만들어 Unity에 임포트했더니 Humanoid 클립 안에 이 커브들이 값이 변하는 채로 들어왔다:
-
-    Jaw Close            변화폭 2.60
-    Left/Right Eye Down-Up   각 1.64
-    Left/Right Eye In-Out    각 0.34
-
-그 클립의 커브 130개 중 변화폭 상위 5개가 전부 이것들이었다. 즉 파이프라인이 얼굴을 버리지 않는다.
-
-되는 뼈는 셋뿐이다. 리그 .meta의 humanDescription이 이렇게 매핑한다:
+여기서 키를 찍을 수 있는 얼굴 뼈는 셋뿐이고, 되는 것은 '눈동자 방향'과 '입 벌리기' 둘이다.
+리그의 humanDescription이 이렇게 매핑한다:
 
     eye_L -> LeftEye      eye_R -> RightEye      mouth -> Jaw
 
-**함정: 턱을 움직이는 뼈는 `jaw`가 아니라 `mouth`다.** `jaw`라는 이름의 뼈도 리그에 있지만 매핑이
-없어서 애드온이 숨겨 놓았고, 돌려도 Unity에서 조용히 사라진다. `nose` · `lip_L` · `lip_R`도 마찬가지다.
+실제로 건너가는 것을 확인했다. 얼굴만 움직이는 클립을 Unity에 임포트했더니 Humanoid 클립 안에
+Jaw Close(변화폭 2.60), Left/Right Eye Down-Up(각 1.64), Eye In-Out(각 0.34)이 값이 변하는 채로
+들어왔고, 그 클립의 커브 130개 중 변화폭 상위 5개가 전부 이것들이었다.
 
-그리고 **표정은 만들 수 없다.** 웃거나 찡그리는 것은 보통 블렌드셰이프(모프)로 하는데, 이 리그의
-메시에는 블렌드셰이프가 **0개**이고, 애초에 Humanoid AnimationClip은 블렌드셰이프를 담지 못한다.
-**눈은 깜빡이지 않는다.** 눈꺼풀 뼈가 아예 없다 - 얼굴 쪽 뼈는 eye_L / eye_R / mouth 셋뿐이고
-lid, blink 같은 이름은 하나도 없다. eye_L을 돌리면 움직이는 것은 눈알 385개 정점뿐이라
-'Left Eye Down-Up'은 눈동자가 위아래를 보는 것이지 눈을 감는 것이 아니다.
-그래서 여기서 할 수 있는 얼굴 연기는 '눈동자 방향'과 '입 벌리기' 둘뿐이다.
+함정: 턱을 움직이는 뼈는 jaw가 아니라 mouth다. jaw라는 이름의 뼈도 있지만 매핑이 없어서
+애드온이 숨겨 놓았고, 돌려도 Unity에서 조용히 사라진다. nose / lip_L / lip_R도 마찬가지다.
 
-축은 다른 뼈와 같은 규칙이다: 눈은 X+가 아래로, Z가 좌우. 입(턱)은 X+가 벌리기.
+## 눈 깜빡임은 여기서 못 만든다 (제페토가 못 해서가 아니다)
+
+eye_L을 돌리면 움직이는 것은 눈알 385개 정점뿐이다. 눈꺼풀 뼈가 아예 없다.
+
+그런데 진짜 아바타는 깜빡인다. Play 중 조사해 보면 body 메시에 블렌드셰이프가 250개 있고
+그중 zepeto.eyeBlinkLeft / mouthSmileLeft / browInnerUp 같은 것이 79개다. 제페토 공식 클립
+(zepeto.studio@3.2.16의 ANI_039_v03.anim)도 blendShape.zepeto.* 커브를 57종 담고 있다.
+path는 "body", classID는 137(SkinnedMeshRenderer)이다.
+
+빠진 곳은 우리가 내보내는 몸이다. ZepetoBaseModel.prefab 자체에 블렌드셰이프가 0개라
+(m_Shapes: vertices: [] shapes: [] channels: [], 메시 4개 전부) Blender에는 섞을 모양이 없다.
+얼굴 모양은 Play 중 서버에서 내려올 때 붙는다.
+
+넣으려면 Unity 쪽에서 추출된 .anim에 커브를 직접 써야 한다. 지금 이 저장소에는 그 기능이 없다.
+
+축은 다른 뼈와 같다: 눈은 X가 위아래, Z가 좌우. 입(턱)은 X+가 벌리기.
 눈은 좌우 대칭이라 Z만 부호를 뒤집는다 - pose()가 알아서 처리한다.
 
 ## 규칙

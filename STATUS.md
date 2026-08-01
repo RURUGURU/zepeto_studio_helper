@@ -140,6 +140,30 @@ README·QA_AUDIT·이 문서가 각자 들고 있다가 장수와 상태가 서�
 
 ---
 
+## 얼굴: 아바타는 깜빡이는데 우리 파이프라인은 못 만든다
+
+세 곳을 직접 열어 확인한 결과입니다.
+
+| 무엇 | 블렌드셰이프 |
+| --- | --- |
+| SDK 기본 몸 `ZepetoBaseModel.prefab` (우리가 Blender로 내보내는 것) | **0개** |
+| SDK 공식 클립 `ANI_039_v03.anim` | 커브 **57종** (`blendShape.zepeto.eyeBlinkLeft`, `path: body`, `classID: 137`) |
+| **Play 중 실제 아바타**의 `body` 메시(`SHARED_MESH`) | **250개**, 그중 깜빡임·눈썹·미소 계열 **79개** |
+
+즉 제페토 아바타도, 제페토 공식 모션도, Unity 클립 형식도 전부 표정을 지원합니다.
+**빠진 곳은 Blender로 내보내는 기본 몸 하나뿐입니다** - 섞을 모양이 없으니 키를 찍을 수 없습니다.
+
+> 한때 이 프로젝트 문서들이 "Humanoid AnimationClip은 블렌드셰이프를 담지 못한다"고 적었습니다.
+> **틀린 설명이었습니다.** 공식 클립이 바로 그것을 담고 있습니다.
+
+뼈로 되는 얼굴은 `eye_L`/`eye_R`(눈동자 방향)와 `mouth`(턱)뿐입니다. `mouth`가 Jaw로 매핑되고
+`jaw`라는 이름의 뼈는 매핑이 없다는 것이 이 리그의 함정입니다.
+
+**아직 없는 것:** 추출된 `.anim`에 `blendShape.zepeto.*` 커브를 넣는 기능. 원리와 바인딩은
+확인했지만 구현하지 않았습니다.
+
+---
+
 ## ⚠️ 모션은 아이템으로 못 올립니다 (이전 결론 유지)
 
 조사 결과(공식 문서 · 스튜디오 제품 목록 · 크리에이터 프로그램 · World SDK 제스처 API ·
@@ -631,6 +655,7 @@ blender.exe --background --factory-startup --python BlenderMotion/make_live_fixt
 | `zepeto-helper-selftest.trigger` | 자체 테스트 전체 → `.result.txt` (거절 시 `.skipped.txt`) |
 | `zepeto-livereload.trigger` | Play 왕복 실측 (**픽스처 2개 필요** — 위 생성기로 먼저 만드세요) |
 | `zepeto-rig-export.trigger` | 리그 내보내기 + assertion 4개 |
+| `zepeto-face-probe.trigger` | Play 중 실제 아바타의 블렌드셰이프 조사 → `.report.txt`. '왜 눈이 안 깜빡이나'의 근거를 만든 도구입니다 |
 | `zepeto-custom-motion.trigger` | 커스텀 모션 end-to-end. **파일 내용에 FBX 경로를 적습니다** (예: `Assets/CustomMotions/Wave_Hello.fbx`) |
 
 > **`-quit`을 쓰지 마세요.** 트리거는 `[InitializeOnLoadMethod]` → `delayCall`로 실행되는데 `-quit`은
