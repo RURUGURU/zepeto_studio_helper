@@ -1,0 +1,18 @@
+{
+  "name": "com.easy.zepeto-helper",
+  "displayName": "Easy ZEPETO Studio Helper",
+  "version": "0.10.1",
+  "unity": "2020.3",
+  "description": "초보자도 화면 안내를 따라 1~7번 순서로 ZEPETO 의상 확인, 동작 선택, Blender 모션 왕복, 클립 조정, .zepeto 생성까지 진행하는 Editor helper 패키지.",
+  "keywords": [
+    "zepeto",
+    "studio",
+    "editor",
+    "fitting",
+    "export",
+    "animation"
+  ],
+  "author": {
+    "name": "easy"
+  }
+}

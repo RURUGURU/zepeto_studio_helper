@@ -1,0 +1,31 @@
+*.tgz
+*.zip
+*.unitypackage
+Library/
+Temp/
+Obj/
+Logs/
+UserSettings/
+.git/
+.vs/
+.vscode/
+*.csproj
+*.sln
+*.user
+*.pidb
+*.booproj
+
+# OS 찌꺼기. 이 파일이 존재하는 순간 npm은 .gitignore를 아예 보지 않으므로,
+# 옆에 있는 .gitignore의 OS 규칙이 자동으로 따라오지 않는다. npm 기본 제외 목록은
+# .DS_Store는 걸러 주지만 Windows 쪽 두 개는 걸러 주지 않는다. docs/images/를
+# 탐색기로 열어 보다 생긴 썸네일 캐시가 git에는 안 보이면서 tarball에는 들어갈 수 있다.
+# 실제로 이 트리에는 Packages/.DS_Store가 한 단계 위에 놓여 있었다.
+.DS_Store
+Thumbs.db
+Desktop.ini
+desktop.ini
+
+# 문서 폴더는 일부러 다르게 취급한다.
+# docs/ (ENVIRONMENT.md + images)는 README가 직접 링크하고 이미지도 거기서 불러오므로 배포본에 포함한다.
+# Documentation~/ (QA_AUDIT.md)는 내부 QA·감사 기록이라 저장소에만 두고 tarball에는 넣지 않는다.
+Documentation~/
