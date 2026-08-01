@@ -1,0 +1,261 @@
+"""
+10초짜리 춤 한 곡을 실제로 만들어서 Unity로 내보낸다.
+
+실행:
+    "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe" ^
+        --background BlenderMotion\\zepeto_motion.blend --python BlenderMotion\\make_dance.py
+
+이 파일이 존재하는 이유는 "만들 수 있다"와 "만들어 봤다"가 다른 문장이기 때문이다. 검사 묶음들은
+버튼 하나하나가 약속대로 도는지를 증명하지만, 그것들을 엮어서 사람이 춤이라고 부를 만한 것이 실제로
+나오는지는 증명하지 않는다. 이 스크립트는 그 하나를 증명한다 - 240프레임짜리 안무를 끝까지 찍고,
+루프를 닫고, 내보내고, 뼈가 실제로 얼마나 움직였는지를 잰다.
+
+## 안무에 대해
+
+특정 곡의 실제 안무는 저작물이므로 그대로 옮기지 않는다. 여기 있는 것은 **창작 동작**이고,
+120 BPM(K-pop에서 가장 흔한 템포대) 기준 20비트짜리 루프다. 한 비트가 정확히 12프레임이라
+어떤 120 BPM 곡에도 박자가 맞는다.
+
+    24 fps ÷ (120 BPM ÷ 60초) = 12 프레임/비트
+    240 프레임 ÷ 12 = 20 비트 = 10초
+
+## 뼈 회전축 (렌더와 수치 측정으로 확인함, axisnum 측정치 기준)
+
+좌표계: +X = 캐릭터의 왼쪽, -Y = 캐릭터가 바라보는 앞, +Z = 위.
+rest pose는 T자세다 - 팔이 좌우로 뻗어 있으므로, 팔을 내리려면 Z를 음수로 크게 줘야 한다.
+
+    upperArm_L/R     X 비틀기      Y+ 뒤로        Z+ 위로 (양팔 같은 부호)
+    lowerArm_L/R     X 비틀기      Y+ 뒤로        Z+ 팔꿈치 굽힘
+    spine/chest/     X 몸통 회전    Y+ 뒤로 젖힘    Z+ 오른쪽으로 기울임
+      chestUpper/neck
+    head             X+ 숙임       Y  고개 돌리기   Z+ 오른쪽 기울임
+    upperLeg_L/      X 비틀기      Y+ 뒤로        Z+ 바깥으로 벌림 (양다리 같은 부호)
+      upperReg_R
+    lowerLeg_L/      X 비틀기      Y+ 무릎 굽힘    -
+      lowerReg_R
+
+오른쪽 다리 이름이 upperReg_R / lowerReg_R인 것은 ZEPETO 원본 리그의 오타다. 고치면 Unity의
+Humanoid 매핑이 깨지므로 그대로 쓴다.
+
+## 규칙
+
+전부 **회전**뿐이다. 이동(location)과 크기(scale)는 한 번도 건드리지 않는다 - Humanoid 리타게팅은
+회전만 옮기므로 나머지는 Unity에서 조용히 사라진다. 리그 오브젝트도 건드리지 않는다. 즉 이 안무는
+애드온의 내보내기 게이트를 우회하지 않고 정면으로 통과한다.
+"""
+
+import math
+import os
+import sys
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
+
+import bpy
+import zepeto_motion_helper as addon
+
+FPS = 24
+BPM = 120
+BEAT = FPS * 60 // BPM           # 12 프레임
+BEATS = 20
+LAST = BEAT * BEATS              # 240
+MOTION_NAME = "DanceDemo10s"
+
+# 한 비트씩. 각 항목은 {뼈 이름: (X도, Y도, Z도)}이고, 적지 않은 뼈는 rest(0,0,0)로 돌아간다.
+# 매 비트마다 전신을 다시 적는 이유는, 빠뜨린 뼈가 이전 비트의 각도를 그대로 들고 가면 안무가
+# 아니라 '한쪽으로 계속 쌓이는 자세'가 되기 때문이다.
+def pose(arm_l=(0, 0, -70), arm_r=(0, 0, -70), fore_l=(0, 0, 15), fore_r=(0, 0, 15),
+         spine=(0, 0, 0), chest=(0, 0, 0), chest_upper=(0, 0, 0), head=(0, 0, 0),
+         leg_l=(0, 0, 0), leg_r=(0, 0, 0), knee_l=(0, 0, 0), knee_r=(0, 0, 0)):
+    """기본값은 '차렷에 가까운 준비 자세'다. 바꾸고 싶은 부위만 이름으로 넘긴다."""
+    return {
+        "upperArm_L": arm_l, "upperArm_R": arm_r,
+        "lowerArm_L": fore_l, "lowerArm_R": fore_r,
+        "spine": spine, "chest": chest, "chestUpper": chest_upper, "head": head,
+        "upperLeg_L": leg_l, "upperReg_R": leg_r,
+        "lowerLeg_L": knee_l, "lowerReg_R": knee_r,
+    }
+
+
+CHOREOGRAPHY = [
+    # 1-4비트: 좌우로 포인트하며 시작
+    pose(spine=(0, -4, 0), knee_l=(0, 6, 0), knee_r=(0, 6, 0)),                      # 0  준비
+    pose(arm_r=(0, -15, 60), fore_r=(0, 0, 10), arm_l=(0, -20, -65), fore_l=(0, 0, 25),
+         spine=(0, 0, -12), chest=(0, 0, -8), head=(0, 0, -6)),                      # 1  오른팔 위 포인트
+    pose(arm_l=(0, -15, 60), fore_l=(0, 0, 10), arm_r=(0, -20, -65), fore_r=(0, 0, 25),
+         spine=(0, 0, 12), chest=(0, 0, 8), head=(0, 0, 6)),                         # 2  왼팔 위 포인트
+    # 팔꿈치를 거의 펴는 것이 중요하다. fore를 35도까지 굽혔더니 앞으로 뻗은 팔이 얼굴 옆에서
+    # 구겨진 모양이 되어 '숙였다'가 전혀 읽히지 않았다.
+    pose(arm_l=(0, -85, -8), arm_r=(0, -85, -8), fore_l=(0, 0, 5), fore_r=(0, 0, 5),
+         spine=(0, -16, 0), chest=(0, -10, 0), head=(12, 0, 0)),                     # 3  양팔 앞으로 뻗기
+    # T자세는 이 리그의 rest이므로, 팔을 수평 근처에 두면 '포즈를 안 잡은 것'과 구별되지 않는다.
+    # 정면에서 실루엣이 살려면 수평에서 확실히 벗어나야 한다.
+    pose(arm_l=(0, 5, 48), arm_r=(0, 5, 48), fore_l=(0, 0, 8), fore_r=(0, 0, 8),
+         spine=(0, 14, 0), chest=(0, 8, 0), head=(-14, 0, 0)),                       # 4  양팔 V + 젖힘
+
+    # 5-8비트: 좌우 스텝에서 팔 웨이브로
+    pose(arm_r=(0, -40, -30), arm_l=(0, 0, -60), fore_r=(0, 0, 20),
+         leg_r=(0, 0, 22), spine=(0, 0, 10), chest=(0, 0, 6)),                       # 5  오른쪽 스텝
+    pose(arm_l=(0, -40, -30), arm_r=(0, 0, -60), fore_l=(0, 0, 20),
+         leg_l=(0, 0, 22), spine=(0, 0, -10), chest=(0, 0, -6)),                     # 6  왼쪽 스텝
+    pose(arm_l=(0, 0, 70), arm_r=(0, 0, 70), fore_l=(0, 0, 20), fore_r=(0, 0, 20),
+         spine=(0, 4, 0)),                                                           # 7  양팔 위로
+    pose(arm_l=(0, -20, 55), arm_r=(0, 20, 55), fore_l=(0, 0, 70), fore_r=(0, 0, 70),
+         spine=(0, 0, 8), head=(0, 0, 5)),                                           # 8  웨이브 (팔꿈치)
+
+    # 9-12비트: 몸통 회전 두 번, 낮췄다가 튀어오르기
+    # 몸통 회전(spine X)만으로는 정면에서 거의 안 보인다 - 머리가 회전축 위에 있어서 실루엣이
+    # 그대로다. 한쪽 팔을 몸 앞으로 크게 가로지르게 해서 회전이 눈에 보이게 만든다.
+    pose(spine=(28, 0, 0), chest=(16, 0, 0),
+         arm_l=(0, -70, -10), fore_l=(0, 0, 50), arm_r=(0, 25, -45), fore_r=(0, 0, 15),
+         head=(0, 0, 8)),                                                            # 9  몸통 오른쪽 회전
+    pose(spine=(-28, 0, 0), chest=(-16, 0, 0),
+         arm_r=(0, -70, -10), fore_r=(0, 0, 50), arm_l=(0, 25, -45), fore_l=(0, 0, 15),
+         head=(0, 0, -8)),                                                           # 10 몸통 왼쪽 회전
+    # 원래 여기는 '무릎 굽혀 낮추기'였는데 정면에서 아무것도 보이지 않았다. 웅크리려면 골반이
+    # 내려가야 하는데 골반은 뼈가 아니라 아마추어 오브젝트이고, 그것을 움직이는 것은 이 파이프라인이
+    # 금지하는 바로 그 동작이다(아바타가 화면 밖으로 걸어나간다). 회전만으로 낮은 자세를 흉내내는
+    # 대신, 다리를 벌리고 상체를 크게 기울이는 동작으로 바꿨다 - 둘 다 정면에서 잘 읽힌다.
+    pose(leg_l=(0, 0, 28), leg_r=(0, 0, 28), knee_l=(0, 12, 0), knee_r=(0, 12, 0),
+         spine=(0, 0, -22), chest=(0, 0, -10), head=(0, 0, -12),
+         arm_l=(0, -20, -78), fore_l=(0, 0, 20), arm_r=(0, -10, -30), fore_r=(0, 0, 10)),  # 11 다리 벌려 왼쪽으로
+    pose(arm_l=(0, 0, 75), arm_r=(0, 0, 75), fore_l=(0, 0, 5), fore_r=(0, 0, 5),
+         spine=(0, 8, 0), head=(-15, 0, 0)),                                         # 12 튀어오르기
+
+    # 13-16비트: 대각선 포인트 두 번, 크로스, 활짝
+    pose(arm_r=(0, -35, 40), fore_r=(0, 0, 15), arm_l=(0, 15, -60),
+         head=(18, 0, 0), spine=(0, 0, -8)),                                         # 13 오른팔 대각선
+    pose(arm_l=(0, -35, 40), fore_l=(0, 0, 15), arm_r=(0, 15, -60),
+         head=(-10, 0, 0), spine=(0, 0, 8)),                                         # 14 왼팔 대각선
+    pose(arm_l=(0, -75, -25), arm_r=(0, -75, -25), fore_l=(0, 0, 60), fore_r=(0, 0, 60),
+         spine=(0, -8, 0), head=(8, 0, 0)),                                          # 15 팔 크로스
+    # 여기도 원래 수평에 가까운 '활짝'이라 T자세와 구별되지 않았다. 한 팔 위 / 한 팔 아래의
+    # 대각선으로 바꾸면 실루엣이 확실히 다르고, 앞뒤 비트와도 겹치지 않는다.
+    pose(arm_l=(0, -10, 62), fore_l=(0, 0, 10), arm_r=(0, 10, -72), fore_r=(0, 0, 22),
+         spine=(0, 8, -10), chest=(0, 4, -6), head=(-10, 0, -6)),                    # 16 대각선 (왼팔 위)
+
+    # 17-19비트: 힙 스텝 두 번 뒤 준비 자세로 수렴 (20비트째는 make_loop이 채운다)
+    pose(arm_r=(0, -30, -50), arm_l=(0, 20, -40), fore_r=(0, 0, 30),
+         leg_r=(0, 0, 18), leg_l=(0, -8, 0), spine=(0, 0, 14), chest=(0, 0, 6)),     # 17 오른쪽 힙
+    pose(arm_l=(0, -30, -50), arm_r=(0, 20, -40), fore_l=(0, 0, 30),
+         leg_l=(0, 0, 18), leg_r=(0, -8, 0), spine=(0, 0, -14), chest=(0, 0, -6)),   # 18 왼쪽 힙
+    pose(arm_l=(0, -12, -68), arm_r=(0, -12, -68), fore_l=(0, 0, 18), fore_r=(0, 0, 18),
+         spine=(0, -4, 0), knee_l=(0, 4, 0), knee_r=(0, 4, 0)),                      # 19 마무리
+]
+
+results = []
+
+
+def check(name, ok, detail=""):
+    results.append((name, bool(ok), detail))
+    print("%s %s :: %s" % ("PASS" if ok else "FAIL", name, detail))
+
+
+def apply_pose(rig, spec):
+    """한 비트의 포즈를 적용한다. spec에 없는 매핑 뼈는 rest로 되돌린다."""
+    for pose_bone in rig.pose.bones:
+        if not addon.is_mapped_bone(pose_bone.name):
+            continue
+        degrees = spec.get(pose_bone.name, (0.0, 0.0, 0.0))
+        pose_bone.rotation_euler = tuple(math.radians(d) for d in degrees)
+
+
+def main():
+    scene = bpy.context.scene
+    rig = addon.get_rig(bpy.context)
+    if rig is None:
+        check("dance:rig", False, "아마추어가 없다")
+        return finish()
+    check("dance:rig", addon.mapped_coverage(rig) == 54,
+          "쓸 수 있는 뼈 %d개" % addon.mapped_coverage(rig))
+
+    bpy.context.view_layer.objects.active = rig
+    if bpy.context.object.mode != "POSE":
+        bpy.ops.object.mode_set(mode="POSE")
+
+    # 2초짜리 기본 길이를 10초로 늘린다. frame_end는 make_loop이 루프 키를 찍는 자리이기도 하다.
+    scene.frame_start = 1
+    scene.frame_end = LAST
+    check("dance:timeline", scene.frame_end == LAST,
+          "%d ~ %d 프레임 (%.1f초 @ %dfps)" % (scene.frame_start, LAST, LAST / FPS, FPS))
+
+    # 이전 실행이 남긴 커브를 지운다. 안 지우면 예전 안무의 키가 사이사이에 남아 섞인다.
+    if rig.animation_data and rig.animation_data.action:
+        rig.animation_data.action = None
+
+    for index, spec in enumerate(CHOREOGRAPHY):
+        frame = 1 + index * BEAT
+        # frame_current에 대입하는 대신 frame_set을 쓴다. 대입은 평가를 뒤로 미뤄서, 그 다음에 넣은
+        # 회전을 오퍼레이터 호출 시점의 depsgraph 갱신이 애니메이션 값으로 덮어쓴다.
+        scene.frame_set(frame)
+        apply_pose(rig, spec)
+        bpy.ops.zepeto.key_pose()
+
+    times = addon.keyframe_times(rig)
+    check("dance:beats-keyed", len(times) == BEATS,
+          "%d개 비트: %s" % (len(times), times))
+
+    bpy.ops.zepeto.make_loop()
+    times = addon.keyframe_times(rig)
+    check("dance:loop-closed", LAST in times, "마지막 프레임 %d 키됨" % LAST)
+
+    # 첫 프레임과 마지막 프레임의 포즈가 실제로 같은지 - '반복해도 안 튀는가'의 정의.
+    scene.frame_set(scene.frame_start)
+    first = [tuple(pb.rotation_euler) for pb in rig.pose.bones]
+    scene.frame_set(LAST)
+    last = [tuple(pb.rotation_euler) for pb in rig.pose.bones]
+    worst = max((max(abs(a - b) for a, b in zip(f, l)) for f, l in zip(first, last)), default=0.0)
+    check("dance:loop-seamless", worst < 1e-4, "첫/끝 최대 각도차 %.2e rad" % worst)
+
+    # 정말 '춤'인가. 손과 발이 실제로 이동한 거리를 잰다. 키프레임 개수는 움직임을 증명하지 않는다 -
+    # 값이 같은 키 20개도 정지 화면이다.
+    travel = measure_travel(rig, scene)
+    for label, distance in sorted(travel.items()):
+        check("dance:moves-%s" % label, distance > 0.15, "이동 거리 %.3fm" % distance)
+
+    # 내보내기. 애드온의 게이트를 그대로 통과해야 한다 - 우회 경로는 쓰지 않는다.
+    bpy.ops.zepeto.locate_paths()
+    scene.zepeto_motion_name = MOTION_NAME
+    problems = addon.export_problems(scene, rig)
+    check("dance:gates-pass", not problems, "막는 이유: %s" % problems)
+    if problems:
+        return finish()
+
+    bpy.ops.zepeto.export()
+    out = os.path.join(bpy.path.abspath(scene.zepeto_export_dir), MOTION_NAME + ".fbx")
+    check("dance:fbx-written", os.path.isfile(out), out)
+    if os.path.isfile(out):
+        with open(out, "rb") as handle:
+            head = handle.read(18)
+        check("dance:binary-fbx", head.startswith(b"Kaydara FBX Binary"),
+              "%r, %d bytes" % (head, os.path.getsize(out)))
+
+    return finish()
+
+
+def measure_travel(rig, scene):
+    """한 바퀴 도는 동안 각 부위가 지나간 총 거리(월드 좌표)."""
+    watched = ("hand_L", "hand_R", "foot_L", "foot_R", "head")
+    previous = {}
+    total = dict.fromkeys(watched, 0.0)
+    for frame in range(scene.frame_start, LAST + 1):
+        scene.frame_set(frame)
+        bpy.context.view_layer.update()
+        for name in watched:
+            here = (rig.matrix_world @ rig.pose.bones[name].head).copy()
+            if name in previous:
+                total[name] += (here - previous[name]).length
+            previous[name] = here
+    return total
+
+
+def finish():
+    passed = sum(1 for _, ok, _ in results if ok)
+    failed = len(results) - passed
+    print("\n=== dance: pass=%d fail=%d ===" % (passed, failed))
+    return failed
+
+
+if __name__ == "__main__":
+    main()

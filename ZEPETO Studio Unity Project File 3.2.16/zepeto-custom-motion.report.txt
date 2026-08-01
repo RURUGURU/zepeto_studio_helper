@@ -1,86 +1,260 @@
 custom motion end-to-end
-fbx = Assets/CustomMotions/Wave_Hello.fbx
+fbx = Assets/CustomMotions/DanceDemo10s.fbx
 ----
 stage flags: 3 stage flag(s) captured
 PASS custom-motion:configured
-step 1 configure -> True : Wave_Hello.fbx 설정 완료 — Avatar는 이 FBX에서 생성 - 이 FBX의 뼈 이름이 ZEPETO 리그와 달라 Avatar를 복사하지 않았습니다 (55개 중 55개 없음, 예: hips), Root Transform 고정 (1개 클립)
+step 1 configure -> True : DanceDemo10s.fbx 설정 완료 — Animation Type = Humanoid, Avatar는 이 FBX에서 생성 (모션 자체의 뼈대를 기준으로 읽습니다), Root Transform 고정 (1개 클립)
 animationType = Human
 avatarSetup = CreateFromThisModel  sourceAvatar = NULL
-sub-assets in fbx: 48
-  GameObject 'Wave_Hello' hideFlags=NotEditable
-  GameObject 'Hips' hideFlags=NotEditable
-  Avatar 'Wave_HelloAvatar' hideFlags=NotEditable
-    avatar isValid=True isHuman=True
+sub-assets in fbx: 222
   AnimationClip '__preview__Scene' hideFlags=HideInHierarchy, NotEditable
-  Transform 'RightUpLeg' hideFlags=HideInHierarchy, NotEditable
-  Transform 'LeftToeBase' hideFlags=HideInHierarchy, NotEditable
-  Transform 'Wave_Hello' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'Head' hideFlags=HideInHierarchy, NotEditable
-  Transform 'LeftLeg' hideFlags=HideInHierarchy, NotEditable
-  Transform 'RightShoulder' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'RightArm' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'LeftLeg' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'LeftUpLeg' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'Chest' hideFlags=HideInHierarchy, NotEditable
-  Transform 'LeftUpLeg' hideFlags=HideInHierarchy, NotEditable
-  Transform 'Head' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'RightLeg' hideFlags=HideInHierarchy, NotEditable
-  Transform 'RightArm' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'RightUpLeg' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'RightShoulder' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'LeftToeBase' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'LeftArm' hideFlags=HideInHierarchy, NotEditable
-  Transform 'LeftFoot' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'RightFoot' hideFlags=HideInHierarchy, NotEditable
-  Transform 'Spine' hideFlags=HideInHierarchy, NotEditable
-  Transform 'Hips' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'RightForeArm' hideFlags=HideInHierarchy, NotEditable
-  Transform 'LeftForeArm' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'RightToeBase' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'LeftHand' hideFlags=HideInHierarchy, NotEditable
-  Transform 'RightForeArm' hideFlags=HideInHierarchy, NotEditable
-  Transform 'LeftShoulder' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'LeftFoot' hideFlags=HideInHierarchy, NotEditable
-  Transform 'LeftHand' hideFlags=HideInHierarchy, NotEditable
-  Transform 'RightFoot' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'LeftShoulder' hideFlags=HideInHierarchy, NotEditable
-  Transform 'LeftArm' hideFlags=HideInHierarchy, NotEditable
-  Transform 'RightLeg' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'LeftForeArm' hideFlags=HideInHierarchy, NotEditable
-  Transform 'RightHand' hideFlags=HideInHierarchy, NotEditable
-  Animator 'Wave_Hello' hideFlags=HideInHierarchy, NotEditable
-  Transform 'Chest' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'Spine' hideFlags=HideInHierarchy, NotEditable
-  Transform 'Neck' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'Neck' hideFlags=HideInHierarchy, NotEditable
-  GameObject 'RightHand' hideFlags=HideInHierarchy, NotEditable
-  Transform 'RightToeBase' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'DanceDemo10s' hideFlags=NotEditable
+  GameObject 'lowerLegTwist_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerArmTwist_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperArm_L_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'eLineOut_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'neck' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'jBone' hideFlags=HideInHierarchy, NotEditable
+  Transform 'chestUpper_scale' hideFlags=HideInHierarchy, NotEditable
+  Material 'eye' hideFlags=NotEditable
+  Transform 'DanceDemo10s' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'indexPro_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'headUpper' hideFlags=HideInHierarchy, NotEditable
+  Transform 'chest_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerReg_R' hideFlags=HideInHierarchy, NotEditable
+  Mesh 'body' hideFlags=NotEditable
+  Transform 'hairAll' hideFlags=HideInHierarchy, NotEditable
+  Transform 'thumbDis_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'chestUpper' hideFlags=HideInHierarchy, NotEditable
+  Transform 'shoulder_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'ringDis_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperLegTwist_L_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'iScale_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperArmTwist_L_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'foot_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'toes_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'ringInt_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'shoulder_L_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'shoulder_L_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'thumbPro_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'foot_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerArm_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'ringPro_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperArm_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerArmTwist_L_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'pelvis' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'nose' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerArm_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerArmTwist_L_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'middleInt_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'body' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperArm_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'indexInt_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'littlePro_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'littleDis_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'spine' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperArmTwist_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'thumbInt_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'hand_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'ringPro_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'head' hideFlags=HideInHierarchy, NotEditable
+  Transform 'indexPro_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'hand_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperRegTwist_R_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'middleDis_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'chestUpper' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'body' hideFlags=NotEditable
+  Transform 'middleInt_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'hips_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'littlePro_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'eLineIn_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'heel_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'heel_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerReg_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'jaw' hideFlags=HideInHierarchy, NotEditable
+  Transform 'heel_L' hideFlags=HideInHierarchy, NotEditable
+  Material 'eyelash' hideFlags=NotEditable
+  Transform 'upperArm_R_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerRegTwist_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'ringDis_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'ringInt_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'chest' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'hips_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerArm_L_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'shoulder_R_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'thumbInt_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperArmTwist_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'middleDis_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'thumbDis_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'eye_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'indexPro_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperRegTwist_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'neck_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperLeg_L_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerLegTwist_L_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerLeg_L_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'middleDis_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'middlePro_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'spine_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lip_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'jBone' hideFlags=HideInHierarchy, NotEditable
+  Transform 'nose' hideFlags=HideInHierarchy, NotEditable
+  Transform 'foot_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lip_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'middleInt_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperLeg_L' hideFlags=HideInHierarchy, NotEditable
+  SkinnedMeshRenderer 'body' hideFlags=HideInHierarchy, NotEditable
+  Transform 'ringPro_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperRegTwist_R_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'middlePro_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerArm_L_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'foreHead' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'ringInt_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperArmTwist_L_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lip_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'pelvis_scale' hideFlags=HideInHierarchy, NotEditable
+  Avatar 'DanceDemo10sAvatar' hideFlags=NotEditable
+    avatar isValid=True isHuman=True
+  Transform 'shoulder_R_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerReg_R_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'thumbPro_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperReg_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'chestUpper_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerRegTwist_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperLegTwist_L_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'iScale_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerRegTwist_R_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'iScale_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperLeg_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'shoulder_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'littleInt_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'spine_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerArmTwist_R_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'eye_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'foreHead' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerRegTwist_R_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'hips' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'shoulder_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'middleDis_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'headUpper' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperReg_R_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'foot_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerLeg_L_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'littleInt_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperArm_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'indexInt_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'middleInt_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerArm_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerArmTwist_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'indexDis_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'littleDis_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'indexDis_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'littleInt_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'ringDis_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'toes_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'heel_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'hand_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'middlePro_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'eLineOut_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperLeg_L_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerLeg_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerArm_R_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'neck_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'hips' hideFlags=NotEditable
+  Transform 'littleInt_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperReg_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'spine' hideFlags=HideInHierarchy, NotEditable
+  Transform 'thumbInt_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'thumbInt_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerArmTwist_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'littlePro_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'ringPro_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperLegTwist_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'hand_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'eye_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'littleDis_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperArmTwist_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerArmTwist_R_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'pelvis_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'littlePro_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperArmTwist_R_scale' hideFlags=HideInHierarchy, NotEditable
+  Animator 'DanceDemo10s' hideFlags=HideInHierarchy, NotEditable
+  Transform 'indexInt_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'indexInt_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'mouth' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerLegTwist_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'indexDis_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperLegTwist_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'head' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperReg_R_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'littleDis_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'pelvis' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperRegTwist_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'toes_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'eye_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperArmTwist_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'thumbDis_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperArmTwist_R_scale' hideFlags=HideInHierarchy, NotEditable
+  Material 'body' hideFlags=NotEditable
+  GameObject 'mouth' hideFlags=HideInHierarchy, NotEditable
+  Transform 'jaw' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'thumbDis_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'iScale_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'eLineOut_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerLeg_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperArm_R_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerArm_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lip_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'lowerArm_R_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerLegTwist_L_scale' hideFlags=HideInHierarchy, NotEditable
+  Transform 'ringInt_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'thumbPro_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'indexDis_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerArmTwist_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'toes_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'thumbPro_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'chest_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'eLineIn_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'chest' hideFlags=HideInHierarchy, NotEditable
+  Transform 'eLineIn_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'shoulder_L' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'middlePro_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'hairAll' hideFlags=HideInHierarchy, NotEditable
+  Transform 'indexPro_L' hideFlags=HideInHierarchy, NotEditable
+  Transform 'eLineOut_R' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'ringDis_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'eLineIn_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'upperArm_L_scale' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'neck' hideFlags=HideInHierarchy, NotEditable
+  GameObject 'upperArm_R' hideFlags=HideInHierarchy, NotEditable
+  Transform 'lowerReg_R_scale' hideFlags=HideInHierarchy, NotEditable
+  Object 'Import Logs' hideFlags=HideInHierarchy
   AnimationClip 'Scene' hideFlags=NotEditable
 defaultClipAnimations: 1
 clipAnimations: 1
 importAnimation: True
 PASS custom-motion:extracted
-step 2 extract -> True : 내 모션으로 추가했습니다: Assets/ZepetoHelper/Motions/Wave_Hello 1.anim (1.96초). 2번 목록에서 바로 고를 수 있습니다.
-extracted clip = Assets/ZepetoHelper/Motions/Wave_Hello 1.anim (removed again when the run restores)
-clip = Wave_Hello 1 length=1.96s humanoid=True
+step 2 extract -> True : 내 모션으로 추가했습니다: Assets/ZepetoHelper/Motions/DanceDemo10s.anim (9.96초). 2번 목록에서 바로 고를 수 있습니다.
+extracted clip = Assets/ZepetoHelper/Motions/DanceDemo10s.anim (removed again when the run restores)
+clip = DanceDemo10s length=9.96s humanoid=True
 snapshot animationClipProperty = ZepetoRig_Wave @ Assets/ZepetoHelper/Motions/ZepetoRig_Wave.anim
 snapshot animatorControllerProperty = PlaygroundAnimatorController_local @ Assets/ZepetoHelper/Controllers/PlaygroundAnimatorController_local.overrideController
 local controller -> True : AnimatorController is already project-local: Assets/ZepetoHelper/Controllers/PlaygroundAnimatorController_local.overrideController
 snapshot override table: 1 slot(s) on PlaygroundAnimatorController_local
 step 3 assign -> True
-playback slot = Wave_Hello 1
+playback slot = DanceDemo10s
 --- entering Play ---
 --- Play active ---
-right hand height relative to hips: min=0.260 max=0.633 travel=0.373m
+right hand height relative to hips: min=-0.021 max=0.633 travel=0.654m
 PASS custom-motion:avatar-animating
-playing: Wave_Hello 1 (1.96s)
+playing: DanceDemo10s (9.96s)
 --- finished: done (serial 21) ---
 ---- results ----
 pass=3 fail=0
   restored override table: 1 slot(s) on PlaygroundAnimatorController_local
   restored animationClipProperty = ZepetoRig_Wave
   restored animatorControllerProperty = PlaygroundAnimatorController_local
-  removed this run's extracted clip: Assets/ZepetoHelper/Motions/Wave_Hello 1.anim
+  removed this run's extracted clip: Assets/ZepetoHelper/Motions/DanceDemo10s.anim
   work scene saved back to its pre-run contents
 --- restored the work scene to its pre-run state ---
 stage flags restored: AvatarOutfitStageCompleteSessionKey=false, MotionSelectStageCompleteSessionKey=false, ClipStageCompleteSessionKey=false
