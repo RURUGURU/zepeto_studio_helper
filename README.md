@@ -140,6 +140,142 @@ flowchart LR
 Blender에서 `Unity로 보내기`를 누르고 Unity 창을 다시 클릭할 때마다 1~2초 안에 내 아바타에
 반영됩니다. Play를 끄지 않습니다.
 
+---
+
+## 따라하기 — 화면 그대로
+
+아래 캡처는 전부 **실제로 돌아가는 화면**입니다. 합성이나 목업이 아니고, Blender 쪽 5장은
+애드온 오퍼레이터로 조작하면서 찍은 것이라 여러분 화면과 같은 것이 나옵니다.
+
+### Unity 1번 — 아이디와 의상
+
+`아이디` 칸에 본인 제페토 아이디를 넣고 **`ID 적용`**, `Assets/Contents` 아래 의상 prefab을 골라
+**`의상 적용`**. 5번의 라이브 확인이 이 아이디로 아바타를 내려받으므로 여기를 먼저 채워야 합니다.
+
+<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/step-1-avatar-outfit.png" alt="1번 카드" width="760">
+
+### Unity 2번 — 동작 고르기
+
+ZEPETO 기본 동작 목록입니다. 직접 만들 거면 건너뛰고 3번으로 갑니다. 목록의 `[내 모션]` 표시가
+내가 만든 것, `(포즈)`는 키가 1개뿐이라 정지 화면인 것입니다.
+
+<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/step-2-motion-select.png" alt="2번 카드" width="760">
+
+### Unity 3번 — Blender용 몸 내보내기 (평생 한 번)
+
+`ZEPETO 리그 내보내기`를 누르면 `Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx`가 만들어집니다.
+ZEPETO의 진짜 뼈 이름과 rest pose 위에서 작업하기 위한 파일이라, 이걸 건너뛰면 Unity에서
+Humanoid 매핑이 깨집니다.
+
+---
+
+### Blender 1단계 — 몸 불러오기
+
+`zepeto_motion.blend`를 열고 3D 화면에서 **N** 키를 누르면 오른쪽에 `ZEPETO 모션` 패널이 나옵니다.
+맨 위 줄이 **`쓸 수 있는 뼈 54개 / 전체 103개`** 입니다.
+
+<img src="BlenderMotion/docs/blender-1-body.png" alt="Blender 1단계" width="760">
+
+> 뼈는 103개인데 54개만 보입니다. 나머지 49개(`*Twist*` · `*_scale` · 얼굴 대부분)는 Unity Humanoid에
+> 매핑이 없어서 **돌려도 조용히 사라지므로** 애드온이 아예 클릭을 막아 둡니다.
+
+### Blender 2단계 — 포즈 만들기
+
+파란 막대가 뼈입니다. 뼈를 클릭 → **R** → 마우스 → **좌클릭**. 몸통 메시는 클릭이 막혀 있어서
+마우스는 항상 뼈에 떨어집니다.
+
+<img src="BlenderMotion/docs/blender-2-pose.png" alt="Blender 2단계" width="760">
+
+> ⚠️ **회전(R)만 쓰세요.** 이동(G)·크기(S)는 Humanoid 리타게팅이 통째로 버립니다.
+> Blender에서는 잘 보이는데 Unity에서 안 나오는 원인 1위입니다.
+
+### Blender 3단계 — 이 순간 기록
+
+프레임을 정하고 **`현재 포즈 저장`**. 3단계 칸에 `저장된 프레임: 1, 24`가 쌓이고 아래 타임라인에도
+키가 마름모로 찍힙니다. **최소 2개**가 필요하고, 두 프레임의 포즈가 같으면 애드온이 거절합니다.
+
+<img src="BlenderMotion/docs/blender-3-keys.png" alt="Blender 3단계" width="760">
+
+### Blender 4단계 — 부드럽게 반복
+
+**`처음과 끝 맞추기`** 한 번. 1프레임 포즈가 마지막 프레임에 복사되어 반복 재생에서 툭 끊기지
+않습니다. ZEPETO 안에서는 동작이 계속 반복되므로 사실상 필수입니다.
+
+<img src="BlenderMotion/docs/blender-4-loop.png" alt="Blender 4단계" width="760">
+
+### Blender 5단계 — Unity로 보내기
+
+이름을 정하고 **`Unity로 보내기`**. 조건이 안 맞으면 버튼이 회색이고 **그 위에 이유가 한국어로**
+하나씩 적힙니다. 다 맞으면 **`보낼 준비 완료`** 로 바뀝니다 — 아래가 그 상태입니다.
+
+<img src="BlenderMotion/docs/blender-5-export.png" alt="Blender 5단계" width="760">
+
+> `저장 폴더`가 처음엔 비어 있습니다. 고장이 아닙니다 — `.blend`에 절대 경로를 저장해 두지 않기
+> 때문이고(다른 컴퓨터에서 열면 없는 폴더가 됩니다), 바로 아래 **`경로 자동 찾기`** 를 한 번 누르면
+> 채워집니다.
+
+---
+
+### Unity 5번 — 내 캐릭터로 확인
+
+초록 **`내 캐릭터로 확인 시작 (Play)`**. Play가 켜지고 내 실제 아바타가 서버에서 내려옵니다.
+**Play를 끄지 마세요.** Blender에서 `Unity로 보내기`를 누른 뒤 **Unity 창을 다시 클릭**하면
+1~2초 안에 동작이 바뀌고 `적용된 횟수`가 올라갑니다.
+
+<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/step-4-5-blender-live.png" alt="4번과 5번 카드" width="760">
+
+그 결과가 이것입니다 — 위에 있는 GIF와 같은 화면입니다.
+
+<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/play-preview.png" alt="Play 중 Game View" width="600">
+
+### Unity 6번 — 클립 조정
+
+속도·구간을 다듬습니다. 원본은 건드리지 않고 `_editable` 사본을 만들어 작업합니다.
+
+<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/step-3-clip-adjust.png" alt="6번 카드" width="760">
+
+### Unity 7번 — 내보내기
+
+`.zepeto`를 만듭니다. **여기에 모션은 안 들어갑니다** — 맨 위 경고를 다시 보세요. 이 카드 안의
+`이 모션을 제페토에 넣기` 패널이 ZEPETO World로 가는 4단계를 안내합니다.
+
+<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/step-4-save-export.png" alt="7번 카드" width="760">
+
+---
+
+## 얼굴 모션 — 됩니다, 눈과 턱만
+
+실제로 확인했습니다. 얼굴 뼈만 움직이는 클립을 만들어 Unity에 임포트했더니 Humanoid 클립 안에
+이 커브들이 **값이 변하는 채로** 들어왔고, 그 클립의 커브 130개 중 변화폭 상위 5개가 전부
+얼굴이었습니다.
+
+| 커브 | 변화폭 |
+| --- | --- |
+| `Jaw Close` | **2.60** |
+| `Left / Right Eye Down-Up` | 각 **1.64** |
+| `Left / Right Eye In-Out` | 각 **0.34** |
+
+쓸 수 있는 뼈는 셋뿐입니다. 리그가 이렇게 매핑합니다:
+
+| Blender 뼈 | Unity Humanoid |
+| --- | --- |
+| `eye_L` | LeftEye |
+| `eye_R` | RightEye |
+| **`mouth`** | **Jaw** |
+
+> **함정: 턱을 움직이는 뼈는 `jaw`가 아니라 `mouth`입니다.** `jaw`라는 이름의 뼈도 리그에 있지만
+> 매핑이 없어 숨겨져 있고, 돌려도 Unity에서 사라집니다. `nose` · `lip_L` · `lip_R`도 같습니다.
+
+**표정은 만들 수 없습니다.** 웃거나 찡그리는 것은 보통 블렌드셰이프로 하는데, 이 리그의 메시에는
+블렌드셰이프가 **0개**이고 Humanoid AnimationClip은 애초에 블렌드셰이프를 담지 못합니다.
+할 수 있는 얼굴 연기는 **눈 감았다 뜨기 · 눈동자 좌우 · 입 벌리기** 셋입니다.
+
+위 10초 안무에도 20비트 전부에 얼굴이 들어가 있습니다 (`make_dance.py`의 `eyes=` / `mouth=`).
+
+---
+
+### 카드별 요약
+
 | 헬퍼 카드 | 무엇 | 언제 |
 | --- | --- | --- |
 | 1 | 아바타·의상 준비 (아이디 입력) | 처음 한 번 |
@@ -149,8 +285,6 @@ Blender에서 `Unity로 보내기`를 누르고 Unity 창을 다시 클릭할 �
 | 5 | 내 캐릭터로 라이브 확인 (Play) | 매번 |
 | 6 | 클립 조정 (속도·구간) | 필요할 때 |
 | 7 | `.zepeto` 내보내기 + 월드 안내 | 마지막 |
-
-Blender 쪽 5단계는 **몸 불러오기 → 포즈 → 키프레임 → 루프 → 내보내기**입니다.
 
 ### 어느 문서를 볼 것인가
 

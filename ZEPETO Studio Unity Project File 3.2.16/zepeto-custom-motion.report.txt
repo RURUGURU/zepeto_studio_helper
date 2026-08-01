@@ -1,20 +1,20 @@
 custom motion end-to-end
-fbx = Assets/CustomMotions/DanceDemo10s.fbx
+fbx = Assets/CustomMotions/FaceTest.fbx
 ----
 stage flags: 3 stage flag(s) captured
 PASS custom-motion:configured
-step 1 configure -> True : DanceDemo10s.fbx 설정 완료 — Avatar는 이 FBX에서 생성 (모션 자체의 뼈대를 기준으로 읽습니다), Root Transform 고정 (1개 클립)
+step 1 configure -> True : FaceTest.fbx 설정 완료 — Avatar는 이 FBX에서 생성 (모션 자체의 뼈대를 기준으로 읽습니다), Root Transform 고정 (1개 클립)
 animationType = Human
 avatarSetup = CreateFromThisModel  sourceAvatar = NULL
 sub-assets in fbx: 222
-  GameObject 'DanceDemo10s' hideFlags=NotEditable
+  GameObject 'FaceTest' hideFlags=NotEditable
   GameObject 'body' hideFlags=NotEditable
   GameObject 'hips' hideFlags=NotEditable
   Material 'body' hideFlags=NotEditable
   Material 'eye' hideFlags=NotEditable
   Material 'eyelash' hideFlags=NotEditable
   Mesh 'body' hideFlags=NotEditable
-  Avatar 'DanceDemo10sAvatar' hideFlags=NotEditable
+  Avatar 'FaceTestAvatar' hideFlags=NotEditable
     avatar isValid=True isHuman=True
   AnimationClip '__preview__Scene' hideFlags=HideInHierarchy, NotEditable
   GameObject 'lowerLegTwist_L' hideFlags=HideInHierarchy, NotEditable
@@ -24,7 +24,7 @@ sub-assets in fbx: 222
   Transform 'neck' hideFlags=HideInHierarchy, NotEditable
   GameObject 'jBone' hideFlags=HideInHierarchy, NotEditable
   Transform 'chestUpper_scale' hideFlags=HideInHierarchy, NotEditable
-  Transform 'DanceDemo10s' hideFlags=HideInHierarchy, NotEditable
+  Transform 'FaceTest' hideFlags=HideInHierarchy, NotEditable
   GameObject 'indexPro_L' hideFlags=HideInHierarchy, NotEditable
   GameObject 'headUpper' hideFlags=HideInHierarchy, NotEditable
   Transform 'chest_scale' hideFlags=HideInHierarchy, NotEditable
@@ -180,7 +180,7 @@ sub-assets in fbx: 222
   GameObject 'pelvis_scale' hideFlags=HideInHierarchy, NotEditable
   GameObject 'littlePro_L' hideFlags=HideInHierarchy, NotEditable
   GameObject 'upperArmTwist_R_scale' hideFlags=HideInHierarchy, NotEditable
-  Animator 'DanceDemo10s' hideFlags=HideInHierarchy, NotEditable
+  Animator 'FaceTest' hideFlags=HideInHierarchy, NotEditable
   Transform 'indexInt_L' hideFlags=HideInHierarchy, NotEditable
   GameObject 'indexInt_R' hideFlags=HideInHierarchy, NotEditable
   Transform 'mouth' hideFlags=HideInHierarchy, NotEditable
@@ -234,27 +234,27 @@ defaultClipAnimations: 1
 clipAnimations: 1
 importAnimation: True
 PASS custom-motion:extracted
-step 2 extract -> True : 내 모션으로 추가했습니다: Assets/ZepetoHelper/Motions/DanceDemo10s.anim (9.96초). 2번 목록에서 바로 고를 수 있습니다.
-extracted clip = Assets/ZepetoHelper/Motions/DanceDemo10s.anim (removed again when the run restores)
-clip = DanceDemo10s length=9.96s humanoid=True
+step 2 extract -> True : 내 모션으로 추가했습니다: Assets/ZepetoHelper/Motions/FaceTest.anim (1.96초). 2번 목록에서 바로 고를 수 있습니다.
+extracted clip = Assets/ZepetoHelper/Motions/FaceTest.anim (removed again when the run restores)
+clip = FaceTest length=1.96s humanoid=True
 snapshot animationClipProperty = ZepetoRig_Wave @ Assets/ZepetoHelper/Motions/ZepetoRig_Wave.anim
 snapshot animatorControllerProperty = PlaygroundAnimatorController_local @ Assets/ZepetoHelper/Controllers/PlaygroundAnimatorController_local.overrideController
 local controller -> True : AnimatorController is already project-local: Assets/ZepetoHelper/Controllers/PlaygroundAnimatorController_local.overrideController
 snapshot override table: 1 slot(s) on PlaygroundAnimatorController_local
 step 3 assign -> True
-playback slot = DanceDemo10s
+playback slot = FaceTest
 --- entering Play ---
 --- Play active ---
-right hand height relative to hips: min=-0.021 max=0.648 travel=0.669m
-PASS custom-motion:avatar-animating
-playing: DanceDemo10s (9.96s)
+right hand height relative to hips: min=0.260 max=0.306 travel=0.046m
+FAIL custom-motion:avatar-animating :: the right hand moved 0.046m relative to the hips, so the avatar is NOT performing the custom motion
+playing: FaceTest (1.96s)
 --- finished: done (serial 21) ---
 ---- results ----
-pass=3 fail=0
+pass=2 fail=1
   restored override table: 1 slot(s) on PlaygroundAnimatorController_local
   restored animationClipProperty = ZepetoRig_Wave
   restored animatorControllerProperty = PlaygroundAnimatorController_local
-  removed this run's extracted clip: Assets/ZepetoHelper/Motions/DanceDemo10s.anim
+  removed this run's extracted clip: Assets/ZepetoHelper/Motions/FaceTest.anim
   work scene saved back to its pre-run contents
 --- restored the work scene to its pre-run state ---
 stage flags restored: AvatarOutfitStageCompleteSessionKey=false, MotionSelectStageCompleteSessionKey=false, ClipStageCompleteSessionKey=false
