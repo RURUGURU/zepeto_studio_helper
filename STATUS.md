@@ -38,6 +38,7 @@
 | --- | --- |
 | Blender 애드온 (헤드리스 5.2.0 LTS) | **29 / 29 통과** — `BlenderMotion/headless_check.py` (`%TEMP%\zepeto_headless_check\result.txt`의 `pass=29 fail=0`) |
 | Blender 패널 draw (창 있는 5.2.0 LTS) | **17 / 17 통과** — `BlenderMotion/ui_check.py`. 헤드리스가 닿을 수 없는 유일한 구간입니다 (아래 상자) |
+| **초보자 왕복** (배포되는 `.blend` 그대로) | **15 / 15 통과** — `BlenderMotion/beginner_check.py`. `README_모션만들기.md`가 적어 둔 순서대로만 눌러서 FBX까지 갑니다 (아래 상자) |
 | Unity 자체 테스트 | **전 항목 통과** — `zepeto-helper-selftest.result.txt`의 `pass=`/`fail=` 집계. 개수와 그룹별 명세는 `Documentation~/QA_AUDIT.md`의 `최근 결과`가 원본이고 여기서 옮겨 적지 않습니다 |
 | 리그 export 러너 | **4 / 4 통과** — 바이너리 검증 포함, 씬 오염 없음 |
 | **라이브 왕복 실측** | **통과** — 팔 0.272m / 다리 0.195m, 1.96s→3.96s, 1.5초 반영 |
@@ -45,6 +46,30 @@
 | 컴파일 (`csc.exe` + Unity 양쪽) | 에러 0 · 경고 0 |
 | 헬퍼 창 7단계 육안 확인 | 완료 (캡처 8장, 그중 7장이 신규·재촬영) |
 
+> ### 부품이 다 멀쩡해도 초보자가 못 시작할 수 있습니다
+>
+> `headless_check.py`는 깨끗한 씬을 새로 만들고 리그를 직접 임포트해서 **부품**을 검사합니다. 그래서
+> "배포되는 `zepeto_motion.blend`으로 시작조차 못 하는" 상태를 구조적으로 볼 수 없습니다. 실제로 그
+> 상태였습니다 — 그 `.blend`의 `zepeto_rig_fbx`에 **`C:\Users\Jun-WN\...`** 가 저장돼 있었습니다.
+> 다른 사람의 계정 이름이고 이 컴퓨터에 없는 경로인데, 추적되는 파일입니다. 검사 28개가 전부 통과하는
+> 동안 내내 그랬습니다.
+>
+> 그 값은 `scene.keys()`나 `scene.get()`으로는 **보이지 않습니다.** Blender는 `bpy.types.Scene`에 등록한
+> RNA 프로퍼티를 시스템 IDProperty로 저장하고, `keys()`는 사용자가 손으로 넣은 커스텀 프로퍼티만
+> 돌려줍니다. 속성으로 직접 읽고 써야 하며, 그러려면 애드온이 켜져 있어야 합니다.
+> 그리고 `.blend`은 zstd 압축본이라 평문 검색으로도 안 걸립니다.
+> 저장할 때 `compress=True`를 빠뜨리면 876KB가 2.9MB로 부풀면서 diff가 파일 전체가 됩니다.
+>
+> ```
+> "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" \
+>     --background BlenderMotion\zepeto_motion.blend --python BlenderMotion\beginner_check.py
+> ```
+>
+> `--factory-startup`을 붙이면 안 됩니다. 이 검사가 묻는 것 중 하나가 "설치된 애드온이 켜진 채로
+> 열리는가"입니다. 내부 함수를 부르지 않고 **오퍼레이터만** 부르는 것이 규칙입니다 — 사용자가 버튼을
+> 누르는 것과 같은 경로여야 이 검사가 무언가를 증명합니다. 두 경로 프로퍼티가 비어 있는지도 함께
+> 단언하므로, 절대 경로가 다시 저장되면 여기서 실패합니다.
+>
 > ### 애드온은 이제 이 컴퓨터의 Blender에 실제로 설치돼 있습니다
 >
 > 이번 회차 전까지 애드온은 **한 번도 설치된 적이 없었습니다.**
@@ -137,8 +162,8 @@ README·QA_AUDIT·이 문서가 각자 들고 있다가 장수와 상태가 서�
 | --- | --- |
 | Unity | 2020.3.9f1 (`108be757e447`) |
 | ZEPETO SDK | `zepeto.studio@3.2.16`, `zepeto.character@3.1.32` |
-| 헬퍼 패키지 | **0.10.0** — `Packages/com.easy.zepeto-helper` (Editor 20파일) |
-| Blender 애드온 | **1.5.0** — `BlenderMotion/zepeto_motion_helper.py` (`bl_info`의 `version = (1, 5, 0)`) |
+| 헬퍼 패키지 | **0.10.1** — `Packages/com.easy.zepeto-helper` (Editor 20파일) |
+| Blender 애드온 | **1.5.1** — `BlenderMotion/zepeto_motion_helper.py` (`bl_info`의 `version = (1, 5, 1)`) |
 | 테스트 | `Assets/ZepetoHelperTests` — `.cs` 6파일 + **어셈블리 정의 2개** (아래) |
 | Blender 설치본 | 5.2.0 LTS — 단 애드온의 `bl_info["blender"]`는 `(4, 2, 0)` (= 최소 4.2) |
 | 컴파일 검증 | `csc.exe` — 헬퍼 **에러 0 · 경고 0**, 테스트 **에러 0 · 경고 0** |

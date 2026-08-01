@@ -1,7 +1,7 @@
 bl_info = {
     "name": "ZEPETO 모션 헬퍼",
     "author": "easy",
-    "version": (1, 5, 0),
+    "version": (1, 5, 1),
     "blender": (4, 2, 0),
     "location": "3D View > 사이드바(N) > ZEPETO",
     "description": "ZEPETO 의상 미리보기용 모션을 버튼 몇 개로 만들고 Unity로 내보냅니다.",
@@ -315,12 +315,21 @@ def refresh_paths(scene, force=False):
 
 
 def export_dir_problem(scene):
-    """패널과 내보내기 오퍼레이터가 '쓸 수 있는 저장 폴더'의 정의에서 어긋날 수 없도록, 둘 다 여기에 묻는다."""
+    """
+    패널과 내보내기 오퍼레이터가 '쓸 수 있는 저장 폴더'의 정의에서 어긋날 수 없도록, 둘 다 여기에 묻는다.
+
+    두 문구 모두 '경로 자동 찾기'를 먼저 가리킨다. 예전에는 "패널의 '저장 폴더'를 직접 지정하세요"라고만
+    했는데, 그 문구가 뜨는 자리 바로 아래에 한 번만 누르면 되는 버튼이 이미 그려져 있었다. 처음 쓰는
+    사람에게 폴더 브라우저를 열어 Assets/CustomMotions를 손으로 찾아 들어가라고 시킨 셈이고, 그 경로를
+    모르는 것이 애초에 이 메시지가 뜬 이유다. 새 씬은 이 상태로 시작하므로(refresh_paths 참고) 이것은
+    예외가 아니라 모든 사람이 처음에 한 번은 보는 화면이다.
+    """
     folder = bpy.path.abspath(scene.zepeto_export_dir)
     if not folder:
-        return "저장 폴더가 비어 있습니다. 패널의 '저장 폴더'를 직접 지정하세요 (Unity 프로젝트의 Assets/CustomMotions)"
+        return "저장 폴더가 비어 있습니다. 아래 '경로 자동 찾기'를 누르면 채워집니다"
     if not os.path.isdir(folder):
-        return "저장 폴더가 없습니다: %s - 패널의 '저장 폴더'를 직접 지정하세요" % folder
+        return ("저장 폴더가 없습니다: %s - 아래 '경로 자동 찾기'를 누르거나 폴더를 직접 고르세요"
+                % folder)
     return None
 
 
