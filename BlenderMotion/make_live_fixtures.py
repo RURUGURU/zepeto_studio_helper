@@ -65,9 +65,13 @@ def find_unity_project():
     if forced and os.path.isdir(os.path.join(forced, "Assets")):
         return os.path.normpath(forced)
 
+    # 폴더 이름이 아니라 구조로 찾는다. ZEPETO Studio가 붙여 주는 기본 이름에 기대면 폴더를
+    # 정리하는 순간 못 찾는다. ProjectSettings/ProjectVersion.txt는 Unity가 만드는 파일이라
+    # 이름과 무관하다 (headless_check.py의 같은 함수와 판정을 맞춰 둔다).
     for base in (os.path.dirname(_HERE), _HERE):
-        found = [cand for cand in sorted(glob.glob(os.path.join(base, "ZEPETO Studio Unity Project File*")))
-                 if os.path.isdir(os.path.join(cand, "Assets"))]
+        found = [cand for cand in sorted(glob.glob(os.path.join(base, "*")))
+                 if os.path.isdir(os.path.join(cand, "Assets"))
+                 and os.path.isfile(os.path.join(cand, "ProjectSettings", "ProjectVersion.txt"))]
         if len(found) == 1:
             return os.path.normpath(found[0])
         if len(found) > 1:

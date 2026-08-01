@@ -101,7 +101,7 @@ git 주소 (**⚠️ 검증하지 않았습니다.** 저장소를 하나로 합�
 ```json
 {
   "dependencies": {
-    "com.easy.zepeto-helper": "https://github.com/RURUGURU/zepeto_studio_helper.git?path=/ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper"
+    "com.easy.zepeto-helper": "https://github.com/RURUGURU/zepeto_studio_helper.git?path=/unity-project/Packages/com.easy.zepeto-helper"
   }
 }
 ```

@@ -217,7 +217,7 @@ Blender에서 ZEPETO의 실제 뼈 이름·뼈대로 작업하기 위한 파일�
 뼈를 클릭 → `R` → 축 → 좌클릭으로 포즈를 잡고, `현재 포즈 저장`을 2번 이상,
 `처음과 끝 맞추기`, `Unity로 보내기` 순서로 누릅니다.
 
-자세한 내용은 `BlenderMotion/README_모션만들기.md`에 있습니다.
+자세한 내용은 `BlenderMotion/README.md`에 있습니다.
 
 ### 5. 내 캐릭터로 확인
 
@@ -256,7 +256,7 @@ Blender에서 ZEPETO의 실제 뼈 이름·뼈대로 작업하기 위한 파일�
 > 저장소 루트가 곧 Unity 프로젝트를 품고 있고, 이 패키지는 이미 그 안 제자리에 있습니다.
 >
 > ```text
-> ZEPETO Studio Unity Project File 3.2.16/Packages/com.easy.zepeto-helper/
+> unity-project/Packages/com.easy.zepeto-helper/
 > ```
 >
 > Unity는 `Packages/` 아래 폴더를 자동으로 인식하므로(임베디드 패키지) `manifest.json`에 아무것도
@@ -291,7 +291,7 @@ Window > Easy > ZEPETO Studio Helper
 > 않았습니다.** 되지 않으면 방법 A를 쓰세요 — 그쪽은 확실합니다.
 
 ```text
-https://github.com/RURUGURU/zepeto_studio_helper.git?path=/ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper
+https://github.com/RURUGURU/zepeto_studio_helper.git?path=/unity-project/Packages/com.easy.zepeto-helper
 ```
 
 `Window > Package Manager > + > Add package from git URL...`에 붙여넣습니다.
@@ -300,7 +300,7 @@ https://github.com/RURUGURU/zepeto_studio_helper.git?path=/ZEPETO%20Studio%20Uni
 ```json
 {
   "dependencies": {
-    "com.easy.zepeto-helper": "https://github.com/RURUGURU/zepeto_studio_helper.git?path=/ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper",
+    "com.easy.zepeto-helper": "https://github.com/RURUGURU/zepeto_studio_helper.git?path=/unity-project/Packages/com.easy.zepeto-helper",
     "zepeto.studio": "3.2.16"
   },
   "scopedRegistries": [

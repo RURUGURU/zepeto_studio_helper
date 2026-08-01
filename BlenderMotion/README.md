@@ -311,7 +311,7 @@ ZEPETO 안에서는 동작이 계속 반복되므로 사실상 필수입니다.
 
 저장 위치는 애드온이 알아서 찾습니다. 찾는 곳은 여기입니다:
 ```
-ZEPETO Studio Unity Project File 3.2.16\Assets\CustomMotions\
+unity-project\Assets\CustomMotions\
 ```
 
 **`저장 폴더`** 칸은 그 결과를 그냥 보여 주는 칸입니다. 채워져 있으면 그대로 두세요.
@@ -345,7 +345,7 @@ ZEPETO Studio Unity Project File 3.2.16\Assets\CustomMotions\
   > 설정하는 법: 시작 메뉴에서 `환경 변수` 검색 → **시스템 환경 변수 편집** → **환경 변수(N)...** →
   > 위쪽 `사용자 변수`에서 **새로 만들기(N)...** → 변수 이름 `ZEPETO_UNITY_PROJECT`,
   > 변수 값에는 `Assets` 폴더가 들어 있는 **프로젝트 폴더**(예:
-  > `C:\Users\...\Desktop\zepeto\ZEPETO Studio Unity Project File 3.2.16`) 를 넣습니다.
+  > `C:\Users\...\Desktop\zepeto\unity-project`) 를 넣습니다.
   > **Blender를 껐다 켜야** 적용됩니다.
 
 ### 버튼이 회색일 때

@@ -50,9 +50,14 @@ def _find_unity_project():
     if forced and os.path.isdir(os.path.join(forced, "Assets")):
         return os.path.normpath(forced), ()
 
+    # 폴더 이름으로 찾지 않는다. 예전에는 "ZEPETO Studio Unity Project File*"로 glob했는데,
+    # 그 이름은 ZEPETO Studio가 붙여 주는 기본값일 뿐이라 폴더를 정리하는 순간 기준값이 사라진다
+    # (실제로 unity-project로 바꾸면서 이 검사가 통째로 무의미해질 뻔했다).
+    # ProjectSettings/ProjectVersion.txt는 Unity가 만드는 파일이고 이름과 무관하다.
     for base in (os.path.dirname(_HERE), _HERE):
-        found = [cand for cand in sorted(glob.glob(os.path.join(base, "ZEPETO Studio Unity Project File*")))
-                 if os.path.isdir(os.path.join(cand, "Assets"))]
+        found = [cand for cand in sorted(glob.glob(os.path.join(base, "*")))
+                 if os.path.isdir(os.path.join(cand, "Assets"))
+                 and os.path.isfile(os.path.join(cand, "ProjectSettings", "ProjectVersion.txt"))]
         if len(found) == 1:
             return os.path.normpath(found[0]), ()
         if len(found) > 1:
@@ -356,7 +361,7 @@ def main():
     try:
         tmp = tempfile.mkdtemp(prefix="zpamb_")
         for name in ("ZEPETO Studio Unity Project File 3.2.12",
-                     "ZEPETO Studio Unity Project File 3.2.16"):
+                     "unity-project"):
             os.makedirs(os.path.join(tmp, name, "Assets"), exist_ok=True)
         picked = mod._pick_project([os.path.join(tmp, n) for n in sorted(os.listdir(tmp))])
         got, amb = picked if isinstance(picked, tuple) else (picked, ())

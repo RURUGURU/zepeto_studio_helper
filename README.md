@@ -5,9 +5,9 @@
 Blender에서 춤을 만들어 Unity의 내 ZEPETO 아바타 위에서 바로 확인하는 작업대.
 **Blender 버튼 다섯 개 → Unity 창 클릭.** 그게 한 사이클 전부입니다.
 
-<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/dance-on-avatar.gif" alt="내 ZEPETO 아바타가 이 안무를 추는 화면" width="230">
+<img src="unity-project/Packages/com.easy.zepeto-helper/docs/images/dance-on-avatar.gif" alt="내 ZEPETO 아바타가 이 안무를 추는 화면" width="230">
 &nbsp;&nbsp;
-<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/dance-demo.gif" alt="Blender에서 만든 같은 안무" width="230">
+<img src="unity-project/Packages/com.easy.zepeto-helper/docs/images/dance-demo.gif" alt="Blender에서 만든 같은 안무" width="230">
 
 **왼쪽이 결과입니다** — Unity Play 중 서버에서 내려온 내 실제 ZEPETO 아바타가, 오른쪽 Blender에서
 만든 그 안무를 그대로 추고 있습니다. 10초 · 20비트 @ 120 BPM ·
@@ -40,7 +40,7 @@ Blender에서 춤을 만들어 Unity의 내 ZEPETO 아바타 위에서 바로 �
 | 폴더 | 무엇 |
 | --- | --- |
 | [`BlenderMotion/`](BlenderMotion/) | Blender 애드온 + 초보자 가이드 + 검사 스크립트 |
-| `ZEPETO Studio Unity Project File 3.2.16/` | ZEPETO Studio 아이템 제작 템플릿 (SDK 3.2.16) |
+| `unity-project/` | ZEPETO Studio 아이템 제작 템플릿 (SDK 3.2.16) |
 | └ `Packages/com.easy.zepeto-helper/` | Unity 헬퍼 패키지 — 7단계 창, 라이브 미리보기, 자체 문서 |
 | └ `Assets/ZepetoHelperTests/` | Unity 자체 테스트 + 러너 4개 |
 | `Capoeira.fbx` (루트) | Mixamo에서 받은 참고용 샘플 2.1MB. **파이프라인이 쓰지 않습니다** — Blender를 안 거친 외부 FBX를 헬퍼 5번의 `직접 등록하기`로 넣어 볼 때 쓸 수 있는 재료로 남겨 둔 것입니다 |
@@ -79,7 +79,7 @@ cd zepeto_studio_helper
 ```
 
 **한 번이면 됩니다.** Unity 헬퍼 패키지도 이 안에 들어 있습니다
-(`ZEPETO Studio Unity Project File 3.2.16/Packages/com.easy.zepeto-helper/`).
+(`unity-project/Packages/com.easy.zepeto-helper/`).
 
 > 예전에는 패키지가 별도 저장소여서 클론을 두 번 해야 했고, 한 번만 하면 그 폴더가 비어서
 > `Assets/ZepetoHelperTests`가 참조하는 어셈블리가 없어 **Unity가 컴파일 에러로 맞이했습니다.**
@@ -108,12 +108,12 @@ cd zepeto_studio_helper
 
 ### 5. Unity 프로젝트 열기
 
-Unity Hub에서 `Add > Add project from disk`로 `ZEPETO Studio Unity Project File 3.2.16` 폴더를
+Unity Hub에서 `Add > Add project from disk`로 `unity-project` 폴더를
 고릅니다. 열리면 상단 메뉴 **`Window > Easy > ZEPETO Studio Helper`** 로 헬퍼 창을 띄웁니다.
 
 헬퍼 패키지는 `Packages/` 안에 들어 있으므로(embedded) Unity가 알아서 인식합니다. **따로 설치할 것이
 없습니다.** 다른 Unity 프로젝트에 이 패키지만 넣고 싶다면 패키지 README의
-[`설치 방법`](ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/README.md#설치-방법)
+[`설치 방법`](unity-project/Packages/com.easy.zepeto-helper/README.md#설치-방법)
 절을 보세요.
 
 ### 6. 내 제페토 아이디 넣기
@@ -152,14 +152,14 @@ Blender에서 `Unity로 보내기`를 누르고 Unity 창을 다시 클릭할 �
 `아이디` 칸에 본인 제페토 아이디를 넣고 **`ID 적용`**, `Assets/Contents` 아래 의상 prefab을 골라
 **`의상 적용`**. 5번의 라이브 확인이 이 아이디로 아바타를 내려받으므로 여기를 먼저 채워야 합니다.
 
-<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/step-1-avatar-outfit.png" alt="1번 카드" width="760">
+<img src="unity-project/Packages/com.easy.zepeto-helper/docs/images/step-1-avatar-outfit.png" alt="1번 카드" width="760">
 
 ### Unity 2번 — 동작 고르기
 
 ZEPETO 기본 동작 목록입니다. 직접 만들 거면 건너뛰고 3번으로 갑니다. 목록의 `[내 모션]` 표시가
 내가 만든 것, `(포즈)`는 키가 1개뿐이라 정지 화면인 것입니다.
 
-<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/step-2-motion-select.png" alt="2번 카드" width="760">
+<img src="unity-project/Packages/com.easy.zepeto-helper/docs/images/step-2-motion-select.png" alt="2번 카드" width="760">
 
 ### Unity 3번 — Blender용 몸 내보내기 (평생 한 번)
 
@@ -222,24 +222,24 @@ Humanoid 매핑이 깨집니다.
 **Play를 끄지 마세요.** Blender에서 `Unity로 보내기`를 누른 뒤 **Unity 창을 다시 클릭**하면
 1~2초 안에 동작이 바뀌고 `적용된 횟수`가 올라갑니다.
 
-<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/step-4-5-blender-live.png" alt="4번과 5번 카드" width="760">
+<img src="unity-project/Packages/com.easy.zepeto-helper/docs/images/step-4-5-blender-live.png" alt="4번과 5번 카드" width="760">
 
 그 결과가 이것입니다 — 위에 있는 GIF와 같은 화면입니다.
 
-<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/play-preview.png" alt="Play 중 Game View" width="600">
+<img src="unity-project/Packages/com.easy.zepeto-helper/docs/images/play-preview.png" alt="Play 중 Game View" width="600">
 
 ### Unity 6번 — 클립 조정
 
 속도·구간을 다듬습니다. 원본은 건드리지 않고 `_editable` 사본을 만들어 작업합니다.
 
-<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/step-3-clip-adjust.png" alt="6번 카드" width="760">
+<img src="unity-project/Packages/com.easy.zepeto-helper/docs/images/step-3-clip-adjust.png" alt="6번 카드" width="760">
 
 ### Unity 7번 — 내보내기
 
 `.zepeto`를 만듭니다. **여기에 모션은 안 들어갑니다** — 맨 위 경고를 다시 보세요. 이 카드 안의
 `이 모션을 제페토에 넣기` 패널이 ZEPETO World로 가는 4단계를 안내합니다.
 
-<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/step-4-save-export.png" alt="7번 카드" width="760">
+<img src="unity-project/Packages/com.easy.zepeto-helper/docs/images/step-4-save-export.png" alt="7번 카드" width="760">
 
 ---
 
@@ -307,8 +307,8 @@ Humanoid 매핑이 깨집니다.
 
 | 문서 | 누구를 위한 것 |
 | --- | --- |
-| [`BlenderMotion/README_모션만들기.md`](BlenderMotion/README_모션만들기.md) | **처음이라면 이것 하나만.** Blender를 한 번도 안 써봤다는 전제로 쓰였고, 막히는 지점마다 화면에 뜨는 한국어 문구를 그대로 표로 옮겨 뒀습니다 |
-| [패키지 README](ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/README.md) | Unity 헬퍼 창 7개 카드의 실제 화면 캡처와 버튼별 설명 |
+| [`BlenderMotion/README.md`](BlenderMotion/README.md) | **처음이라면 이것 하나만.** Blender를 한 번도 안 써봤다는 전제로 쓰였고, 막히는 지점마다 화면에 뜨는 한국어 문구를 그대로 표로 옮겨 뒀습니다 |
+| [패키지 README](unity-project/Packages/com.easy.zepeto-helper/README.md) | Unity 헬퍼 창 7개 카드의 실제 화면 캡처와 버튼별 설명 |
 | [`STATUS.md`](STATUS.md) | 현재 상태·검증 기록·함정 16개. 이 프로젝트를 이어받는 사람용 |
 
 ## 잘 되는지 확인하고 싶다면
@@ -337,7 +337,7 @@ Humanoid 매핑이 깨집니다.
 ## 라이선스와 저작권
 
 - 이 저장소의 **코드와 문서**는 작성자의 것입니다.
-- `ZEPETO Studio Unity Project File 3.2.16/` 안의 SDK·샘플 애셋은 **NAVER Z의 것**이고 여기 포함된
+- `unity-project/` 안의 SDK·샘플 애셋은 **NAVER Z의 것**이고 여기 포함된
   것은 제페토 스튜디오가 배포하는 템플릿 원본입니다. 그쪽 이용약관을 따릅니다.
 - `.../com.easy.zepeto-helper/docs/images/play-preview.png`에는 **제작자 본인의 ZEPETO 아바타**가
   나옵니다. 의도된 상태입니다 (패키지 README의 `캡처 이미지에 대하여` 참고).

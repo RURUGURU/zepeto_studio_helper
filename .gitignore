@@ -1,15 +1,15 @@
 # ── Unity 생성물 (재생성 가능, 292MB) ────────────────────────────────
-/ZEPETO Studio Unity Project File 3.2.16/Library/
-/ZEPETO Studio Unity Project File 3.2.16/Temp/
+/unity-project/Library/
+/unity-project/Temp/
 # Obj/ 와 obj/ 는 중복처럼 보이지만 둘 다 필요합니다. git의 ignore 매칭은 core.ignorecase를
 # 따라가므로, 대소문자를 구분하는 파일 시스템(리눅스·macOS)에서 클론하면 서로 다른 두 폴더가 됩니다.
 # 이 저장소에는 macOS를 거친 흔적이 있었으니(Packages/.DS_Store) 한쪽만 남기지 마세요.
-/ZEPETO Studio Unity Project File 3.2.16/Obj/
-/ZEPETO Studio Unity Project File 3.2.16/obj/
-/ZEPETO Studio Unity Project File 3.2.16/Logs/
-/ZEPETO Studio Unity Project File 3.2.16/UserSettings/
-/ZEPETO Studio Unity Project File 3.2.16/MemoryCaptures/
-/ZEPETO Studio Unity Project File 3.2.16/Recordings/
+/unity-project/Obj/
+/unity-project/obj/
+/unity-project/Logs/
+/unity-project/UserSettings/
+/unity-project/MemoryCaptures/
+/unity-project/Recordings/
 
 # IDE / 자동 생성 프로젝트 파일
 *.csproj
@@ -22,7 +22,7 @@
 .vs/
 .idea/
 # .vscode/ 규칙은 일부러 두지 않습니다. ZEPETO 템플릿이 넣어 준
-# "ZEPETO Studio Unity Project File 3.2.16/.vscode/settings.json"이 추적 중이고,
+# "unity-project/.vscode/settings.json"이 추적 중이고,
 # 템플릿을 다시 받았을 때의 diff 기준이기 때문입니다. 패키지 저장소 쪽 .gitignore가
 # .vscode/를 무시하는 것과 어긋나 보이지만, 그쪽은 배포용 별도 저장소라 정책이 다릅니다.
 # 다만 그 settings.json의 files.exclude는 **/*.meta, **/*.unity, **/*.prefab, **/*.asset,

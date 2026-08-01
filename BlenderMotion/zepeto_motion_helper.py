@@ -61,7 +61,7 @@ MAPPED_BONES = frozenset((
 #     ├─ BlenderMotion/                              ← .blend과 이 파일이 있는 곳 (= 탐색 시작점)
 #     │    ├─ zepeto_motion.blend
 #     │    └─ zepeto_motion_helper.py
-#     └─ ZEPETO Studio Unity Project File 3.2.16/    ← 찾으려는 프로젝트 (= 시작점의 형제)
+#     └─ unity-project/    ← 찾으려는 프로젝트 (= 시작점의 형제)
 #          └─ Assets/
 #               ├─ CustomMotions/                    ← 내보내기 목적지, Unity가 감시하는 폴더
 #               └─ ZepetoHelper/Rig/ZepetoBaseModel.fbx
@@ -109,11 +109,29 @@ PathFix = namedtuple("PathFix", "project export_dir rig_fbx ambiguous")
 
 
 def _looks_like_unity_project(path):
-    """ZEPETO Studio 다운로드다운 이름이면서 Assets 폴더까지 실제로 들고 있는 폴더인가."""
+    """
+    Unity 프로젝트 폴더인가.
+
+    예전에는 판정이 이름 하나였다: 폴더 이름이 "zepeto studio unity project file"로 시작하는가.
+    ZEPETO Studio가 내려주는 기본 이름이라 대개는 맞았지만, **폴더 이름을 바꾸는 순간 애드온이
+    프로젝트를 못 찾았다.** 그 이름에는 공백이 세 개나 들어 있어서 UPM의 ?path= 설치도 막고
+    명령마다 따옴표를 요구하므로, 이름을 바꾸는 것은 충분히 있을 법한 일이다.
+
+    그래서 구조로도 인정한다: ProjectSettings/ProjectVersion.txt는 Unity가 프로젝트를 만들 때
+    반드시 넣는 파일이고, 폴더 이름과 무관하다. 둘 중 하나만 맞아도 후보로 본다.
+
+    Assets 폴더 확인은 두 경로 모두에 남는다. 압축을 풀다 만 폴더나 이름만 같은 빈 폴더를
+    프로젝트로 오인하면, 내보내기가 Unity가 보지 않는 곳으로 떨어진다 - 이 파이프라인에서 가장
+    진단하기 어려운 실패다.
+    """
     if not path or not os.path.isdir(path):
         return False
+    if not os.path.isdir(os.path.join(path, "Assets")):
+        return False
     name = os.path.basename(os.path.normpath(path)).lower()
-    return name.startswith(UNITY_PROJECT_PREFIX) and os.path.isdir(os.path.join(path, "Assets"))
+    if name.startswith(UNITY_PROJECT_PREFIX):
+        return True
+    return os.path.isfile(os.path.join(path, "ProjectSettings", "ProjectVersion.txt"))
 
 
 def _anchor_dirs():
@@ -639,7 +657,7 @@ def object_moved(scene, rig):
     아마추어 '오브젝트' 자체가 움직였는가. odd_bones는 pose bone만 보므로 이건 못 본다.
 
     그런데 이 파이프라인에서 눈에 보이는 실패 1위가 바로 이것이다 - 리그 오브젝트를 G로 끌면 아바타가
-    화면 밖으로 걸어나간다(README_모션만들기.md의 '막히면' 표). 임계값은 odd_bones와 같은 0.01 / 0.05다.
+    화면 밖으로 걸어나간다(README.md의 '막히면' 표). 임계값은 odd_bones와 같은 0.01 / 0.05다.
 
     스냅샷이 없으면(이 기능 이전에 저장된 씬, 1단계를 안 거친 리그) 판단하지 않고 False를 돌려준다.
     원래 위치를 모르는 채로 경고하면 아무 잘못도 안 한 사용자를 잡게 된다.

@@ -52,7 +52,7 @@
 | --- | --- |
 | 운영체제 | Windows 11 |
 | Unity | `2020.3.9f1` |
-| 프로젝트 | 공식 `ZEPETO Studio Unity Project File 3.2.16` 템플릿 |
+| 프로젝트 | 공식 `unity-project` 템플릿 |
 | ZEPETO Studio | `3.2.16` (최소 요구 `3.2.12`) |
 | zepeto.character | `3.1.32` |
 | helper 설치 형태 | embedded (`Packages/com.easy.zepeto-helper`) |
@@ -63,7 +63,7 @@
 
 ZEPETO **World**(월드/게임)는 World SDK 1.22.00부터 Unity `2022.3.34f1`을 요구하지만, 이 패키지가 다루는
 **아이템/의상 제작 파이프라인은 Unity `2020.3.9`**를 그대로 사용한다. 공식 아이템 템플릿
-`ZEPETO Studio Unity Project File 3.2.16`의 `ProjectVersion.txt`도 `2020.3.9f1`로 고정되어 있다.
+`unity-project`의 `ProjectVersion.txt`도 `2020.3.9f1`로 고정되어 있다.
 World 쪽 2022 마이그레이션 문서를 아이템 제작에 적용하면 안 된다.
 
 ## 0.3.0에서 확인한 SDK 사실
