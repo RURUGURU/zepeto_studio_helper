@@ -119,9 +119,9 @@ reflection으로 실제 SDK 어셈블리를 조사한 결과다. 코드가 의�
 다음 script reload 때 실행되며, 결과는 `zepeto-helper-selftest.result.txt`에 남는다.
 `Window > Easy > Run ZEPETO Helper Self Test` 메뉴로도 실행할 수 있다.
 
-### 최근 결과: 67 pass / 0 fail (공식 템플릿 프로젝트에서 실행)
+### 최근 결과: 70 pass / 0 fail (공식 템플릿 프로젝트에서 실행)
 
-`zepeto-helper-selftest.result.txt`의 `pass=67 fail=0`. 이 표는 그 파일의 검사 이름을 그룹으로 묶은 것이다.
+`zepeto-helper-selftest.result.txt`의 `pass=70 fail=0`. 이 표는 그 파일의 검사 이름을 그룹으로 묶은 것이다.
 `NOTE` 줄은 pass/fail이 아니라 실측값 기록이라 개수에 들어가지 않는다.
 
 > **이 개수를 문장으로 적어 두는 문서는 여기 하나다.** README 최상단의 QA 배지가 같은 숫자를 보여주고
@@ -133,6 +133,7 @@ reflection으로 실제 SDK 어셈블리를 조사한 결과다. 코드가 의�
 | --- | --- |
 | **실제 템플릿** | `Assets/Playground.unity`의 진짜 `LOADER`에 세 필드 모두 바인딩, 계정 2개 전환, 의상 prefab 발견, SDK 동작 10개 발견 |
 | 개인 아이디 제거 | `BuiltInDefaultZepetoId` 상수 부재, 배포되는 `.cs`·`.md` 전체에 개인 아이디 문자열 부재. **`.png`는 보지 않는다** — 위 `캡처 이미지` 참고 |
+| 내보낸 리그 파일 | 저장소에 커밋되는 `Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx`를 바이트로 읽어, 텍스처가 `.prefab`을 가리키지 않고 `C:\Users\<계정>\` 경로가 박혀 있지 않은지 (`rig-artifact:*`). 위 `개인 아이디 제거`는 **텍스트 파일만** 훑으므로 이 바이너리를 볼 수 없다 |
 | MCP 코드 제거 | `GetUnityMcpBridgePort` 외 4개 멤버 부재 |
 | 버전 비교 | `3.2.16 > 3.2.12`, `3.2.9 < 3.2.12`, 동일 버전, prerelease suffix 처리 |
 | SDK 탐지 | 설치 감지, 최소 버전 충족, 설치 형태(embedded/registry) 보고 |

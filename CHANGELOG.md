@@ -1,5 +1,118 @@
 # 변경 기록
 
+## 0.10.1 (미출시)
+
+Blender가 리그를 불러올 때마다 콘솔에 찍던 에러 한 줄을 없앴다. 원인이 우리 익스포터였다.
+`package.json`의 `version`을 `0.10.1`로 올렸다. **Blender 애드온은 `1.5.0` 그대로다** — 애드온 코드는
+한 글자도 바뀌지 않았고, 바뀐 것은 Unity 쪽 익스포터와 검사 도구뿐이다.
+
+### 내보낸 리그 FBX가 `.prefab`을 텍스처로 가리키고 있었다
+
+증상은 이랬다. Blender에서 `ZEPETO 몸 불러오기`를 누를 때마다:
+
+```
+ERROR IMB_load_image_from_memory: unknown file-format (.../zepeto.character@3.1.32/resources/zepeto/ZepetoBaseModel.prefab)
+```
+
+`ZepetoBaseModel`의 텍스처는 prefab 안에 끼워 넣어진(embedded) 서브애셋이다. 그래서
+`AssetDatabase.GetAssetPath(texture)`가 텍스처 파일이 아니라 **그것을 품고 있는 `.prefab`의 경로**를
+돌려주고, Unity FBX Exporter는 그 문자열을 그대로 `FbxFileTexture`의 파일명으로 적었다. Blender는
+임포트할 때마다 그 경로를 이미지로 열려다 실패한다.
+
+동작을 망가뜨리지는 않았다. 그래서 더 나빴다 — 리그를 불러올 때마다 뜨는 이 빨간 줄은 처음 쓰는
+사람에게 자기가 뭘 잘못했다는 신호로 읽히고, 사라지지 않는 에러는 그 옆의 진짜 에러를 묻는다.
+
+**두 번째 이유가 더 무겁다.** exporter는 같은 경로를 절대 경로로도 적는데, 그 문자열에는 내보낸 사람의
+계정 이름이 들어 있다(`C:\Users\<계정>\...`). 이 fbx는 저장소에 **추적되는 파일**이라, 그대로 두면
+릴리스마다 계정 이름을 같이 배포하게 된다. 0.6.0에서 `BuiltInDefaultZepetoId`를, 애드온 1.4.0에서
+`UNITY_PROJECT = r"C:\Users\Jun-WN\..."`를 없앤 것과 정확히 같은 종류의 유출이 바이너리 안에 남아
+있었던 셈이다.
+
+고친 곳은 `RigExport.cs`의 `StripTexturesForExport`다. 내보내기 직전에 **임시 인스턴스**의 렌더러
+재질을 사본으로 갈아 끼우고 셰이더가 선언한 텍스처 슬롯을 전부 `null`로 만든다. 공유 재질(패키지
+애셋)은 건드리지 않고, 사본은 `finally`에서 인스턴스와 함께 파괴한다.
+
+- `mainTexture` 하나만 지우면 안 된다. ZEPETO 셰이더에는 노멀·마스크 슬롯도 있고 exporter는 그중
+  무엇이든 발견하는 대로 경로를 쓴다. 그래서 `ShaderUtil`로 프로퍼티 목록을 읽어 전부 훑는다.
+- 꺼져 있는 렌더러도 포함한다(`GetComponentsInChildren<Renderer>(true)`). exporter의 `ExportUnrendered`
+  기본값이 참이라 비활성 렌더러도 나가는데, 빠뜨리면 그 하나가 경로를 도로 써 넣는다.
+
+텍스처를 버려도 잃는 것이 없다. 이 fbx는 Blender에서 뼈 이름 · rest pose · 몸 실루엣을 보려고 쓰는
+것이고, 애드온은 임포트하자마자 메시를 `hide_select`로 잠가 클릭조차 막는다.
+
+**재내보내기 결과** (`zepeto-rig-export.result.txt` `pass=4 fail=0`):
+
+| | 이전 | 이후 |
+| --- | --- | --- |
+| `.prefab` 문자열 | 4건 | **0건** |
+| `C:\Users\<계정>\` 경로 | 3건 | **0건** |
+| 크기 | 1,434,544 B | 1,427,376 B |
+| Blender 헤드리스 임포트 | `ERROR IMB_load_image...` | (없음) |
+
+### 자체 테스트 67 → 70: 커밋되는 바이너리를 처음으로 읽는다
+
+`no-personal-id-in-source`는 배포되는 **텍스트** 파일만 훑는다(`.cs`와 `.md`). 정작 계정 이름이 새어
+나간 실제 경로는 텍스트가 아니라 fbx 바이너리였다. 그 검사는 구조적으로 이걸 볼 수 없었고, 앞으로도
+볼 수 없다.
+
+`rig-artifact:*` 세 개를 더했다. `Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx`를 ISO-8859-1로 읽어
+(어떤 바이트도 잃지 않고 1바이트=1문자로 대응시키려고) `.prefab`과 `:\Users\`를 찾는다.
+
+- `rig-artifact:present` — 파일이 없으면 건너뛰지 않고 **실패**다. 없다는 것은 깨끗하다는 뜻이 아니라
+  검사가 아무것도 증명하지 못했다는 뜻이다. `no-personal-id-in-source`가 파일 0개를 읽고 공허하게
+  통과하던 예전 버그와 같은 모양이라 같은 방식으로 막았다.
+- `rig-artifact:no-user-path`는 이 기계의 계정 이름이 아니라 `:\Users\`라는 **모양**을 찾는다. 다른
+  사람이 내보낸 파일이 커밋됐을 때도 걸려야 하고, 드라이브 문자는 `C:`가 아닐 수 있다.
+
+`ExpectedCheckCount`도 `70`으로 올렸다. 이 숫자를 잊으면 실패가 나는 것이 의도다.
+
+### 애드온 검사: 패널 `draw()`를 처음으로 실행해 봤다 (`ui_check.py`, 17개)
+
+`headless_check.py`는 `--background`로 돈다. 그 모드에는 창도 영역도 없고 `UILayout`은 실제로 그려지는
+영역 안에서만 만들어지므로, **패널 `draw`는 한 줄도 실행된 적이 없었다.** 오퍼레이터와 순수 함수는
+28개 검사가 지키고 있었지만 사용자가 실제로 보는 화면은 무검증이었다.
+
+`draw`가 던지는 예외는 Blender를 죽이지 않는다. 콘솔에 traceback만 찍고 그 패널을 반쯤 그리다 만
+상태로 남긴다 — 증상이 "버튼이 안 보여요"로만 나타나는, 조용한 실패다.
+
+`ui_check.py`는 창을 띄우고 사이드바를 연 뒤 6가지 상태를 강제로 그려 본다: 리그 없음 / 경로 깨짐 /
+리그 있음 / 숨긴 뼈 보기 켬 / 저장 폴더 깨짐 / 이름 잘못됨. 각 상태에서 예외가 났는지와 **어떤 오퍼레이터
+버튼이 실제로 layout에 들어갔는지**를 센다(`UILayout`은 상속할 수 없는 C 타입이라 `__getattr__` 위임으로
+감싼다). "버튼이 조용히 사라졌다"가 이 파이프라인의 대표 회귀라서 존재 자체를 검사값으로 삼았다.
+
+`ui:draws-at-all`이 draw 호출 횟수를 따로 단언한다. 첫 판이 정확히 그 함정에 빠졌다 — 검사 준비
+과정에서 씬의 오브젝트를 전부 지웠더니 사이드바가 자리를 잡지 못해 `draw`가 **0번** 호출됐고, 검사
+6개가 "버튼이 없다"고 거짓 실패했다. 0번 그리고 통과하는 쪽이었다면 훨씬 나빴을 것이다.
+
+### 애드온 검사 28 → 29: 설치된 사본이 낡았는지 본다
+
+Blender의 "Install from Disk"는 링크가 아니라 **복사**다. `BlenderMotion\zepeto_motion_helper.py`를
+고쳐도 사용자의 Blender는 예전 사본을 계속 돌린다. 에러가 나지 않으므로 스스로는 절대 드러나지 않고,
+"고쳤는데 그대로예요"로만 나타난다.
+
+`install:copy-matches-source`가 두 파일의 내용을 직접 비교한다. 경로는 추측하지 않고
+`addon_utils.modules()`가 알려 주는 것을 쓴다 — Blender는 버전마다, 설치 방식마다(레거시
+`scripts/addons` vs 4.2+ `extensions`) 다른 폴더에 넣기 때문에, 경로를 우리가 계산하면 Blender가 어디에
+넣었는지가 아니라 우리가 어디에 넣었다고 믿는지를 검사하게 된다.
+
+설치돼 있지 않은 것 자체는 실패가 아니라 `NOTE`다. 이 묶음은 `--factory-startup`으로도 돌고 애드온을
+설치하지 않는 환경도 정상이다. **설치돼 '있는데' 내용이 다를 때만** 실패다.
+
+검사가 살아 있다는 것도 실행으로 확인했다: 설치된 사본에 주석 한 줄을 붙여 `pass=28 fail=1`을 받고,
+되돌려 `pass=29 fail=0`으로 돌아오는 것을 확인했다.
+
+### `install_addon.py`: 애드온이 여태 설치된 적이 없었다
+
+`%APPDATA%\Blender Foundation\Blender\5.2\scripts\addons\`가 비어 있었고 `config\`도 비어 있었다
+(= 저장된 환경설정 자체가 없었다). Blender를 열어도 사이드바에 `ZEPETO` 탭이 없는 상태였다.
+헤드리스 검사 28개가 전부 통과하고 있었지만, 그것은 `sys.path`에 폴더를 끼워 넣고 모듈을 직접
+import해서 얻은 결과였다 — **검사가 통과한다는 것과 사용자가 쓸 수 있다는 것은 다른 문장이었다.**
+
+`install_addon.py`가 설치 · 활성화 · `save_userpref()`까지 한 번에 한다. 마지막 것이 없으면 Blender를
+껐다 켰을 때 애드온이 다시 꺼진다(`addon_enable`은 이번 세션에만 적용된다). 덮어쓰기 전에
+`addon_disable`을 먼저 부르는데, 켜진 채로 덮어쓰면 예전 클래스가 등록된 상태로 남아 `register()`가
+"already registered"로 죽기 때문이다.
+
 ## 0.10.0 (미출시)
 
 **정리 회차인데 patch가 아니라 minor다.** Blender 애드온 쪽 동작이 여러 개 바뀌고, 그중 셋은

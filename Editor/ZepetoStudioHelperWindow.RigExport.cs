@@ -155,6 +155,10 @@ namespace Easy.ZepetoHelper.Editor
             GameObject instance = UnityEngine.Object.Instantiate(baseModel);
             instance.name = "ZepetoBaseModel";
 
+            // 텍스처 참조를 끊고 내보낸다. 이유는 StripTexturesForExport의 주석에 있다.
+            // 여기서 만들어진 임시 재질들은 아래 finally에서 인스턴스와 함께 반드시 파괴한다.
+            List<Material> temporaryMaterials = StripTexturesForExport(instance);
+
             bool requestedBinary = false;
             bool exportOk = false;
 
@@ -197,9 +201,102 @@ namespace Easy.ZepetoHelper.Editor
             finally
             {
                 UnityEngine.Object.DestroyImmediate(instance);
+                // 인스턴스를 파괴해도 재질은 따라 죽지 않는다. new Material(...)로 만든 것은 씬 오브젝트가
+                // 아니라 떠 있는 애셋이라, 여기서 지우지 않으면 에디터를 닫을 때까지 메모리에 남는다.
+                for (int i = 0; i < temporaryMaterials.Count; i++)
+                {
+                    UnityEngine.Object.DestroyImmediate(temporaryMaterials[i]);
+                }
             }
 
             return TryAdoptExportedRig(exportOk, requestedBinary, ref message);
+        }
+
+        /// <summary>
+        /// 내보내기 직전에 임시 인스턴스의 모든 텍스처 참조를 끊는다.
+        ///
+        /// [AUDIT][Risk:Major][Scope:blender_roundtrip]
+        /// ZepetoBaseModel의 텍스처는 prefab 안에 끼워 넣어진(embedded) 서브애셋이다. 그래서
+        /// AssetDatabase.GetAssetPath(texture)가 텍스처 파일이 아니라 그것을 품고 있는 .prefab의 경로를
+        /// 돌려준다. FBX exporter는 그 문자열을 그대로 FbxFileTexture의 파일명으로 적고, Blender는 임포트할
+        /// 때마다 그 경로를 이미지로 열려고 시도해서 실패한다:
+        ///     ERROR IMB_load_image_from_memory: unknown file-format (....../ZepetoBaseModel.prefab)
+        /// 리그를 불러올 때마다 콘솔에 뜨는 이 에러는 실제로 아무것도 망가뜨리지 않지만, 처음 쓰는 사람은
+        /// 자기가 뭘 잘못했다고 읽는다. 그리고 사라지지 않는 빨간 줄은 진짜 에러를 묻어 버린다.
+        ///
+        /// 두 번째 이유가 더 무겁다. exporter는 그 경로를 절대 경로로도 한 번 적는데, 그 문자열에는 내보낸
+        /// 사람의 계정 이름이 들어 있다(C:\Users\&lt;계정&gt;\...). 이 fbx는 저장소에 커밋되는 파일이라,
+        /// 고치지 않으면 릴리스마다 계정 이름을 같이 배포하게 된다.
+        ///
+        /// 텍스처를 버려도 잃는 것이 없다: 이 fbx는 Blender에서 뼈 이름·rest pose·몸 실루엣을 보려고 쓰는
+        /// 것이고, 애드온은 임포트하자마자 메시를 hide_select로 잠가 클릭조차 막는다.
+        ///
+        /// 공유 재질을 직접 건드리지 않는 것이 중요하다 - 그것은 패키지 애셋이다. 사본을 만들어 인스턴스에만
+        /// 꽂고, 사본은 호출자가 finally에서 파괴한다.
+        /// </summary>
+        private static List<Material> StripTexturesForExport(GameObject instance)
+        {
+            List<Material> temporaries = new List<Material>();
+
+            // 꺼져 있는 렌더러까지 포함한다(includeInactive: true). exporter의 ExportUnrendered 기본값이
+            // 참이라 비활성 렌더러도 내보내지는데, 여기서 빠뜨리면 그 하나가 .prefab 경로를 도로 써 넣는다.
+            Renderer[] renderers = instance.GetComponentsInChildren<Renderer>(true);
+            for (int r = 0; r < renderers.Length; r++)
+            {
+                Material[] originals = renderers[r].sharedMaterials;
+                Material[] replacements = new Material[originals.Length];
+
+                for (int m = 0; m < originals.Length; m++)
+                {
+                    if (originals[m] == null)
+                    {
+                        // 빈 슬롯은 빈 채로 둔다. 여기에 재질을 채워 넣으면 원본에 없던 것을 만들어 내는 것이다.
+                        continue;
+                    }
+
+                    Material copy = new Material(originals[m]);
+                    // 이름은 유지한다. FBX의 재질 이름이 바뀌면 Blender에서 몸 파트를 구분할 수 없게 된다.
+                    copy.name = originals[m].name;
+                    // 이 사본은 어디에도 저장되면 안 된다. 씬을 저장하는 순간 딸려 들어가면 그때부터 프로젝트에
+                    // 정체불명의 재질이 남는다.
+                    copy.hideFlags = HideFlags.HideAndDontSave;
+                    ClearTextureProperties(copy);
+
+                    replacements[m] = copy;
+                    temporaries.Add(copy);
+                }
+
+                renderers[r].sharedMaterials = replacements;
+            }
+
+            return temporaries;
+        }
+
+        /// <summary>
+        /// 셰이더가 선언한 모든 텍스처 슬롯을 null로 만든다.
+        ///
+        /// mainTexture 하나만 지우면 안 된다. ZEPETO 셰이더는 _MainTex 말고도 노멀·마스크 슬롯을 갖고 있고,
+        /// exporter는 그중 무엇이든 발견하는 대로 FbxFileTexture를 쓴다 - 하나만 남아도 .prefab 경로가
+        /// 그대로 파일에 들어간다. 그래서 프로퍼티 목록을 셰이더에서 직접 읽어 전부 훑는다.
+        /// </summary>
+        private static void ClearTextureProperties(Material material)
+        {
+            Shader shader = material.shader;
+            if (shader == null)
+            {
+                return;
+            }
+
+            int count = ShaderUtil.GetPropertyCount(shader);
+            for (int i = 0; i < count; i++)
+            {
+                if (ShaderUtil.GetPropertyType(shader, i) != ShaderUtil.ShaderPropertyType.TexEnv)
+                {
+                    continue;
+                }
+
+                material.SetTexture(ShaderUtil.GetPropertyName(shader, i), null);
+            }
         }
 
         /// <summary>

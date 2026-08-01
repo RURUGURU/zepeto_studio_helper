@@ -10,7 +10,7 @@
 [![ZEPETO](https://img.shields.io/badge/ZEPETO%20Studio-3.2.12%2B-2563eb)](https://studio.zepeto.me/)
 [![Package](https://img.shields.io/badge/package-com.easy.zepeto--helper-16a34a)](package.json)
 [![Guide](https://img.shields.io/badge/guide-beginner%20friendly-2563eb)](#처음-사용하는-순서)
-[![QA](https://img.shields.io/badge/QA-67%20self%20tests%20passing-22c55e)](Documentation~/QA_AUDIT.md)
+[![QA](https://img.shields.io/badge/QA-70%20self%20tests%20passing-22c55e)](Documentation~/QA_AUDIT.md)
 
 ![ZEPETO Studio Helper 전체 워크플로우](docs/images/workflow-overview.png)
 
