@@ -28,13 +28,19 @@
 # 다만 그 settings.json의 files.exclude는 **/*.meta, **/*.unity, **/*.prefab, **/*.asset,
 # **/*.fbx를 숨깁니다 — 이 프로젝트의 감사와 테스트가 읽는 파일이 정확히 그것들입니다.
 
-# ── 헬퍼 패키지는 자체 git 저장소를 가집니다 ──────────────────────────
-# Packages/com.easy.zepeto-helper/.git 이 존재하고 origin은
-#   https://github.com/RURUGURU/zepeto_studio_helper.git
-# 이 바깥 저장소가 그 폴더를 추적하면 gitlink(내용 없는 참조)만 남아
-# 오히려 백업이 되지 않으므로 통째로 제외합니다.
-# 패키지 변경은 반드시 그 폴더 안에서 커밋하세요.
-/ZEPETO Studio Unity Project File 3.2.16/Packages/com.easy.zepeto-helper/
+# ── 헬퍼 패키지는 이제 이 저장소 안에 있습니다 ────────────────────────
+# 예전에는 Packages/com.easy.zepeto-helper/ 가 자체 .git을 가진 별도 저장소였고
+# 이 줄이 그 폴더를 통째로 제외했습니다. 바깥에서 추적하면 gitlink(내용 없는
+# 참조)만 남아 백업이 되지 않기 때문이었습니다.
+#
+# 그 대가가 컸습니다. 이 저장소만 클론하면 그 폴더가 비어서
+# Assets/ZepetoHelperTests가 참조하는 Easy.ZepetoHelper.Editor 어셈블리가 없고,
+# Unity가 컴파일 에러로 맞이했습니다. 클론 두 번을 정확히 기억해야만 열리는
+# 프로젝트였습니다.
+#
+# 이제 git subtree로 패키지의 커밋 전부를 이 저장소 안 제자리 경로에 붙였습니다.
+# 히스토리는 그대로 살아 있고(git log -- 'ZEPETO*/Packages/com.easy.zepeto-helper'),
+# 클론은 한 번이면 됩니다. 제외 규칙은 그래서 없어졌습니다.
 
 # ── 테스트 트리거 (떠돌면 위험) ──────────────────────────────────────
 # 무장된 트리거는 아무 재컴파일에서 자동 발화합니다. 규칙이 있는 이유는 그것 하나입니다.
