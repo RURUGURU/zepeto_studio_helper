@@ -39,8 +39,13 @@
 # 프로젝트였습니다.
 #
 # 이제 git subtree로 패키지의 커밋 전부를 이 저장소 안 제자리 경로에 붙였습니다.
-# 히스토리는 그대로 살아 있고(git log -- 'ZEPETO*/Packages/com.easy.zepeto-helper'),
 # 클론은 한 번이면 됩니다. 제외 규칙은 그래서 없어졌습니다.
+#
+# 히스토리는 살아 있지만 경로로는 찾을 수 없습니다. 합치기 이전 커밋들은 파일
+# 경로가 옛 저장소 루트 기준(CHANGELOG.md 등)이라 경로 필터에 걸리지 않습니다:
+#   git log -- 'ZEPETO*/Packages/com.easy.zepeto-helper'   -> 0건 (기대와 다릅니다)
+# 실제로 보려면 합치기 커밋의 두 번째 부모를 따라가세요:
+#   git log --oneline $(git rev-list --grep="^Add 'ZEPETO" -1 HEAD)^2   -> 15건
 
 # ── 테스트 트리거 (떠돌면 위험) ──────────────────────────────────────
 # 무장된 트리거는 아무 재컴파일에서 자동 발화합니다. 규칙이 있는 이유는 그것 하나입니다.
@@ -101,7 +106,7 @@ zepeto-live-b.fbx
 
 # ── 커진 생성 클립: 규칙이 아니라 기록입니다 ─────────────────────────
 # Assets/ZepetoHelper/Animations/Videobooth_282_editable.anim 은 26,341,772 bytes로
-# 추적 용량 47.03MB의 절반이 넘습니다. 그리고 SDK 에셋의 그대로 복사본입니다:
+# 추적 용량 52.16MB 중 25.12MB(48%)로, 단일 파일로는 압도적 1위입니다. 그리고 SDK 에셋의 그대로 복사본입니다:
 # Library/PackageCache/zepeto.studio@3.2.16/resources/Animation/Videobooth_282.anim
 # (26,341,763 bytes)과 991,025줄을 한 줄씩 비교하면 다른 줄은 9번 한 줄뿐이고
 #   m_Name: Videobooth_282_editable   vs   m_Name: Videobooth_282

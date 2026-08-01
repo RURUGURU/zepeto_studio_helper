@@ -9,7 +9,7 @@
 | 운영체제 | Windows 11 |
 | Unity | `2020.3.9f1` |
 | ZEPETO Studio | `3.2.12` 이상 (`3.2.16`에서 확인) |
-| helper 패키지 | `com.easy.zepeto-helper@0.10.0` |
+| helper 패키지 | `com.easy.zepeto-helper@0.10.1` |
 | ZEPETO registry | `https://upm.zepeto.run` |
 
 ## 필요한 준비물
@@ -86,20 +86,22 @@
   }
   ```
 
-- **0.10.0(Blender 왕복 3·4·5번)은 지금 이 형태로만 들어옵니다.** 0.10.0이 들어 있는 폴더를 직접 두는
-  것이기 때문입니다.
+- **이 형태가 확실합니다.** 폴더를 직접 두는 것이라 버전이 어긋날 여지가 없습니다. 이 저장소를
+  클론하면 이미 이 형태로 들어 있습니다.
 
 ### 형태 B. `manifest.json`의 dependency로 적기
 
 `dependencies`에 줄을 추가하는 방식입니다. 이 경우에만 `manifest.json`에 항목이 보입니다.
 
-git 주소 (**주의: 지금 이 주소로는 0.2.4가 들어옵니다.** 저장소 `origin/main`이 0.2.4이고 0.10.0은 아직
-push되지 않았습니다. 4단계 마법사이고 Blender 왕복이 없습니다):
+git 주소 (**⚠️ 검증하지 않았습니다.** 저장소를 하나로 합치면서 패키지가 저장소 루트가 아니라
+하위 폴더로 들어갔습니다. 그래서 UPM에 `?path=`로 위치를 알려줘야 하는데 **그 경로에 공백이
+있습니다.** 아래는 공백을 `%20`으로 인코딩한 형태이고, 실제로 실행해 보지 않았습니다.
+되지 않으면 위 **형태 A**(폴더째 두기)를 쓰세요 — 그쪽은 확실합니다):
 
 ```json
 {
   "dependencies": {
-    "com.easy.zepeto-helper": "https://github.com/RURUGURU/zepeto_studio_helper.git"
+    "com.easy.zepeto-helper": "https://github.com/RURUGURU/zepeto_studio_helper.git?path=/ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper"
   }
 }
 ```

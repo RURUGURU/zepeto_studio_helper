@@ -1,6 +1,6 @@
 # ZEPETO 모션 파이프라인 — 진행 상황
 
-마지막 갱신: 2026-07-31
+마지막 갱신: 2026-08-01
 
 ## 이 문서 읽는 순서
 
@@ -13,7 +13,7 @@
 | 무엇이 남았는가 | `남은 일` — 그 아래 `다시 하지 않아도 되는 것`도 같이 보세요 |
 | 테스트를 어떻게 돌리나 | `테스트 실행 방법` |
 
-이 문서는 **저장소 전체**(Blender 애드온 · 테스트 · 씬 · 리그 · 두 개의 git)를 다룹니다.
+이 문서는 **저장소 전체**(Blender 애드온 · 테스트 · 씬 · 리그 · 헬퍼 패키지)를 다룹니다.
 헬퍼 패키지 자체의 사용법 · 설치 · 캡처는 `Packages/com.easy.zepeto-helper/README.md`,
 검증 기록은 같은 폴더의 `Documentation~/QA_AUDIT.md`가 원본이고 여기서 옮겨 적지 않습니다.
 헬퍼 코드가 왜 그렇게 되어 있는지는 각 파일 머리와 `[AUDIT]`/`[QC]` 주석이 원본입니다.
@@ -42,7 +42,7 @@
 | **10초 안무 실제 제작** | **13 / 13 통과** — `BlenderMotion/make_dance.py`. 240프레임 20비트(120 BPM), 루프 각도차 `0.00e+00`, 손 이동 7.8m. Unity에서 9.96초 Humanoid 클립으로 임포트되고 **Play 중 실제 아바타의 오른손이 0.654m 움직입니다** |
 | Unity 자체 테스트 | **전 항목 통과** — `zepeto-helper-selftest.result.txt`의 `pass=`/`fail=` 집계. 개수와 그룹별 명세는 `Documentation~/QA_AUDIT.md`의 `최근 결과`가 원본이고 여기서 옮겨 적지 않습니다 |
 | 리그 export 러너 | **4 / 4 통과** — 바이너리 검증 포함, 씬 오염 없음 |
-| **라이브 왕복 실측** | **통과** — 팔 0.272m / 다리 0.195m, 1.96s→3.96s, 1.5초 반영 |
+| **라이브 왕복 실측** | **통과** — 팔 0.272m / 다리 0.195m, 1.96s→3.96s, **1.3초** 반영 |
 | 커스텀 모션 end-to-end | **통과** — 손 이동 0.373m, 씬 완전 복원 |
 | 컴파일 (`csc.exe` + Unity 양쪽) | 에러 0 · 경고 0 |
 | 헬퍼 창 7단계 육안 확인 | 완료 (캡처 8장, 그중 7장이 신규·재촬영) |
@@ -175,7 +175,7 @@ README·QA_AUDIT·이 문서가 각자 들고 있다가 장수와 상태가 서�
 > 때문입니다. 실제로 두 저장소의 해시가 각각 4개·여러 개 뒤처진 채로, 존재하지 않는 미커밋 diff까지
 > 적혀 있었습니다. 줄 수도 같은 방식으로 썩습니다 — 정리 회차 **하나**가 여기 있던 `8,169 / 3,198 / 1,154`을
 > 전부 수백 줄씩 틀리게 만들었고, 같은 표에서 헬퍼 버전 행만 갱신된 탓에 옆 행은 일부러 그대로 둔 것처럼 보였습니다.
-> 두 저장소에서 각각 `git log --oneline -3`과 `git status --porcelain`을, 줄 수가 필요하면 `wc -l`을 보세요.
+> `git log --oneline -3`과 `git status --porcelain`을, 줄 수가 필요하면 `wc -l`을 보세요.
 > **파일 개수(20 / 6 / 2)는 남깁니다** — 어셈블리 구성과 `QA_AUDIT.md`의 파일 구조 표가 그 값에 걸려 있습니다.
 
 ### 테스트 폴더는 어셈블리 **2개**입니다 (한 개로 만들면 깨집니다)
@@ -183,7 +183,7 @@ README·QA_AUDIT·이 문서가 각자 들고 있다가 장수와 상태가 서�
 | 어셈블리 정의 | `includePlatforms` | 들어 있는 것 |
 | --- | --- | --- |
 | `ZepetoHelperTests/Easy.ZepetoHelper.Tests.asmdef` | `[]` (= 런타임 포함) | `ZepetoHelperTestLoader.cs` — 씬에 붙는 MonoBehaviour |
-| `ZepetoHelperTests/Editor/Easy.ZepetoHelper.Tests.Editor.asmdef` | `["Editor"]` | 러너 5개 (`ZepetoHelperSelfTest` · `ZepetoSelfTestSceneGuard` · `ZepetoRigExportRun` · `ZepetoLiveReloadRun` · `ZepetoCustomMotionRun`) |
+| `ZepetoHelperTests/Editor/Easy.ZepetoHelper.Tests.Editor.asmdef` | `["Editor"]` | 러너 4개 (`ZepetoHelperSelfTest` · `ZepetoRigExportRun` · `ZepetoLiveReloadRun` · `ZepetoCustomMotionRun`) + 공용 가드 `ZepetoSelfTestSceneGuard` (러너가 아니라 넷이 함께 부르는 씬 가드입니다) |
 
 폴더 루트에 `["Editor"]` 하나만 두면 **런타임 MonoBehaviour까지 Editor 전용이 되어 `AddComponent`가
 null을 반환하고** 자체 테스트가 NRE로 중단됩니다. 실제로 그렇게 만들어 24번째 검사에서 멈춘 적이
@@ -210,8 +210,10 @@ null을 반환하고** 자체 테스트가 NRE로 중단됩니다. 실제로 그
 
 앞으로 패키지 변경은 **다른 파일과 똑같이** 이 저장소에서 커밋하면 됩니다.
 
-> `origin/main`이 0.2.4라서 README의 `Add package from git URL`을 따르면 Blender 파이프라인이 없는
-> 4단계 헬퍼가 설치됩니다. README·ENVIRONMENT에 그 경고를 넣어뒀습니다.
+> ~~`origin/main`이 0.2.4~~ → **해소됐습니다.** `origin/main`은 이제 이 저장소 자신이고 패키지는
+> `0.10.1`입니다. 대신 새 제약이 생겼습니다: 저장소 루트가 더 이상 패키지가 아니라서 **git URL
+> 설치는 `?path=`가 필요하고, 그 경로에 공백이 있어 검증하지 못했습니다.** 패키지 README가 그
+> 사실을 명시하고 확실한 대안(폴더째 복사)을 안내합니다.
 
 ### 활성 계정 / 애셋
 
@@ -321,7 +323,7 @@ meta에 뼈별 위치 오차 경고가 2.3m~21.5m로 기록돼 있지만, 64개 
 clip length: 1.96s -> 3.96s                       PASS clip-swapped
 phase A (픽스처 A, 팔 모션):  arm=0.272m  leg=0.000m
 phase B (픽스처 B, 다리 모션): arm=0.000m  leg=0.195m   PASS avatar-animating
-reload fired after 1.5s, count = 2
+reload fired after 1.3s, count = 2
 animator is playing: LiveFromBlender (3.96s)
 ```
 
@@ -434,8 +436,17 @@ Mixamo 경로 테스트용 픽스처로 쓸 만하지만 `Assets/CustomMotions`(
 | `Assets/ZepetoHelperTests/Editor/ZepetoHelperSelfTest.cs` | 재유입 검사가 찾아야 하는 토큰 자체(`PersonalIdSample`). 문자열을 쪼개 선언한 것도 같은 이유입니다 |
 | `zepeto-helper-selftest.result.txt` | 그 검사가 남긴 결과 기록 |
 
-**루트 저장소에 원격이 없다는 것**(위 `두 개의 git 저장소`)이 지금 이게 유출이 아닌 유일한 이유입니다.
-루트를 어딘가에 push하기 전에 이 3개를 반드시 처리하세요. 배포되는 **패키지 쪽은 깨끗합니다.**
+**이 3개는 이미 공개돼 있습니다.** 예전에는 "루트 저장소에 원격이 없다"는 것이 유출이 아닌 유일한
+이유였고, 이 자리에 "push하기 전에 반드시 처리하세요"라고 적혀 있었습니다. 저장소를 합쳐 push한
+뒤에도 그 문장이 남아 있었습니다 — 이미 일어난 일을 막으라고 경고하고 있었던 셈입니다.
+
+소유자의 판단으로 **그대로 둡니다.** 제페토 아이디는 앱에서 서로 검색하라고 있는 공개 식별자이고,
+셋 다 지우면 기능이 깨집니다(씬은 아바타를 못 불러오고, 재유입 검사는 찾을 토큰을 잃습니다).
+배포되는 **패키지 쪽은 여전히 깨끗합니다** — 자체 테스트가 그것을 지킵니다.
+
+> `ZepetoHelperSelfTest.cs`의 값은 `"darbam" + "s77"`로 쪼개져 있습니다. 자체 테스트의 스캔에
+> 걸리지 않게 하려는 의도인데 부작용이 있습니다 — **아이디 전체 문자열로 grep하면 이 파일이 안
+> 잡힙니다.** 공개 전 점검에서 실제로 이 파일 하나가 누락된 적이 있습니다.
 
 ---
 
@@ -584,7 +595,12 @@ csc: C:\Program Files\Unity\Hub\Editor\2020.3.9f1\Editor\Data\Tools\Roslyn\csc.e
 | Blender→Unity 드롭존 | `.../Assets/CustomMotions` |
 | 라이브 확인 클립 | `.../Assets/ZepetoHelper/Motions/LiveFromBlender.anim` |
 
-> **애드온 설치본은 없습니다.** `%APPDATA%/Blender Foundation/Blender/5.2` 아래에 `config`만 있고
+> **애드온은 설치돼 있습니다** — 아래 문단은 2026-07-30 기준의 낡은 기록입니다.
+> 지금은 `%APPDATA%/Blender Foundation/Blender/5.2/scripts/addons/zepeto_motion_helper.py`에 사본이
+> 있고 켜져 있습니다. `BlenderMotion/install_addon.py`가 설치하고 `headless_check.py`의
+> `install:copy-matches-source`가 그 사본이 낡았는지 감시합니다. 아래는 그 이전 상태의 기록입니다.
+>
+> ~~**애드온 설치본은 없습니다.**~~ `%APPDATA%/Blender Foundation/Blender/5.2` 아래에 `config`만 있고
 > `scripts/addons`가 없습니다. 전 파일시스템에 `zepeto_motion_helper.py`는 `BlenderMotion/`의 1개뿐이라,
 > 소스 폴더에서 직접 로드하는 방식으로 쓰이고 있습니다. (이전 문서는 설치본 경로가 있다고 적었습니다.)
 

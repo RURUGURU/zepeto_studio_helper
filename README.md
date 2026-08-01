@@ -39,6 +39,7 @@ Blender에서 춤을 만들어 Unity의 내 ZEPETO 아바타 위에서 바로 �
 | `ZEPETO Studio Unity Project File 3.2.16/` | ZEPETO Studio 아이템 제작 템플릿 (SDK 3.2.16) |
 | └ `Packages/com.easy.zepeto-helper/` | Unity 헬퍼 패키지 — 7단계 창, 라이브 미리보기, 자체 문서 |
 | └ `Assets/ZepetoHelperTests/` | Unity 자체 테스트 + 러너 4개 |
+| `Capoeira.fbx` (루트) | Mixamo에서 받은 참고용 샘플 2.1MB. **파이프라인이 쓰지 않습니다** — Blender를 안 거친 외부 FBX를 헬퍼 5번의 `직접 등록하기`로 넣어 볼 때 쓸 수 있는 재료로 남겨 둔 것입니다 |
 
 ## 설치 — 처음부터 순서대로
 
@@ -54,6 +55,17 @@ ZEPETO SDK 3.2.16이 이 버전에 맞춰져 있습니다.
 
 [blender.org](https://www.blender.org/download/)에서 받습니다. 여기서 검증한 것은 **5.2.0 LTS**이고,
 애드온이 요구하는 최소 버전은 4.2입니다.
+
+이 문서의 모든 Blender 명령은 **PowerShell** 기준이고 아래 `$B` 변수를 씁니다. 창을 새로 열 때마다
+한 번 정의하세요. **설치한 버전이 5.2가 아니면 경로의 `Blender 5.2`를 본인 버전으로 바꾸세요.**
+
+```powershell
+$B = "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
+```
+
+> Git Bash를 쓰신다면 `$B="/c/Program Files/Blender Foundation/Blender 5.2/blender.exe"` 로 두고
+> 명령의 `\`를 `/`로 바꾸세요. Bash에서 `\`는 이스케이프 문자라 `BlenderMotion\install_addon.py`가
+> `BlenderMotioninstall_addon.py`가 됩니다.
 
 ### 3. 클론
 
@@ -72,9 +84,15 @@ cd zepeto_studio_helper
 
 ### 4. Blender 애드온 설치
 
+저장소 폴더 안에서 실행합니다.
+
+```powershell
+& $B --background --python BlenderMotion\install_addon.py
 ```
-"C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background --python BlenderMotion\install_addon.py
-```
+
+> **맨 앞의 `&`를 빼면 안 됩니다.** PowerShell은 따옴표로 시작하는 줄을 명령이 아니라 문자열로 읽어서
+> `The '--' operator works only on variables` 파서 에러를 냅니다. `$B`를 정의하지 않았다면 위
+> **2. Blender** 로 돌아가세요.
 
 `PASS :: 설치 완료` 두 줄이 나오면 끝입니다. 설치·활성화·설정 저장까지 한 번에 합니다.
 손으로 하시려면 Blender의 `Edit > Preferences > Add-ons > Install from Disk`로
@@ -140,20 +158,28 @@ Blender 쪽 5단계는 **몸 불러오기 → 포즈 → 키프레임 → 루프
 전부 **실제로 실행해서** 나온 수치입니다. 문서에 적힌 숫자는 그 실행 결과를 옮긴 것이지 목표치가
 아닙니다.
 
-Blender는 Windows에서 PATH에 등록되지 않으므로 아래 `$B`처럼 전체 경로로 부릅니다. 저장소 루트에서
-실행하세요.
-
-```powershell
-$B = "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe"
-```
+Blender는 Windows에서 PATH에 등록되지 않으므로 위 **2. Blender**의 `$B`를 그대로 씁니다.
+저장소 루트에서 실행하세요.
 
 | 무엇 | 결과 | 어떻게 다시 돌리나 |
 | --- | --- | --- |
 | 초보자 왕복 | **15 / 15** | `& $B --background BlenderMotion\zepeto_motion.blend --python BlenderMotion\beginner_check.py` |
-| 10초 안무 제작 | **13 / 13** | `& $B --background BlenderMotion\zepeto_motion.blend --python BlenderMotion\make_dance.py` |
+| 10초 안무 제작 | **13 / 13** | `& $B --background BlenderMotion\zepeto_motion.blend --python BlenderMotion\make_dance.py` — ⚠️ 아래 참고 |
 | Blender 애드온 (헤드리스) | **29 / 29** | `& $B --background --factory-startup --python BlenderMotion\headless_check.py` |
 | Blender 패널 draw | **17 / 17** | `& $B --factory-startup --python BlenderMotion\ui_check.py` — **`--background` 금지**, 창이 있어야 패널이 그려집니다 |
 | Unity 자체 테스트 | **70 / 70** | Unity 메뉴 `Window > Easy > Run ZEPETO Helper Self Test` |
+
+> ⚠️ **`make_dance.py`만 저장소를 더럽힙니다.** 다른 검사들은 만든 파일을 스스로 치우지만, 이건
+> `Assets/CustomMotions/DanceDemo10s.fbx`를 **덮어씁니다** — 추적되는 파일입니다. 안무를 바꾸지
+> 않았다면 바이트가 완전히 같지 않을 수 있으므로(FBX에 타임스탬프가 들어갑니다) `git status`에
+> 수정으로 뜹니다. 되돌리려면:
+>
+> ```powershell
+> git checkout -- "ZEPETO Studio Unity Project File 3.2.16/Assets/CustomMotions/DanceDemo10s.fbx"
+> ```
+>
+> 이 fbx를 추적하는 이유는 그것이 **결과물**이기 때문입니다 — 클론한 사람이 Blender를 돌리지 않고도
+> Unity에서 바로 그 춤을 볼 수 있어야 합니다.
 
 Unity 쪽 러너 넷(자체 테스트 · 리그 내보내기 · 커스텀 모션 · 라이브 왕복)을 트리거 파일로 돌리는
 방법은 `STATUS.md`의 트리거 표에 있습니다.
@@ -176,8 +202,11 @@ Unity 쪽 러너 넷(자체 테스트 · 리그 내보내기 · 커스텀 모션
 - 이 저장소의 **코드와 문서**는 작성자의 것입니다.
 - `ZEPETO Studio Unity Project File 3.2.16/` 안의 SDK·샘플 애셋은 **NAVER Z의 것**이고 여기 포함된
   것은 제페토 스튜디오가 배포하는 템플릿 원본입니다. 그쪽 이용약관을 따릅니다.
-- 패키지 저장소의 `docs/images/play-preview.png`에는 **제작자 본인의 ZEPETO 아바타**가 나옵니다.
-  의도된 상태입니다 (그 저장소 README의 `캡처 이미지에 대하여` 참고).
-- `Assets/Playground.unity`에는 제작자의 제페토 아이디가 들어 있습니다. 포크해서 쓰실 때는 헬퍼
-  1번 카드에서 본인 아이디로 바꾸세요.
+- `.../com.easy.zepeto-helper/docs/images/play-preview.png`에는 **제작자 본인의 ZEPETO 아바타**가
+  나옵니다. 의도된 상태입니다 (패키지 README의 `캡처 이미지에 대하여` 참고).
+- **제작자의 제페토 아이디가 파일 3개에 들어 있습니다** — `Assets/Playground.unity`(씬 `LOADER`의
+  실제 값), `Assets/ZepetoHelperTests/Editor/ZepetoHelperSelfTest.cs`(재유입 검사가 찾아야 하는
+  토큰 자체라 문자열을 쪼개 선언), `zepeto-helper-selftest.result.txt`(그 검사의 결과 기록).
+  셋 다 지우면 기능이 깨지므로 그대로 둔 것이고, 제페토 아이디는 앱에서 서로 검색하라고 있는 공개
+  식별자입니다. 포크해서 쓰실 때는 헬퍼 1번 카드에서 본인 아이디로 바꾸세요.
 - **안무는 저작물입니다.** 이 저장소의 예제 안무는 창작이고, 남의 안무를 그대로 옮겨 배포하지 마세요.

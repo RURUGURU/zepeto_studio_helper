@@ -410,7 +410,7 @@ Assets/Contents/TRANSPARENT_1/ZEPETO_TRANSPARENT_1_VideoBooth_139_v02.zepeto
 | Unity | `2020.3.9f1` |
 | ZEPETO Studio | `3.2.12` 이상 (`3.2.16`에서 확인) |
 | 패키지 이름 | `com.easy.zepeto-helper` |
-| 패키지 버전 | `0.10.0` |
+| 패키지 버전 | `0.10.1` |
 | ZEPETO registry | `https://upm.zepeto.run` |
 
 환경 설정 상세는 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md), 검증 기록은 [Documentation~/QA_AUDIT.md](Documentation~/QA_AUDIT.md)에 정리되어 있습니다.
