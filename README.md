@@ -5,7 +5,7 @@
 Blender에서 춤을 만들어 Unity의 내 ZEPETO 아바타 위에서 바로 확인하는 작업대.
 **Blender 버튼 다섯 개 → Unity 창 클릭.** 그게 한 사이클 전부입니다.
 
-<img src="ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/docs/images/dance-demo.gif" alt="이 도구로 만든 10초 안무" width="240">
+<img src="BlenderMotion/docs/dance-demo.gif" alt="이 도구로 만든 10초 안무" width="240">
 
 *이 도구로 만든 10초 안무 — 20비트 @ 120 BPM. `BlenderMotion/make_dance.py`가 그대로 다시 만들어 냅니다.*
 
@@ -40,14 +40,35 @@ Blender에서 춤을 만들어 Unity의 내 ZEPETO 아바타 위에서 바로 �
 | └ `Packages/com.easy.zepeto-helper/` | Unity 헬퍼 패키지 — **자체 git 저장소입니다** ([RURUGURU/zepeto_studio_helper](https://github.com/RURUGURU/zepeto_studio_helper)) |
 | └ `Assets/ZepetoHelperTests/` | Unity 자체 테스트 + 러너 4개 |
 
+## ⚠️ 저장소 두 개 — 이 저장소만 클론하면 Unity가 컴파일되지 않습니다
+
+Unity 헬퍼 패키지는 **자기 git 저장소**를 갖고 있고, 이 저장소는 그 폴더를
+[`.gitignore`](.gitignore)로 통째로 제외합니다. 바깥 저장소가 그 폴더를 추적하면 내용 없는
+gitlink만 남아서 백업이 되지 않기 때문입니다.
+
+그래서 이 저장소만 클론하면 `Packages/com.easy.zepeto-helper/`가 **빈 폴더**로 남고,
+`Assets/ZepetoHelperTests`가 참조하는 `Easy.ZepetoHelper.Editor` 어셈블리가 없어서
+**Unity가 컴파일 에러를 냅니다.** 두 개를 같이 받으세요.
+
+```bash
+git clone https://github.com/RURUGURU/zepeto-motion-pipeline.git
+cd zepeto-motion-pipeline
+git clone https://github.com/RURUGURU/zepeto_studio_helper.git \
+    "ZEPETO Studio Unity Project File 3.2.16/Packages/com.easy.zepeto-helper"
+```
+
+두 번째 줄까지 끝나야 Unity를 여실 수 있습니다. 패키지를 고칠 때는 **그 폴더 안에서** 커밋하세요 —
+바깥에서는 아예 보이지 않습니다.
+
 ## 시작하기
 
 **처음이라면 [`BlenderMotion/README_모션만들기.md`](BlenderMotion/README_모션만들기.md) 하나만 보시면 됩니다.**
 Blender를 한 번도 안 써봤다는 전제로 쓰여 있고, 막히는 지점마다 화면에 뜨는 한국어 문구를 그대로
 표로 옮겨 뒀습니다.
 
-Unity 헬퍼 창 자체의 사용법은
-[`Packages/com.easy.zepeto-helper/README.md`](ZEPETO%20Studio%20Unity%20Project%20File%203.2.16/Packages/com.easy.zepeto-helper/README.md)에 있습니다.
+Unity 헬퍼 창 자체의 사용법은 **별도 저장소**에 있습니다 →
+[RURUGURU/zepeto_studio_helper](https://github.com/RURUGURU/zepeto_studio_helper)
+(이 저장소를 클론하면 그 폴더는 비어 있습니다. 아래 `저장소 두 개` 참고.)
 
 프로젝트의 현재 상태·검증 기록·함정 목록은 [`STATUS.md`](STATUS.md)가 원본입니다.
 
