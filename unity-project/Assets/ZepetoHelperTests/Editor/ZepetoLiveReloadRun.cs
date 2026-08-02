@@ -365,6 +365,19 @@ namespace Easy.ZepetoHelper.Tests
             // 같아야 감시자가 이 복사본에 반응한다.
             Directory.CreateDirectory(Path.GetDirectoryName(WatchedAsset));
             File.Copy(FixtureA, WatchedAsset, true);
+            // [QC][Invariant:live_roundtrip_measurement]
+            // File.Copy는 원본의 LastWriteTime을 그대로 물려준다. 픽스처는 한 번 만들어 두고 계속
+            // 쓰는 파일이라 그 시각이 몇 주 전일 수 있고, 감시자의 규칙은 "폴더에서 가장 새것이
+            // 이긴다"이다(LivePreview.TryFindNewestMotionFile). 그래서 같은 폴더에 더 최근에 쓰인
+            // fbx가 하나라도 있으면 - 예를 들어 저장소에 커밋된 DanceDemo10s.fbx를 방금 checkout
+            // 했다면 - 감시자가 이 실행의 픽스처 대신 그것을 집어 든다.
+            //
+            // 실제로 그렇게 실패했다: "the watcher never fired within 25s"인데 메시지는
+            // "DanceDemo10s.fbx → 적용했습니다 (9.96초)"였다. 이 실행이 놓은 파일이 아니라
+            // 무관한 파일이 적용된 것이라, 뒤따르는 이동 거리 측정 전체가 의미를 잃는다.
+            // 복사 직후에 시각을 지금으로 밀어 둔다.
+            File.SetLastWriteTimeUtc(WatchedAsset, DateTime.UtcNow);
+
             SessionState.SetBool(PlacedKey, true);
             AssetDatabase.ImportAsset(WatchedAsset, ImportAssetOptions.ForceUpdate);
             Append("placed fixture A at " + WatchedAsset);
@@ -511,6 +524,8 @@ namespace Easy.ZepetoHelper.Tests
 
                 // 실제 사용에서 Blender의 내보내기가 일어나는 순간이 여기다.
                 File.Copy(FixtureB, WatchedAsset, true);
+                // 위 FixtureA 쪽 주석 참고 - 복사는 원본 시각을 물려준다.
+                File.SetLastWriteTimeUtc(WatchedAsset, DateTime.UtcNow);
                 Append("--- swapped fixture B in (" + FixtureBFrames + " frames) ---");
 
                 SessionState.SetString(PhaseKey, "waiting");

@@ -38,8 +38,8 @@
 | --- | --- |
 | Blender 애드온 (헤드리스 5.2.0 LTS) | **29 / 29 통과** — `BlenderMotion/headless_check.py` (`%TEMP%\zepeto_headless_check\result.txt`의 `pass=29 fail=0`) |
 | Blender 패널 draw (창 있는 5.2.0 LTS) | **17 / 17 통과** — `BlenderMotion/ui_check.py`. 헤드리스가 닿을 수 없는 유일한 구간입니다 (아래 상자) |
-| **초보자 왕복** (배포되는 `.blend` 그대로) | **15 / 15 통과** — `BlenderMotion/beginner_check.py`. `README.md`가 적어 둔 순서대로만 눌러서 FBX까지 갑니다 (아래 상자) |
-| **10초 안무 실제 제작** | **15 / 15 통과** — `BlenderMotion/make_dance.py`. 240프레임 20비트(120 BPM), 루프 각도차 `0.00e+00`, 손 이동 7.8m, **발 이동 3.6m / 3.2m**. Unity에서 9.96초 Humanoid 클립으로 임포트되고 **Play 중 실제 아바타가 그대로 춤춥니다** (`docs/images/dance-on-avatar.gif`가 그 화면입니다). 검사 2개(`legs-move-every-beat` · `knees-actually-bend`)는 첫 판이 20비트 중 13비트에서 다리를 rest로 두고도 통과했기 때문에 추가한 것입니다 |
+| **초보자 왕복** (배포되는 `.blend` 그대로) | **17 / 17 통과** — `BlenderMotion/beginner_check.py`. `README.md`가 적어 둔 순서대로만 눌러서 FBX까지 갑니다 (아래 상자) |
+| **10초 안무 실제 제작** | **17 / 17 통과** — `BlenderMotion/make_dance.py`. 240프레임 20비트(120 BPM), 루프 각도차 `0.00e+00`, 손 이동 7.8m, **발 이동 3.6m / 3.2m**. Unity에서 9.96초 Humanoid 클립으로 임포트되고 **Play 중 실제 아바타가 그대로 춤춥니다** (`docs/images/dance-on-avatar.gif`가 그 화면입니다). 검사 2개(`legs-move-every-beat` · `knees-actually-bend`)는 첫 판이 20비트 중 13비트에서 다리를 rest로 두고도 통과했기 때문에 추가한 것입니다 |
 | Unity 자체 테스트 | **전 항목 통과** — `zepeto-helper-selftest.result.txt`의 `pass=`/`fail=` 집계. 개수와 그룹별 명세는 `Documentation~/QA_AUDIT.md`의 `최근 결과`가 원본이고 여기서 옮겨 적지 않습니다 |
 | 리그 export 러너 | **4 / 4 통과** — 바이너리 검증 포함, 씬 오염 없음 |
 | **라이브 왕복 실측** | **통과** — 팔 0.272m / 다리 0.195m, 1.96s→3.96s, **1.3초** 반영 |
@@ -192,7 +192,7 @@ Play 중 실제 아바타에서 가중치가 **0.0 → 99.3 → 0.0** 으로 움
 | --- | --- |
 | Unity | 2020.3.9f1 (`108be757e447`) |
 | ZEPETO SDK | `zepeto.studio@3.2.16`, `zepeto.character@3.1.32` |
-| 헬퍼 패키지 | **0.11.0** — `Packages/com.easy.zepeto-helper` (Editor 20파일) |
+| 헬퍼 패키지 | **0.11.1** — `Packages/com.easy.zepeto-helper` (Editor 20파일) |
 | Blender 애드온 | **1.5.1** — `BlenderMotion/zepeto_motion_helper.py` (`bl_info`의 `version = (1, 5, 1)`) |
 | 테스트 | `Assets/ZepetoHelperTests` — `.cs` 6파일 + **어셈블리 정의 2개** (아래) |
 | Blender 설치본 | 5.2.0 LTS — 단 애드온의 `bl_info["blender"]`는 `(4, 2, 0)` (= 최소 4.2) |
@@ -205,14 +205,14 @@ Play 중 실제 아바타에서 가중치가 **0.0 → 99.3 → 0.0** 으로 움
 > 적혀 있었습니다. 줄 수도 같은 방식으로 썩습니다 — 정리 회차 **하나**가 여기 있던 `8,169 / 3,198 / 1,154`을
 > 전부 수백 줄씩 틀리게 만들었고, 같은 표에서 헬퍼 버전 행만 갱신된 탓에 옆 행은 일부러 그대로 둔 것처럼 보였습니다.
 > `git log --oneline -3`과 `git status --porcelain`을, 줄 수가 필요하면 `wc -l`을 보세요.
-> **파일 개수(20 / 6 / 2)는 남깁니다** — 어셈블리 구성과 `QA_AUDIT.md`의 파일 구조 표가 그 값에 걸려 있습니다.
+> **파일 개수(Editor 21 / 테스트 8 / asmdef 2)는 남깁니다** — 어셈블리 구성과 `QA_AUDIT.md`의 파일 구조 표가 그 값에 걸려 있습니다.
 
 ### 테스트 폴더는 어셈블리 **2개**입니다 (한 개로 만들면 깨집니다)
 
 | 어셈블리 정의 | `includePlatforms` | 들어 있는 것 |
 | --- | --- | --- |
 | `ZepetoHelperTests/Easy.ZepetoHelper.Tests.asmdef` | `[]` (= 런타임 포함) | `ZepetoHelperTestLoader.cs` — 씬에 붙는 MonoBehaviour |
-| `ZepetoHelperTests/Editor/Easy.ZepetoHelper.Tests.Editor.asmdef` | `["Editor"]` | 러너 4개 (`ZepetoHelperSelfTest` · `ZepetoRigExportRun` · `ZepetoLiveReloadRun` · `ZepetoCustomMotionRun`) + 공용 가드 `ZepetoSelfTestSceneGuard` (러너가 아니라 넷이 함께 부르는 씬 가드입니다) |
+| `ZepetoHelperTests/Editor/Easy.ZepetoHelper.Tests.Editor.asmdef` | `["Editor"]` | 러너 6개 (`ZepetoHelperSelfTest` · `ZepetoRigExportRun` · `ZepetoLiveReloadRun` · `ZepetoCustomMotionRun` · `ZepetoBlinkRun` · `ZepetoFaceProbeRun`) + 공용 가드 `ZepetoSelfTestSceneGuard` (러너가 아니라 함께 부르는 씬 가드입니다) |
 
 폴더 루트에 `["Editor"]` 하나만 두면 **런타임 MonoBehaviour까지 Editor 전용이 되어 `AddComponent`가
 null을 반환하고** 자체 테스트가 NRE로 중단됩니다. 실제로 그렇게 만들어 24번째 검사에서 멈춘 적이
@@ -455,7 +455,7 @@ Mixamo 경로 테스트용 픽스처로 쓸 만하지만 `Assets/CustomMotions`(
 
 #### 개인 아이디 제거는 **패키지 범위**입니다 — 루트 저장소는 아직 깨끗하지 않습니다
 
-자체 테스트의 `no-personal-id-in-source`가 훑는 것은 `Packages/com.easy.zepeto-helper` 아래 24파일
+자체 테스트의 `no-personal-id-in-source`가 훑는 것은 `Packages/com.easy.zepeto-helper` 아래 25파일
 (`Editor/`의 `.cs` 20개 + `.md` 4개)뿐이라, 루트 저장소는 **구조적으로 볼 수 없습니다.**
 실제로 아이디 문자열은 루트 쪽 3개 파일에 그대로 있습니다.
 
@@ -491,7 +491,7 @@ Mixamo 경로 테스트용 픽스처로 쓸 만하지만 `Assets/CustomMotions`(
       바이너리인지, `.part` 잔여 없음, **패널을 거치지 않는 호출도 게이트에 걸리는지**까지 실측.
       `54 + 49 = 103` 산수도 실제 리그에서 확인
 - [x] **자체 테스트 전 항목 통과**, 결과 파일 재기록. 예상했던 NOTE 5줄 등장 확인
-      (`no-personal-id-in-source:scanned` 24파일, `real-template:id-restored`,
+      (`no-personal-id-in-source:scanned` 25파일, `real-template:id-restored`,
       `playback-slot:{overrides,clip,controller}-restored` — 러너가 씬을 되돌린다는 증거)
 - [x] **asmdef 회귀 발견·수정.** 신규 asmdef를 테스트 폴더 루트에 `includePlatforms: ["Editor"]`로 둬서
       런타임 MonoBehaviour(`ZepetoHelperTestLoader`)까지 Editor 전용이 됐고, `AddComponent`가 null을

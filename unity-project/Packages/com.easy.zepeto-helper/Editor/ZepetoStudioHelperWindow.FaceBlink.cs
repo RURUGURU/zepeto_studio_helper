@@ -140,6 +140,16 @@ namespace Easy.ZepetoHelper.Editor
                 return 0;
             }
 
+            // 남이 만든 눈 애니메이션 위에 덮어쓰지 않는다. 위 GetBlinkOwner의 [AUDIT] 블록 참고 -
+            // ZEPETO 공식 클립은 키 95개짜리 눈꺼풀 연기를 이미 갖고 있고, 그것을 3.4초 간격의
+            // 기계적인 커브로 갈아치우면 춤과 어긋난 채 형제 보정 커브만 남는다.
+            if (GetBlinkOwner(clip) == BlinkOwner.Authored)
+            {
+                message = "이 동작에는 이미 만들어진 눈 애니메이션이 있습니다(ZEPETO 공식 동작이 대개 그렇습니다). "
+                    + "덮어쓰면 그 연기가 사라지므로 넣지 않았습니다. 직접 만든 모션에 쓰세요.";
+                return 0;
+            }
+
             List<float> times = BlinkTimes(clip.length);
             if (times.Count == 0)
             {
@@ -167,22 +177,70 @@ namespace Easy.ZepetoHelper.Editor
             return times.Count;
         }
 
-        /// <summary>클립에 이미 깜빡임 커브가 들어 있는가. 버튼 문구를 정하는 데 쓴다.</summary>
-        internal static bool ClipHasBlink(AnimationClip clip)
+        /// <summary>
+        /// 이 클립의 깜빡임 커브를 누가 만들었는가.
+        ///
+        /// [AUDIT][Risk:Critical][Scope:never_destroy_authored_animation]
+        /// 이 구분이 없으면 안 된다. **ZEPETO가 배포하는 공식 클립은 이미 같은 커브를 갖고 있다.**
+        /// 2번 카드의 기본 동작인 Videobooth_282를 복사해 오면 그 사본에
+        /// blendShape.zepeto.eyeBlinkLeft가 키 95개(값 10~100), Right가 97개 들어 있다.
+        /// 손으로 만든, 춤에 맞춰진 눈꺼풀 연기다.
+        ///
+        /// 처음 판은 "커브가 있으면 우리 것"으로 보고 `빼기`를 활성화했다. 6번 카드를 처음 열자마자
+        /// `빼기`가 눌리는 상태였고, 한 번 누르면 그 95개가 사라졌다. Undo도 없고, 2번을 다시 눌러도
+        /// FindCopiedAnimationForPackage가 망가진 사본을 그대로 다시 집는다. 게다가 형제 커브
+        /// (eyeBlinkLeftEyeSquintLeft 등 6종)는 남아서, 눈꺼풀 없이 보정만 도는 상태가 된다.
+        ///
+        /// 그래서 모양으로 판별한다. 우리가 쓰는 커브는 값이 0 아니면 100이고 키가 정확히
+        /// 2 + 3×(깜빡임 수)개다. 공식 커브는 10~100 사이를 촘촘히 오간다. 하나라도 어긋나면
+        /// 남의 작업으로 보고 건드리지 않는다.
+        /// </summary>
+        internal enum BlinkOwner
+        {
+            None,       // 깜빡임 커브가 없다
+            Ours,       // 이 헬퍼가 써 넣은 모양이다
+            Authored,   // 다른 누군가(대개 ZEPETO)가 만든 것이다 - 건드리면 안 된다
+        }
+
+        internal static BlinkOwner GetBlinkOwner(AnimationClip clip)
         {
             if (clip == null)
             {
-                return false;
+                return BlinkOwner.None;
             }
-            EditorCurveBinding[] bindings = AnimationUtility.GetCurveBindings(clip);
-            for (int i = 0; i < bindings.Length; i++)
+
+            EditorCurveBinding binding = EditorCurveBinding.FloatCurve(
+                BlinkRendererPath, typeof(SkinnedMeshRenderer), BlinkLeftProperty);
+            AnimationCurve curve = AnimationUtility.GetEditorCurve(clip, binding);
+            if (curve == null || curve.keys == null || curve.keys.Length == 0)
             {
-                if (bindings[i].propertyName == BlinkLeftProperty)
+                return BlinkOwner.None;
+            }
+
+            // 값이 0/100 두 가지뿐인가. 공식 커브는 그 사이 값을 잔뜩 갖고 있다.
+            Keyframe[] keys = curve.keys;
+            for (int i = 0; i < keys.Length; i++)
+            {
+                float v = keys[i].value;
+                if (Mathf.Abs(v) > 0.01f && Mathf.Abs(v - BlinkClosedWeight) > 0.01f)
                 {
-                    return true;
+                    return BlinkOwner.Authored;
                 }
             }
-            return false;
+
+            // 키 개수가 우리 공식(양 끝 2개 + 깜빡임마다 3개)과 맞는가.
+            int blinks = BlinkTimes(clip.length).Count;
+            if (keys.Length != 2 + blinks * 3)
+            {
+                return BlinkOwner.Authored;
+            }
+            return BlinkOwner.Ours;
+        }
+
+        /// <summary>클립에 깜빡임 커브가 있는가(누가 만들었든).</summary>
+        internal static bool ClipHasBlink(AnimationClip clip)
+        {
+            return GetBlinkOwner(clip) != BlinkOwner.None;
         }
 
         /// <summary>
@@ -198,45 +256,55 @@ namespace Easy.ZepetoHelper.Editor
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             GUILayout.Label("얼굴 · 눈 깜빡임", EditorStyles.boldLabel);
 
-            bool hasBlink = ClipHasBlink(assignedClip);
+            BlinkOwner owner = GetBlinkOwner(assignedClip);
             int planned = assignedClip == null ? 0 : BlinkTimes(assignedClip.length).Count;
 
-            DrawStatusRow("현재 상태", assignedClip == null
-                ? "동작 없음"
-                : (hasBlink ? "깜빡임 있음" : "없음 — 넣으면 " + planned + "번"));
+            string state;
+            if (assignedClip == null) { state = "동작 없음"; }
+            else if (owner == BlinkOwner.Authored) { state = "이미 만들어진 눈 애니메이션이 있습니다 (건드리지 않습니다)"; }
+            else if (owner == BlinkOwner.Ours) { state = "깜빡임 넣어 둠"; }
+            else { state = "없음 — 넣으면 " + planned + "번"; }
+            DrawStatusRow("현재 상태", state);
 
-            bool canEdit = assignedClip != null
-                && !EditorApplication.isPlayingOrWillChangePlaymode
-                && planned > 0;
+            bool notPlaying = !EditorApplication.isPlayingOrWillChangePlaymode;
+            // 남의 눈 애니메이션이 있는 클립에서는 두 버튼 다 잠근다. 눌러도 거절당할 뿐인데
+            // 눌리게 두면 "눌렀는데 아무 일도 안 난다"로 읽힌다.
+            bool editable = assignedClip != null && notPlaying && owner != BlinkOwner.Authored;
 
             EditorGUILayout.BeginHorizontal();
-            if (DrawSecondaryButton(hasBlink ? "다시 넣기" : "눈 깜빡임 넣기", GUILayout.Height(24f)))
+            using (new EditorGUI.DisabledScope(!editable || planned == 0))
             {
-                if (!canEdit)
-                {
-                    statusMessage = EditorApplication.isPlayingOrWillChangePlaymode
-                        ? "Play 중에는 .anim을 고치지 않습니다. 먼저 Stop을 누르세요."
-                        : "먼저 2번에서 동작을 고르고 적용하세요.";
-                }
-                else
+                if (DrawSecondaryButton(owner == BlinkOwner.Ours ? "다시 넣기" : "눈 깜빡임 넣기",
+                                        GUILayout.Height(24f)))
                 {
                     string message;
                     AddBlinkToClip(assignedClip, out message);
                     statusMessage = message;
+                    Repaint();
                 }
-                Repaint();
             }
 
-            using (new EditorGUI.DisabledScope(!hasBlink || EditorApplication.isPlayingOrWillChangePlaymode))
+            using (new EditorGUI.DisabledScope(owner != BlinkOwner.Ours || !notPlaying))
             {
                 if (DrawSecondaryButton("빼기", GUILayout.Width(70f), GUILayout.Height(24f)))
                 {
-                    RemoveBlinkFromClip(assignedClip);
-                    statusMessage = "눈 깜빡임을 뺐습니다.";
+                    string message;
+                    RemoveBlinkFromClip(assignedClip, out message);
+                    statusMessage = message;
                     Repaint();
                 }
             }
             EditorGUILayout.EndHorizontal();
+
+            if (owner == BlinkOwner.Authored)
+            {
+                DrawMiniHelp(
+                    "이 동작에는 이미 눈 애니메이션이 들어 있습니다 — ZEPETO 공식 동작은 대개 춤에 맞춰 "
+                    + "손으로 만든 눈꺼풀 연기를 갖고 있습니다(키 90개 이상). 덮어쓰거나 지우면 그것이 "
+                    + "사라지고 되돌릴 수 없으므로 두 버튼을 잠갔습니다.\n\n"
+                    + "직접 만든 모션(3~5번으로 만든 것)에 쓰세요.",
+                    MessageType.Info);
+            }
 
             DrawMiniHelp(
                 "깜빡임은 뼈가 아니라 블렌드셰이프(미리 만들어 둔 표정 모양)입니다. 그 모양은 Play 중 "
@@ -248,13 +316,44 @@ namespace Easy.ZepetoHelper.Editor
             EditorGUILayout.EndVertical();
         }
 
-        /// <summary>깜빡임 커브를 다시 걷어낸다. 넣기와 짝을 이루지 않으면 되돌릴 방법이 없다.</summary>
-        internal static void RemoveBlinkFromClip(AnimationClip clip)
+        /// <summary>
+        /// 이 헬퍼가 넣은 깜빡임 커브를 걷어낸다. 뺐으면 true.
+        ///
+        /// **우리가 넣은 것만 뺀다.** 남이 만든 눈 애니메이션은 거절한다 - GetBlinkOwner의
+        /// [AUDIT] 블록에 그 이유가 있다. 이 함수에는 되돌리기가 없으므로(SetEditorCurve는 Undo에
+        /// 기록되지 않는다) 판별이 유일한 안전장치다. 그래서 Undo.RegisterCompleteObjectUndo를
+        /// 함께 건다 - 최소한 Ctrl+Z로 되돌아갈 수 있어야 한다.
+        /// </summary>
+        internal static bool RemoveBlinkFromClip(AnimationClip clip, out string message)
         {
+            message = string.Empty;
             if (clip == null)
             {
-                return;
+                message = "동작이 비어 있습니다.";
+                return false;
             }
+
+            BlinkOwner owner = GetBlinkOwner(clip);
+            if (owner == BlinkOwner.None)
+            {
+                message = "이 동작에는 깜빡임 커브가 없습니다.";
+                return false;
+            }
+            if (owner == BlinkOwner.Authored)
+            {
+                message = "이 눈 애니메이션은 이 헬퍼가 만든 것이 아닙니다(ZEPETO 공식 동작이 대개 그렇습니다). "
+                    + "지우면 되돌릴 수 없으므로 건드리지 않았습니다.";
+                return false;
+            }
+
+            string path = AssetDatabase.GetAssetPath(clip);
+            if (string.IsNullOrEmpty(path) || IsPackageOrPackageCachePath(path))
+            {
+                message = "원본 package 동작은 고치지 않습니다.";
+                return false;
+            }
+
+            Undo.RegisterCompleteObjectUndo(clip, "눈 깜빡임 빼기");
             foreach (string property in new[] { BlinkLeftProperty, BlinkRightProperty })
             {
                 EditorCurveBinding binding = EditorCurveBinding.FloatCurve(
@@ -263,6 +362,8 @@ namespace Easy.ZepetoHelper.Editor
             }
             EditorUtility.SetDirty(clip);
             AssetDatabase.SaveAssets();
+            message = "눈 깜빡임을 뺐습니다.";
+            return true;
         }
     }
 }

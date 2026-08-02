@@ -8,7 +8,7 @@ runInBackground = True
 armed = True
 before swap: live clip length = 1.96s, reload count = 1
 --- swapped fixture B in (96 frames) ---
-reload fired after 1.3s, count = 2
+reload fired after 2.0s, count = 2
 after swap: live clip length = 3.96s
 --- results ---
 clip length: 1.96s -> 3.96s

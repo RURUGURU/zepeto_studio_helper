@@ -103,6 +103,35 @@ namespace Easy.ZepetoHelper.SelfTestEditor
                 return;
             }
 
+            // [QC] 남의 눈 애니메이션을 지키는지 먼저 본다.
+            //
+            // ZEPETO 공식 클립은 blendShape.zepeto.eyeBlinkLeft를 이미 갖고 있다 - 2번 카드의 기본
+            // 동작인 Videobooth_282의 사본에는 키가 95개 들어 있다. 처음 판의 헬퍼는 "커브가 있으면
+            // 우리 것"으로 보고 그것을 덮어쓰거나 지웠다. Undo도 없고 UI로 되돌릴 길도 없었다.
+            // 그래서 이 검사가 지켜야 하는 것은 "깜빡임이 들어간다"가 아니라 "남의 것은 안 건드린다"다.
+            const string authored = "Assets/ZepetoHelper/Animations/Videobooth_282_editable.anim";
+            AnimationClip sdkClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(authored);
+            if (sdkClip == null)
+            {
+                head.AppendLine("NOTE blink:authored-guard :: " + authored + " 가 없어 건너뜁니다");
+            }
+            else
+            {
+                int before = CountBlinkKeys(sdkClip);
+                object[] probe = new object[] { sdkClip, null };
+                int wrote = (int)add.Invoke(null, probe);
+                int after = CountBlinkKeys(sdkClip);
+                bool safe = wrote == 0 && after == before && before > 0;
+                head.AppendLine((safe ? "PASS" : "FAIL")
+                    + " blink:refuses-to-overwrite-authored :: 키 " + before + " -> " + after
+                    + ", 반환 " + wrote + " : " + probe[1]);
+                if (!safe)
+                {
+                    File.WriteAllText(ReportPath, head.ToString());
+                    return;
+                }
+            }
+
             object[] args = new object[] { clip, null };
             int count = (int)add.Invoke(null, args);
             head.AppendLine("AddBlinkToClip -> " + count + " : " + args[1]);
@@ -178,6 +207,15 @@ namespace Easy.ZepetoHelper.SelfTestEditor
             SessionState.SetBool(ArmedKey, false);
             Finish();
             EditorApplication.ExitPlaymode();
+        }
+
+        /// <summary>클립의 eyeBlinkLeft 커브 키 개수. 없으면 0.</summary>
+        private static int CountBlinkKeys(AnimationClip clip)
+        {
+            EditorCurveBinding binding = EditorCurveBinding.FloatCurve(
+                "body", typeof(SkinnedMeshRenderer), "blendShape.zepeto.eyeBlinkLeft");
+            AnimationCurve curve = AnimationUtility.GetEditorCurve(clip, binding);
+            return curve == null || curve.keys == null ? 0 : curve.keys.Length;
         }
 
         private static SkinnedMeshRenderer FindBody()

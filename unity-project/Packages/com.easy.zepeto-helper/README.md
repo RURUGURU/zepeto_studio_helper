@@ -338,7 +338,7 @@ npm pack
 생성되는 파일 (이름의 버전은 `package.json`의 `version`을 따릅니다):
 
 ```text
-com.easy.zepeto-helper-0.10.1.tgz
+com.easy.zepeto-helper-0.11.1.tgz
 ```
 
 Unity에서는 `Window > Package Manager > + > Add package from tarball...`을 누르고 `.tgz` 파일을 선택합니다.
@@ -416,7 +416,7 @@ Assets/Contents/TRANSPARENT_1/ZEPETO_TRANSPARENT_1_VideoBooth_139_v02.zepeto
 | Unity | `2020.3.9f1` |
 | ZEPETO Studio | `3.2.12` 이상 (`3.2.16`에서 확인) |
 | 패키지 이름 | `com.easy.zepeto-helper` |
-| 패키지 버전 | `0.11.0` |
+| 패키지 버전 | `0.11.1` |
 | ZEPETO registry | `https://upm.zepeto.run` |
 
 환경 설정 상세는 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md), 검증 기록은 [Documentation~/QA_AUDIT.md](Documentation~/QA_AUDIT.md)에 정리되어 있습니다.
@@ -446,11 +446,11 @@ npm pack
 
 ```powershell
 New-Item -ItemType Directory -Force -Path ..\..\Build\Packages
-Move-Item -Force .\com.easy.zepeto-helper-0.10.1.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.10.1.tgz
+Move-Item -Force .\com.easy.zepeto-helper-0.11.1.tgz ..\..\Build\Packages\com.easy.zepeto-helper-0.11.1.tgz
 ```
 
 압축 파일 내용 확인:
 
 ```powershell
-tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.10.1.tgz
+tar -tzf ..\..\Build\Packages\com.easy.zepeto-helper-0.11.1.tgz
 ```

@@ -2,7 +2,7 @@
 
 ## 범위
 
-패키지: `com.easy.zepeto-helper@0.10.0`
+패키지: `com.easy.zepeto-helper@0.11.1`
 
 핵심 파일: `Editor/ZepetoStudioHelperWindow.cs`
 
