@@ -9,9 +9,9 @@ Blender에서 춤을 만들어 Unity의 내 ZEPETO 아바타 위에서 바로 �
 &nbsp;&nbsp;
 <img src="unity-project/Packages/com.easy.zepeto-helper/docs/images/dance-demo.gif" alt="Blender에서 만든 같은 안무" width="230">
 
-**왼쪽이 결과입니다** — Unity Play 중 서버에서 내려온 내 실제 ZEPETO 아바타가, 오른쪽 Blender에서
-만든 그 안무를 그대로 추고 있습니다. 10초 · 20비트 @ 120 BPM ·
-`BlenderMotion/make_dance.py`가 언제든 다시 만들어 냅니다.
+왼쪽은 Unity Play 중 서버에서 내려온 **실제 ZEPETO 아바타**, 오른쪽은 같은 안무를 Blender에서
+렌더한 것입니다. 10초 · 20비트 @ 120 BPM.
+`BlenderMotion/make_dance.py`로 이 안무를 그대로 다시 만들 수 있습니다.
 
 </div>
 
@@ -43,7 +43,7 @@ Blender에서 춤을 만들어 Unity의 내 ZEPETO 아바타 위에서 바로 �
 | `unity-project/` | ZEPETO Studio 아이템 제작 템플릿 (SDK 3.2.16) |
 | └ `Packages/com.easy.zepeto-helper/` | Unity 헬퍼 패키지 — 7단계 창, 라이브 미리보기, 자체 문서 |
 | └ `Assets/ZepetoHelperTests/` | Unity 자체 테스트 + 러너 4개 |
-| `Capoeira.fbx` (루트) | Mixamo에서 받은 참고용 샘플 2.1MB. **파이프라인이 쓰지 않습니다** — Blender를 안 거친 외부 FBX를 헬퍼 5번의 `직접 등록하기`로 넣어 볼 때 쓸 수 있는 재료로 남겨 둔 것입니다 |
+| `Capoeira.fbx` (루트) | Mixamo 샘플 2.1MB. **파이프라인은 쓰지 않습니다.** 헬퍼 5번의 `직접 등록하기`로 외부 FBX를 넣어 볼 때 쓸 수 있는 연습용 파일입니다 |
 
 ## 설치 — 처음부터 순서대로
 
@@ -53,12 +53,12 @@ Blender에서 춤을 만들어 Unity의 내 ZEPETO 아바타 위에서 바로 �
 Archive > download archive`에서 **2020.3.9f1**을 고릅니다. 최신 LTS가 아니라 이 버전이어야 합니다 —
 ZEPETO SDK 3.2.16이 이 버전에 맞춰져 있습니다.
 
-> Unity Personal 라이선스로 충분합니다. 다만 `-batchmode`는 못 씁니다(아래 `검증` 참고).
+> Unity Personal 라이선스로 충분합니다.
 
 ### 2. Blender 4.2 이상
 
-[blender.org](https://www.blender.org/download/)에서 받습니다. 여기서 검증한 것은 **5.2.0 LTS**이고,
-애드온이 요구하는 최소 버전은 4.2입니다.
+[blender.org](https://www.blender.org/download/)에서 받습니다. 애드온이 요구하는 최소 버전은
+**4.2**이고, **5.2.0 LTS**에서 동작을 확인했습니다.
 
 이 문서의 모든 Blender 명령은 **PowerShell** 기준이고 아래 `$B` 변수를 씁니다. 창을 새로 열 때마다
 한 번 정의하세요. **설치한 버전이 5.2가 아니면 경로의 `Blender 5.2`를 본인 버전으로 바꾸세요.**
@@ -81,10 +81,7 @@ cd zepeto_studio_helper
 **한 번이면 됩니다.** Unity 헬퍼 패키지도 이 안에 들어 있습니다
 (`unity-project/Packages/com.easy.zepeto-helper/`).
 
-> 예전에는 패키지가 별도 저장소여서 클론을 두 번 해야 했고, 한 번만 하면 그 폴더가 비어서
-> `Assets/ZepetoHelperTests`가 참조하는 어셈블리가 없어 **Unity가 컴파일 에러로 맞이했습니다.**
-> `git subtree`로 패키지 커밋 전부를 이 저장소 안 제자리에 붙여서 그 함정을 없앴습니다 —
-> 히스토리도 그대로 남아 있습니다.
+
 
 ### 4. Blender 애드온 설치
 
@@ -262,10 +259,9 @@ Humanoid 매핑이 깨집니다.
 즉 **제페토 아바타는 깜빡입니다.** 공식 모션도 깜빡입니다. Unity 애니메이션 클립도 그 커브를
 담을 수 있습니다. 안 되는 곳은 딱 하나, **Blender로 내보낸 기본 몸**입니다.
 
-> 이 문서는 한때 "Humanoid AnimationClip은 블렌드셰이프를 담지 못한다"고 적어 두었습니다.
-> **틀린 설명이었습니다.** 공식 클립이 바로 그것을 담고 있습니다. 위 표는 전부 파일을 직접 읽어
-> 확인한 것이고, 마지막 줄은 Play 중 아바타를 조사해서 얻은 값입니다
-> (`unity-project/Assets/ZepetoHelperTests/Editor/ZepetoFaceProbeRun.cs`).
+> 위 표의 숫자는 전부 파일을 직접 읽어 얻은 것입니다. 마지막 줄은
+> `unity-project/Assets/ZepetoHelperTests/Editor/ZepetoFaceProbeRun.cs`가 Play 중에 재는 값이라,
+> 직접 돌려서 확인할 수 있습니다.
 
 ### 왜 Blender에서는 못 하나
 
@@ -296,9 +292,8 @@ Humanoid 매핑이 깨집니다.
 
 ### 눈 깜빡임 넣기 — 6번 카드
 
-**만들어 뒀습니다.** 헬퍼 **6번(클립 조정)** 안의 `얼굴 · 눈 깜빡임` 칸에서
-**`눈 깜빡임 넣기`** 를 누르면 됩니다. 클립 길이에 맞춰 3.4초 간격으로 자동 배치하고,
-빼고 싶으면 `빼기`를 누르면 됩니다.
+헬퍼 **6번(클립 조정)** 의 `얼굴 · 눈 깜빡임` 칸에서 **`눈 깜빡임 넣기`** 를 누릅니다.
+클립 길이에 맞춰 3.4초 간격으로 자동 배치되고, `빼기`로 되돌립니다.
 
 넣는 것은 제페토 공식 모션이 쓰는 것과 **똑같은 커브**입니다:
 
@@ -309,9 +304,9 @@ attribute : blendShape.zepeto.eyeBlinkLeft / ...Right
 값        : 0 = 뜬 눈, 100 = 감은 눈
 ```
 
-**진짜 아바타에서 눈이 감기는 것까지 측정했습니다.** Play 중 `zepeto.eyeBlinkLeft`의 가중치를
-매 프레임 읽으면 **0.0 → 99.3 → 0.0** 으로 움직입니다
-(`unity-project/Assets/ZepetoHelperTests/Editor/ZepetoBlinkRun.cs`).
+Play 중 실제 아바타의 `zepeto.eyeBlinkLeft` 가중치는 **0.0 → 99.3 → 0.0** 으로 움직입니다.
+`unity-project/Assets/ZepetoHelperTests/Editor/ZepetoBlinkRun.cs`가 그 값을 매 프레임 재므로,
+직접 돌려서 확인할 수 있습니다.
 
 > ⚠️ **두 가지만 기억하세요.**
 >
@@ -325,13 +320,12 @@ attribute : blendShape.zepeto.eyeBlinkLeft / ...Right
 문서에 적힌 대로 따라했을 때 정말 FBX가 나오는지, 명령 한 줄로 확인할 수 있습니다.
 
 ```powershell
-& $B --background BlenderMotion\zepeto_motion.blend --python BlenderMotioneginner_check.py
+& $B --background BlenderMotion\zepeto_motion.blend --python BlenderMotion\beginner_check.py
 ```
 
 `pass=17 fail=0` 이 나오면 이 문서대로 하면 된다는 뜻입니다.
 
-> 개발자용 검사 묶음 네 개와 그 수치, Unity 러너 실행 방법은 [`STATUS.md`](STATUS.md)에 있습니다.
-> 이 문서는 처음 쓰는 분을 위한 것이라 여기 두지 않았습니다.
+> 검사 묶음 전체와 Unity 러너 실행 방법은 [`STATUS.md`](STATUS.md)에 있습니다.
 
 ## 환경
 

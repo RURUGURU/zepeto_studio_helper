@@ -54,38 +54,33 @@ flowchart LR
 
 ## 준비 확인
 
-| 항목 | 상태 | 위치 |
+| 항목 | 필요한 상태 | 어디에 |
 | --- | --- | --- |
-| Blender | 5.2.0 LTS 설치됨 | `C:\Program Files\Blender Foundation\Blender 5.2` |
-| ZEPETO 리그 | 내보내기 완료 (뼈 103개) | `.../Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx` |
-| 작업 파일 | 몸까지 불러온 상태로 저장됨 | `BlenderMotion\zepeto_motion.blend` |
-| 프레임레이트 | 24 fps, 1~48프레임 (2초) | 애드온이 자동 설정 |
-| ZEPETO 애드온 | **설치 완료 · 켜짐** | `%APPDATA%\Blender Foundation\Blender\5.2\scripts\addons\zepeto_motion_helper.py` |
-| 저장 폴더 | **처음엔 비어 있음** — `경로 자동 찾기` 한 번 (아래 5단계) | 패널 5단계의 `저장 폴더` 칸 |
-| 제페토 아이디 | 라이브 확인 전에 **Unity 1번**에 한 번 입력 | 헬퍼 1번 카드의 `아이디` 칸 |
+| Blender | 4.2 이상 (5.2.0 LTS에서 확인) | blender.org |
+| ZEPETO 애드온 | 설치·활성화 — **아래 `애드온 설치`** | `%APPDATA%\Blender Foundation\Blender\<버전>\scripts\addons\` |
+| ZEPETO 리그 | 저장소에 들어 있습니다 (뼈 103개) | `unity-project/Assets/ZepetoHelper/Rig/ZepetoBaseModel.fbx` |
+| 작업 파일 | 몸까지 불러온 상태로 저장돼 있습니다 | `BlenderMotion\zepeto_motion.blend` |
+| 프레임레이트 | 24 fps, 1~48프레임 (2초) | 애드온이 자동으로 맞춥니다 |
+| 저장 폴더 | 처음엔 비어 있습니다 — `경로 자동 찾기` 한 번 | 패널 5단계의 `저장 폴더` 칸 |
+| 제페토 아이디 | 라이브 확인 전에 한 번 입력 | Unity 헬퍼 1번 카드 |
 
-> 위 표가 맞는지는 매번 확인할 수 있습니다. 이 문서에 적힌 순서를 그대로 눌러 보는 검사가 있습니다:
+> 이 문서에 적힌 순서를 그대로 눌러 보는 검사가 있습니다. 내 컴퓨터에서 되는지 확인하려면:
 > ```
 > "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background BlenderMotion\zepeto_motion.blend --python BlenderMotion\beginner_check.py
 > ```
-> `pass=15 fail=0` 이 나오면 이 문서대로 따라했을 때 FBX가 실제로 만들어진다는 뜻입니다.
+> `pass=17 fail=0` 이 나오면 이 문서대로 따라했을 때 FBX가 실제로 만들어진다는 뜻입니다.
 
-### 애드온 — 이미 설치돼 있습니다
+### 애드온 설치 — 처음 한 번
 
-Blender를 열고 3D 화면에서 **N** 키를 누르면 사이드바에 **`ZEPETO 모션`** 패널이 있습니다.
-`Item` 탭에도 `ZEPETO` 탭에도 같은 패널이 나옵니다. 할 일은 없습니다.
+저장소 폴더에서 아래 한 줄이면 설치 · 활성화 · 설정 저장까지 끝납니다.
+`PASS :: 설치 완료` 두 줄이 나오면 성공입니다.
 
-> **이 문단은 예전에 "설치본은 없습니다"였습니다.** 실제로 그랬습니다 —
-> `%APPDATA%\Blender Foundation\Blender\5.2\scripts\addons\`도 `config\`도 비어 있었고, Blender를 열어도
-> `ZEPETO` 탭이 없었습니다. 그런데 헤드리스 검사 28개는 계속 전부 통과하고 있었습니다. 그 검사들은
-> `sys.path`에 폴더를 끼워 넣고 모듈을 직접 import하기 때문입니다 —
-> **검사가 통과한다는 것과 이 컴퓨터에서 쓸 수 있다는 것은 다른 문장이었습니다.**
+**확인:** Blender를 열고 3D 화면에서 **N** 키를 누르면 사이드바에 **`ZEPETO 모션`** 패널이 보입니다.
+`Item` 탭과 `ZEPETO` 탭 양쪽에 같은 패널이 나옵니다.
 
-#### 다시 설치해야 할 때
-
-애드온 파일(`BlenderMotion\zepeto_motion_helper.py`)을 **고친 뒤**, 그리고 Blender를 새로 깔거나
-다른 컴퓨터로 옮겼을 때입니다. Blender의 설치는 링크가 아니라 **복사**라서, 원본을 고쳐도 Blender는
-예전 사본을 계속 돌립니다. 에러가 나지 않으므로 "고쳤는데 그대로예요"로만 나타납니다.
+> 애드온 파일을 고친 뒤에도 같은 명령을 다시 돌려야 합니다. Blender의 설치는 링크가 아니라
+> **복사**라서, 원본만 고치면 예전 사본이 계속 돕니다 — 에러가 나지 않으므로
+> "고쳤는데 그대로예요"로만 나타납니다.
 
 ```
 "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background --python BlenderMotion\install_addon.py
@@ -322,7 +317,7 @@ unity-project\Assets\CustomMotions\
 
 > **처음 열면 이 칸은 비어 있습니다. 고장이 아닙니다.**
 > `.blend`에는 일부러 아무 경로도 저장해 두지 않았습니다 — 절대 경로를 넣어 두면 그 경로는 그 컴퓨터
-> 에서만 맞고, 다른 사람이 파일을 열었을 때 없는 폴더를 가리키게 됩니다(실제로 예전에 그랬습니다).
+> 에서만 맞고, 다른 사람이 그 파일을 열면 없는 폴더를 가리키게 됩니다.
 > 그래서 **`경로 자동 찾기`를 한 번 누르는 것이 정상 순서**이고, 한 번 누르면 그 씬에는 계속 남습니다.
 
 비어 있거나 빨간 경고가 뜬다면, 바로 밑에 나타나는 **`경로 자동 찾기`** 버튼을 한 번 누르면 됩니다.
