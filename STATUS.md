@@ -159,8 +159,13 @@ README·QA_AUDIT·이 문서가 각자 들고 있다가 장수와 상태가 서�
 뼈로 되는 얼굴은 `eye_L`/`eye_R`(눈동자 방향)와 `mouth`(턱)뿐입니다. `mouth`가 Jaw로 매핑되고
 `jaw`라는 이름의 뼈는 매핑이 없다는 것이 이 리그의 함정입니다.
 
-**아직 없는 것:** 추출된 `.anim`에 `blendShape.zepeto.*` 커브를 넣는 기능. 원리와 바인딩은
-확인했지만 구현하지 않았습니다.
+**만들었습니다.** 6번 카드의 `얼굴 · 눈 깜빡임`이 추출된 `.anim`에
+`blendShape.zepeto.eyeBlinkLeft/Right` 커브를 써 넣습니다 (`Editor/...FaceBlink.cs`).
+Play 중 실제 아바타에서 가중치가 **0.0 → 99.3 → 0.0** 으로 움직이는 것까지 측정했습니다
+(`zepeto-blink.trigger` → `ZepetoBlinkRun`).
+
+> 이 편집은 Unity 쪽 `.anim`에만 남습니다. Blender에서 같은 이름으로 다시 내보내면 사라지므로
+> 작업의 마지막에 넣어야 합니다. 버튼 옆에도 같은 문구를 적어 두었습니다.
 
 ---
 
@@ -187,7 +192,7 @@ README·QA_AUDIT·이 문서가 각자 들고 있다가 장수와 상태가 서�
 | --- | --- |
 | Unity | 2020.3.9f1 (`108be757e447`) |
 | ZEPETO SDK | `zepeto.studio@3.2.16`, `zepeto.character@3.1.32` |
-| 헬퍼 패키지 | **0.10.1** — `Packages/com.easy.zepeto-helper` (Editor 20파일) |
+| 헬퍼 패키지 | **0.11.0** — `Packages/com.easy.zepeto-helper` (Editor 20파일) |
 | Blender 애드온 | **1.5.1** — `BlenderMotion/zepeto_motion_helper.py` (`bl_info`의 `version = (1, 5, 1)`) |
 | 테스트 | `Assets/ZepetoHelperTests` — `.cs` 6파일 + **어셈블리 정의 2개** (아래) |
 | Blender 설치본 | 5.2.0 LTS — 단 애드온의 `bl_info["blender"]`는 `(4, 2, 0)` (= 최소 4.2) |
@@ -655,6 +660,7 @@ blender.exe --background --factory-startup --python BlenderMotion/make_live_fixt
 | `zepeto-helper-selftest.trigger` | 자체 테스트 전체 → `.result.txt` (거절 시 `.skipped.txt`) |
 | `zepeto-livereload.trigger` | Play 왕복 실측 (**픽스처 2개 필요** — 위 생성기로 먼저 만드세요) |
 | `zepeto-rig-export.trigger` | 리그 내보내기 + assertion 4개 |
+| `zepeto-blink.trigger` | 대상 `.anim` 경로를 적으면 깜빡임을 넣고 Play에서 눈이 실제로 감기는지 측정 → `.report.txt`. **넷과 달리 되돌리지 않습니다** — 클립을 영구히 고치고 재생 슬롯도 바꾼 채로 둡니다 |
 | `zepeto-face-probe.trigger` | Play 중 실제 아바타의 블렌드셰이프 조사 → `.report.txt`. '왜 눈이 안 깜빡이나'의 근거를 만든 도구입니다 |
 | `zepeto-custom-motion.trigger` | 커스텀 모션 end-to-end. **파일 내용에 FBX 경로를 적습니다** (예: `Assets/CustomMotions/Wave_Hello.fbx`) |
 

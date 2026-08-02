@@ -1,0 +1,11 @@
+ZEPETO blink run
+clip = Assets/ZepetoHelper/Motions/BlinkTarget.anim
+----
+AddBlinkToClip -> 3 : 눈 깜빡임 3번을 넣었습니다 (BlinkTarget). Play에서 확인하세요 - 편집 화면의 회색 몸에는 표정 모양이 없어서 보이지 않습니다.
+PASS blink:curves-added
+PASS blink:clip-assigned-to-playback-slot
+blendShape index of zepeto.eyeBlinkLeft = 8
+PASS blink:shape-present
+weight range: 0.0 ~ 99.3
+PASS blink:eye-closes :: 최대 99.3
+PASS blink:eye-opens :: 최소 0.0

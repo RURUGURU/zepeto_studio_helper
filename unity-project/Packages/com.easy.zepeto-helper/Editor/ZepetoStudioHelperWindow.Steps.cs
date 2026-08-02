@@ -723,6 +723,8 @@ namespace Easy.ZepetoHelper.Editor
                 }
             }
 
+            DrawBlinkControls(assignedClip);
+
             showClipAdvancedOptions = EditorGUILayout.Foldout(showClipAdvancedOptions, "고급 / Advanced", true);
             if (showClipAdvancedOptions)
             {

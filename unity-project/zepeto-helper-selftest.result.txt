@@ -3,7 +3,7 @@ pass=70 fail=0
 ----
 PASS no-builtin-id-const
 PASS no-personal-id-in-source
-NOTE no-personal-id-in-source:scanned :: 24 files under Packages/com.easy.zepeto-helper
+NOTE no-personal-id-in-source:scanned :: 25 files under Packages/com.easy.zepeto-helper
 PASS rig-artifact:present
 PASS rig-artifact:no-prefab-texture
 PASS rig-artifact:no-user-path
@@ -80,10 +80,10 @@ PASS playback-slot:updated
 PASS playback-slot:not-a-pose
 NOTE playback-slot:value :: Videobooth_282 23.13s
 NOTE playback-slot:overrides-restored :: 1 slot(s) on PlaygroundAnimatorController_local
-NOTE playback-slot:clip-restored :: ZepetoRig_Wave
+NOTE playback-slot:clip-restored :: DanceDemo10s
 NOTE playback-slot:controller-restored :: PlaygroundAnimatorController_local
 PASS catalog:populated
-NOTE catalog:count :: 13 motions
+NOTE catalog:count :: 14 motions
 PASS catalog:sdk-is-humanoid
 PASS catalog:pose-detected
 PASS catalog:default-not-pose
