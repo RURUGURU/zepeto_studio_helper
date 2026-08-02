@@ -338,7 +338,7 @@ Play 중 실제 아바타의 `zepeto.eyeBlinkLeft` 가중치는 **0.0 → 99.3 �
 | ZEPETO SDK | `zepeto.studio@3.2.16`, `zepeto.character@3.1.32` |
 | Blender | 5.2.0 LTS (애드온 최소 요구 4.2) |
 | 헬퍼 패키지 | 0.11.1 |
-| Blender 애드온 | 1.5.1 |
+| Blender 애드온 | 1.6.1 |
 
 ## 라이선스와 저작권
 

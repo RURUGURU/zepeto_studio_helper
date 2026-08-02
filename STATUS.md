@@ -37,7 +37,7 @@
 | 무엇 | 결과 |
 | --- | --- |
 | Blender 애드온 (헤드리스 5.2.0 LTS) | **29 / 29 통과** — `BlenderMotion/headless_check.py` (`%TEMP%\zepeto_headless_check\result.txt`의 `pass=29 fail=0`) |
-| Blender 패널 draw (창 있는 5.2.0 LTS) | **17 / 17 통과** — `BlenderMotion/ui_check.py`. 헤드리스가 닿을 수 없는 유일한 구간입니다 (아래 상자) |
+| Blender 패널 draw (창 있는 5.2.0 LTS) | **21 / 21 통과** — `BlenderMotion/ui_check.py`. 헤드리스가 닿을 수 없는 유일한 구간입니다 (아래 상자) |
 | **초보자 왕복** (배포되는 `.blend` 그대로) | **17 / 17 통과** — `BlenderMotion/beginner_check.py`. `README.md`가 적어 둔 순서대로만 눌러서 FBX까지 갑니다 (아래 상자) |
 | **10초 안무 실제 제작** | **17 / 17 통과** — `BlenderMotion/make_dance.py`. 240프레임 20비트(120 BPM), 루프 각도차 `0.00e+00`, 손 이동 7.8m, **발 이동 3.6m / 3.2m**. Unity에서 9.96초 Humanoid 클립으로 임포트되고 **Play 중 실제 아바타가 그대로 춤춥니다** (`docs/images/dance-on-avatar.gif`가 그 화면입니다). 검사 2개(`legs-move-every-beat` · `knees-actually-bend`)는 첫 판이 20비트 중 13비트에서 다리를 rest로 두고도 통과했기 때문에 추가한 것입니다 |
 | Unity 자체 테스트 | **전 항목 통과** — `zepeto-helper-selftest.result.txt`의 `pass=`/`fail=` 집계. 개수와 그룹별 명세는 `Documentation~/QA_AUDIT.md`의 `최근 결과`가 원본이고 여기서 옮겨 적지 않습니다 |
@@ -193,7 +193,7 @@ Play 중 실제 아바타에서 가중치가 **0.0 → 99.3 → 0.0** 으로 움
 | Unity | 2020.3.9f1 (`108be757e447`) |
 | ZEPETO SDK | `zepeto.studio@3.2.16`, `zepeto.character@3.1.32` |
 | 헬퍼 패키지 | **0.11.1** — `Packages/com.easy.zepeto-helper` (Editor 20파일) |
-| Blender 애드온 | **1.5.1** — `BlenderMotion/zepeto_motion_helper.py` (`bl_info`의 `version = (1, 5, 1)`) |
+| Blender 애드온 | **1.6.1** — `BlenderMotion/zepeto_motion_helper.py` (`bl_info`의 `version = (1, 6, 1)`) |
 | 테스트 | `Assets/ZepetoHelperTests` — `.cs` 6파일 + **어셈블리 정의 2개** (아래) |
 | Blender 설치본 | 5.2.0 LTS — 단 애드온의 `bl_info["blender"]`는 `(4, 2, 0)` (= 최소 4.2) |
 | 컴파일 검증 | `csc.exe` — 헬퍼 **에러 0 · 경고 0**, 테스트 **에러 0 · 경고 0** |
