@@ -54,6 +54,7 @@ _real_draw = addon.draw_zepeto_panel
 # 버튼이 실제로 layout에 들어갔는지를 센다. "버튼이 조용히 사라졌다"가 이 파이프라인의 대표 회귀라서
 # 존재 자체를 검사값으로 삼는다.
 drawn_ops = set()
+drawn_labels = set()
 draw_count = [0]
 
 
@@ -71,6 +72,14 @@ class _LayoutSpy:
     def operator(self, idname, *args, **kwargs):
         drawn_ops.add(idname)
         return object.__getattribute__(self, "_inner").operator(idname, *args, **kwargs)
+
+    def label(self, *args, **kwargs):
+        text = kwargs.get("text")
+        if text is None and args:
+            text = args[0]
+        if text is not None:
+            drawn_labels.add(str(text))
+        return object.__getattribute__(self, "_inner").label(*args, **kwargs)
 
     def box(self, *a, **k):
         return _LayoutSpy(object.__getattribute__(self, "_inner").box(*a, **k))
@@ -159,11 +168,13 @@ def draw_state(label):
     """한 상태를 그려 보고, 그 상태에서 나온 draw 예외와 버튼 목록을 돌려준다."""
     _state_label[0] = label
     drawn_ops.clear()
+    drawn_labels.clear()
     before_errors = len(draw_errors)
     before_draws = draw_count[0]
     force_redraw()
     return {
         "ops": set(drawn_ops),
+        "labels": set(drawn_labels),
         "threw": len(draw_errors) > before_errors,
         "drew": draw_count[0] > before_draws,
     }
@@ -193,6 +204,19 @@ def main():
     # 리그가 없을 때 유일하게 눌러야 할 버튼. 이게 빠지면 시작 자체가 불가능하다.
     check("ui:no-rig-shows-import", "zepeto.import_rig" in state["ops"],
           sorted(state["ops"]))
+    required_guide = {
+        "지금 바로 할 일: 첫 포즈",
+        "· 회색 몸 = Unity와 같은 기본 체형",
+        "  Blender용 FBX로 제공되지 않아요",
+        "0. 패널이 안 보이면 3D 화면 위에서 N 키",
+        "1. 화면의 파란 뼈를 좌클릭",
+        "2. R 키 → 마우스를 움직여 회전",
+        "6. 최소 2개, 서로 다른 포즈가 있어야 합니다",
+        "9. 경로 자동 찾기 → 이름 → Unity로 보내기",
+    }
+    missing_guide = required_guide - state["labels"]
+    check("ui:beginner-guide-detailed", not missing_guide,
+          "빠진 안내: %s" % sorted(missing_guide))
 
     # --- 상태 2: 경로가 깨진 채 리그 없음. 다른 컴퓨터에서 건너온 .blend이 이 상태다.
     # "//" 접두사(.blend 상대 경로)는 이 프로퍼티가 받지 않는다 - Blender가 RuntimeWarning을 찍고
@@ -221,6 +245,16 @@ def main():
                 "zepeto.make_loop", "zepeto.export"}
     missing = expected - state["ops"]
     check("ui:with-rig-full-workflow", not missing, "빠진 버튼: %s" % sorted(missing))
+    check("ui:with-rig-shows-controls", all(any(fragment in label for label in state["labels"])
+          for fragment in ("Ctrl+Z", "Space 키", "48=2초", "영어 이름 입력")),
+          "조작 안내가 단계 상자에 표시됨")
+
+    # 상세 안내를 접어도 실제 작업 버튼은 그대로 있어야 한다.
+    scene.zepeto_show_beginner_guide = False
+    state = draw_state("상세 안내 접힘")
+    check("ui:collapsed-guide-no-exception", not state["threw"], "예외 없음")
+    check("ui:collapsed-guide-keeps-workflow", expected.issubset(state["ops"]), sorted(state["ops"]))
+    scene.zepeto_show_beginner_guide = True
 
     # --- 상태 4: '무시하는 뼈도 보기'를 켠 상태. update 콜백이 draw 도중이 아니라 여기서 돈다.
     scene.zepeto_show_all_bones = True

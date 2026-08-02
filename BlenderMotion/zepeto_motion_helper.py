@@ -1,7 +1,7 @@
 bl_info = {
     "name": "ZEPETO 모션 헬퍼",
     "author": "easy",
-    "version": (1, 5, 1),
+    "version": (1, 6, 1),
     "blender": (4, 2, 0),
     "location": "3D View > 사이드바(N) > ZEPETO",
     "description": "ZEPETO 의상 미리보기용 모션을 버튼 몇 개로 만들고 Unity로 내보냅니다.",
@@ -1325,13 +1325,110 @@ class ZEPETO_PT_panel_item(bpy.types.Panel):
         draw_zepeto_panel(self.layout, context)
 
 
+def _draw_beginner_guide(layout, scene, rig):
+    """Blender를 처음 켠 사람이 문서를 찾지 않고도 한 사이클을 끝내게 하는 화면 안 안내."""
+    guide = layout.box()
+    row = guide.row()
+    row.prop(scene, "zepeto_show_beginner_guide", text="처음부터 자세히 보기", toggle=True,
+             icon="INFO")
+
+    if not scene.zepeto_show_beginner_guide:
+        return
+
+    quick = guide.box()
+    quick.label(text="지금 바로 할 일: 첫 포즈", icon="PLAY")
+    quick.label(text="1. 오른팔의 파란 뼈를 클릭")
+    quick.label(text="   (이름: upperArm_R)")
+    quick.label(text="2. R → 조금 돌리기 → 좌클릭")
+    quick.label(text="3. 아래로 내려서")
+    quick.label(text="   '현재 포즈 저장' 클릭")
+
+    preview = guide.box()
+    preview.label(text="Blender와 실제 내 아바타", icon="ARMATURE_DATA")
+    preview.label(text="· 회색 몸 = Unity와 같은 기본 체형")
+    preview.label(text="· 파란 뼈 = 몸 위에 겹쳐 표시 중")
+    preview.label(text="· 내 얼굴·머리·옷은 서버 데이터라")
+    preview.label(text="  Blender용 FBX로 제공되지 않아요")
+    preview.label(text="· 만든 모션은 Unity Play에서")
+    preview.label(text="  내 실제 아바타에 적용해 확인합니다")
+
+    guide.label(text="사이드바가 좁으면 왼쪽 경계를", icon="INFO")
+    guide.label(text="왼쪽으로 끌어 넓히세요")
+    guide.label(text="아래 내용은 이 패널 위에서")
+    guide.label(text="마우스 휠을 내려 계속 보세요")
+    guide.label(text="0. 패널이 안 보이면 3D 화면 위에서 N 키", icon="INFO")
+    guide.separator()
+
+    guide.label(text="[화면과 마우스]", icon="INFO")
+    guide.label(text="· 회전 보기: 마우스 가운데 버튼 드래그")
+    guide.label(text="· 화면 이동: Shift + 가운데 버튼 드래그")
+    guide.label(text="· 확대/축소: 마우스 휠")
+    guide.separator()
+
+    guide.label(text="[포즈 만드는 정확한 순서]", icon="POSE_HLT")
+    guide.label(text="1. 화면의 파란 뼈를 좌클릭")
+    guide.label(text="2. R 키 → 마우스를 움직여 회전")
+    guide.label(text="3. 좌클릭 또는 Enter로 확정")
+    guide.label(text="· R 다음 X/Y/Z: 한 축으로만 회전")
+    guide.label(text="· Esc/우클릭: 취소, Ctrl+Z: 실행 취소")
+    guide.label(text="· G(이동), S(크기)는 사용하지 마세요", icon="ERROR")
+    guide.label(text="  Unity로 보낼 때 동작이 사라질 수 있어요")
+    guide.separator()
+
+    guide.label(text="[자주 쓰는 파란 뼈 이름]", icon="ARMATURE_DATA")
+    guide.label(text="· 머리/몸: head, neck, spine, chest")
+    guide.label(text="· 팔 위쪽: upperArm_L / upperArm_R")
+    guide.label(text="· 팔 아래: lowerArm_L / lowerArm_R")
+    guide.label(text="· 손: hand_L / hand_R")
+    guide.label(text="· 다리 위: upperLeg_L / upperLeg_R")
+    guide.label(text="· 다리 아래: lowerLeg_L / lowerLeg_R")
+    guide.label(text="· 얼굴: eye_L/R=눈동자, mouth=입 벌리기")
+    guide.label(text="· 처음에는 upperArm_R 하나만")
+    guide.label(text="  작게 돌려 연습하세요")
+    guide.separator()
+
+    guide.label(text="[키프레임부터 Unity까지]", icon="KEYFRAME_HLT")
+    guide.label(text="4. 프레임 1 → 포즈 만들기 → 현재 포즈 저장")
+    guide.label(text="5. 다른 프레임으로 이동 → 다른 포즈 → 다시 저장")
+    guide.label(text="6. 최소 2개, 서로 다른 포즈가 있어야 합니다")
+    guide.label(text="7. Space: 재생/정지하여 동작 미리보기")
+    guide.label(text="8. End를 정한 뒤 처음과 끝 맞추기")
+    guide.label(text="9. 경로 자동 찾기 → 이름 → Unity로 보내기")
+    guide.label(text="10. Unity가 Play 중이면 보낸 뒤")
+    guide.label(text="    Unity 창을 한 번 클릭하세요")
+
+    guide.separator()
+    if rig is None:
+        guide.label(text="지금 할 일", icon="CHECKMARK")
+        guide.label(text="아래 'ZEPETO 몸 불러오기' 클릭")
+        return
+
+    times = keyframe_times(rig)
+    if not times:
+        next_actions = ("파란 뼈를 돌리고", "프레임 1에서 '현재 포즈 저장'")
+    elif len(times) == 1:
+        next_actions = ("다른 프레임으로 이동하고", "포즈를 바꾼 뒤 다시 저장")
+    elif scene.frame_end not in times:
+        next_actions = ("End 숫자를 확인하고", "'처음과 끝 맞추기' 클릭")
+    else:
+        problems = export_problems(scene, rig)
+        next_actions = (("5단계의 첫 번째 빨간 안내를", "먼저 해결하세요")
+                        if problems else ("영어 이름을 확인하고", "'Unity로 보내기' 클릭"))
+    guide.label(text="지금 할 일", icon="CHECKMARK")
+    for line in next_actions:
+        guide.label(text=line)
+
+
 def draw_zepeto_panel(layout, context):
     scene = context.scene
     rig = get_rig(context)
 
+    _draw_beginner_guide(layout, scene, rig)
+
     if not rig:
         box = layout.box()
         box.label(text="1단계 · 몸 불러오기", icon="ARMATURE_DATA")
+        box.label(text="처음 한 번만 합니다. 몸이 이미 보이면 이 단계는 끝난 것입니다")
         box.operator("zepeto.import_rig", text="ZEPETO 몸 불러오기", icon="IMPORT")
         box.prop(scene, "zepeto_rig_fbx", text="")
         # 이 칸은 일부러 빈 채로 시작한다(refresh_paths 참고). 그렇다고 말해 주지 않으면 빈 칸이
@@ -1359,8 +1456,11 @@ def draw_zepeto_panel(layout, context):
 
     box = layout.box()
     box.label(text="2단계 · 포즈 만들기", icon="POSE_HLT")
-    box.label(text="뼈를 클릭 → R → Z", icon="INFO")
-    box.label(text="→ 마우스 이동 → 좌클릭", icon="BLANK1")
+    box.label(text="① 파란 뼈 좌클릭 → ② R → ③ 마우스 이동", icon="INFO")
+    box.label(text="④ 좌클릭/Enter 확정 · Esc/우클릭 취소")
+    box.label(text="축 고정: R 다음 X/Y/Z · 되돌리기: Ctrl+Z")
+    box.label(text="G(이동)와 S(크기)는 사용하지 마세요", icon="ERROR")
+    box.label(text="연습 추천: upperArm_R 또는 head를 조금 돌리기")
     box.operator("zepeto.clear_pose", text="포즈 전부 되돌리기")
     box.prop(scene, "zepeto_show_all_bones")
     if scene.zepeto_show_all_bones:
@@ -1368,6 +1468,9 @@ def draw_zepeto_panel(layout, context):
 
     box = layout.box()
     box.label(text="3단계 · 이 순간 기록", icon="KEYFRAME_HLT")
+    box.label(text="프레임 이동 → 포즈 변경 → 아래 버튼을 반복합니다")
+    box.label(text="예: 1, 24, 48 · 120 BPM은 1, 13, 25, 37...")
+    box.label(text="최소 2개이며 서로 다른 포즈여야 합니다", icon="INFO")
     row = box.row()
     row.scale_y = 1.2
     row.prop(scene, "frame_current", text="프레임")
@@ -1378,9 +1481,12 @@ def draw_zepeto_panel(layout, context):
 
     times = keyframe_times(rig)
     box.label(text="저장된 프레임: %s" % (", ".join(str(t) for t in times) if times else "아직 없음"))
+    box.label(text="Space 키로 지금까지 만든 동작을 재생/정지합니다")
 
     box = layout.box()
     box.label(text="4단계 · 부드럽게 반복", icon="LOOP_BACK")
+    box.label(text="화면 아래 End가 전체 길이입니다: 48=2초, 240=10초")
+    box.label(text="첫 프레임 포즈를 End에 복사해 반복 끊김을 없앱니다")
     box.operator("zepeto.make_loop", text="처음과 끝 맞추기")
 
     # 아바타를 가만히 서 있게 만들거나 부스 화면 밖으로 밀어내는 문제들. 오퍼레이터도 같은 목록으로
@@ -1389,6 +1495,8 @@ def draw_zepeto_panel(layout, context):
 
     box = layout.box()
     box.label(text="5단계 · Unity로 보내기", icon="EXPORT")
+    box.label(text="① 영어 이름 입력 → ② 저장 폴더 확인 → ③ 보내기")
+    box.label(text="처음이면 '경로 자동 찾기'를 한 번 누르는 것이 정상입니다")
     box.prop(scene, "zepeto_motion_name", text="이름")
     # 저장 폴더는 예전에 UI에 아예 없었다. 다른 컴퓨터의 경로를 물고 온 .blend은 내보내기 버튼에서 막히는데
     # Python 콘솔 말고는 고칠 방법이 없었다.
@@ -1404,6 +1512,7 @@ def draw_zepeto_panel(layout, context):
             box.label(text="· " + p)
     else:
         box.label(text="보낼 준비 완료", icon="CHECKMARK")
+        box.label(text="Unity Play 중이면 전송 뒤 Unity 창을 한 번 클릭하세요")
 
     col = box.column()
     col.scale_y = 1.4
@@ -1450,6 +1559,9 @@ def register():
         name="Unity가 무시하는 뼈도 보기", default=False,
         description="켜면 Twist·_scale·얼굴 뼈까지 전부 보입니다. 그 뼈들을 돌려도 Unity에서는 사라집니다",
         update=_on_show_all_bones_changed)
+    bpy.types.Scene.zepeto_show_beginner_guide = BoolProperty(
+        name="처음부터 자세히 보기", default=True,
+        description="Blender 기본 조작부터 포즈 저장과 Unity 전송까지 패널 안에 자세히 표시합니다")
 
 
 def unregister():
@@ -1461,6 +1573,7 @@ def unregister():
     del bpy.types.Scene.zepeto_baseline_object
     del bpy.types.Scene.zepeto_rig_fbx
     del bpy.types.Scene.zepeto_show_all_bones
+    del bpy.types.Scene.zepeto_show_beginner_guide
 
 
 if __name__ == "__main__":
